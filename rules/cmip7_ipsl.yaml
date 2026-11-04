@@ -1,0 +1,33 @@
+# Curated rules (written and reviewed by hand). Load this file BEFORE the generated seed:
+#   esgf-fix-tool classify REPORT -r rules/cmip7_ipsl.yaml -r rules/seed_20261029.yaml
+# First match wins. Named groups of `check` and `message` are substituted in `params`.
+
+- id: C001
+  check: '\[CF-Conventions\] appendix_a'
+  message: '\[Appendix A\] Attribute "history" should not be present in non-coordinate data \(D\) variable "(?P<var>[^"]+)"'
+  action: fix
+  fix: drop_var_attr
+  params: {var: "{var}", attr: history}
+  severity: 3
+  upstream_status: not_reported
+  note: keep history as a global attribute only (Excel S001)
+
+- id: C002
+  check: '\[CMIP7\] \[ATTR004\] Variable ''(?P<var>[^'']+)'' attribute ''comment'' registry expected-term check'
+  message: 'No variable ''[^'']+'' attribute ''comment'' is defined'
+  action: fix
+  fix: rename_var_attr
+  params: {var: "{var}", old: description, new: comment}
+  severity: 1
+  upstream_status: not_reported
+  note: rename "description" to "comment" on the variable (Excel ATTR004 rows, ~350 variables)
+
+- id: C003
+  check: '\[CMIP7\] \[ATTR004\] Coordinate Variable ''(?P<var>[^'']+)'' attribute ''calendar'' enum check'
+  message: 'Value ''gregorian'' not in allowed values'
+  action: fix
+  fix: set_var_attr
+  params: {var: "{var}", attr: calendar, value: standard}
+  severity: 3
+  upstream_status: not_reported
+  note: "'gregorian' is a deprecated CF synonym of 'standard' (same calendar). New on piControl-spinup s.02 (pilot run #1)"

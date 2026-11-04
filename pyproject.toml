@@ -1,0 +1,32 @@
+[project]
+name = "esgf-fix-tool"
+version = "0.1.0"
+description = "Fix CMIP7 netCDF files from an esgqa report and a set of rules"
+readme = "README.md"
+authors = [
+    { name = "TROUSSELLIER Laurent", email = "laurent.troussellier@ipsl.fr" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "netcdf4>=1.7.5.1.post1",
+    "pyyaml>=6.0.3",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+esgf-fix-tool = "esgf_fix_tool.cli.main:app"
+
+[project.optional-dependencies]
+seed = [
+    "openpyxl>=3.1.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
