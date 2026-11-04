@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 
 from ..classify import BLOCKING_SEVERITY
-from .common import Final, Previous, Report, Rules, classification
+from .common import Final, OnlyRules, Previous, Report, Rules, classification
 
 NAME = "classify"
 
@@ -21,6 +21,7 @@ def run(
     final: Final = False,
     as_json: Annotated[bool, typer.Option("--json", help="JSON output")] = False,
     show: Annotated[int, typer.Option(help="rules / unmatched messages to show")] = 15,
+    rule: OnlyRules = None,
 ):
     """Classify a report, print the decision, exit with its code
     (0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)."""
@@ -55,5 +56,10 @@ def run(
         print(f"\nno rule for {len(unmatched)} severity-{BLOCKING_SEVERITY} messages, e.g.:")
         for (check, msg), n in unmatched.most_common(show):
             print(f"  {n:4d}  {check} | {msg[:120]}")
+    for rid in rule or ():
+        mine = [i for i in c.items if i.match and i.match.rule.id == rid]
+        files = {i.finding.path for i in mine}
+        outcomes = dict(Counter(str(i.outcome) for i in mine))
+        print(f"\nrule {rid}: {len(mine)} findings in {len(files)} files {outcomes or '(none: nothing left for this rule)'}")
     print(f"\ndecision   : {decision.name.lower()} (exit {int(decision)})")
     raise typer.Exit(int(decision))

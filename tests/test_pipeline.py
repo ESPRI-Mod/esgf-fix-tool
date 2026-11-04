@@ -171,3 +171,10 @@ def test_progress_and_fixlog_flushed(tmp_path, rules):
 
     apply_plan(plan, log, progress=progress)
     assert seen == [(1, 1, True, 1)]
+
+
+def test_plan_only_one_rule(tmp_path, rules):
+    nc = tmp_path / "tas.nc"
+    c = classify(QAReport.load(make_report(tmp_path, nc)), rules)
+    assert FixPlan.from_classification(c, {"C001"}).files
+    assert FixPlan.from_classification(c, {"OTHER"}).files == {}

@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 from ..plan import FixPlan
-from .common import Final, Previous, Report, Rules, classification
+from .common import Final, OnlyRules, Previous, Report, Rules, classification
 
 NAME = "plan"
 
@@ -19,11 +19,12 @@ def run(
     previous: Previous = None,
     final: Final = False,
     output: Annotated[Path, typer.Option("--output", "-o", help="plan file")] = Path("fixplan.json"),
+    rule: OnlyRules = None,
     map_path: Annotated[str | None, typer.Option(
         help="OLD=NEW path prefix, e.g. the report was made on the source, the fixes go to staging")] = None,
 ):
     """Write the fix plan (JSON) for a report."""
-    p = FixPlan.from_classification(classification(report, rules, previous, final))
+    p = FixPlan.from_classification(classification(report, rules, previous, final), set(rule or ()))
     if map_path:
         old, sep, new = map_path.partition("=")
         if not sep or not old or not new:

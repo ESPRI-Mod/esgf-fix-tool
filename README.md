@@ -13,6 +13,8 @@ uv run esgf-fix-tool plan qa_result_XXX.json -r rules/cmip7_ipsl.yaml -r rules/s
 uv run esgf-fix-tool apply fixplan.json --fixlog fixlog.jsonl [--dry-run]
 ```
 
+Developing a fix and testing it on TGCC (dev copy, shortcuts `eft_try` …): [docs/run_on_tgcc.md](docs/run_on_tgcc.md).
+
 Rules:
 - `rules/cmip7_ipsl.yaml`: curated rules with an implemented fix. Load it **first** (first match wins).
 - `rules/seed_20261029.yaml`: generated from the 2026-10-29 Excel triage (`seed-rules`, needs `--extra seed`).
