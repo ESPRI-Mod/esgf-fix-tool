@@ -15,9 +15,9 @@ uv sync && uv run pytest -q
   `netCDF4.Dataset` (a temp copy) and the rule's params, must be idempotent and return True if it changed something.
   **A new file in `fixes/` must be imported in `fixes/__init__.py`** (next to `from . import attributes`), otherwise the
   fix is never registered and classifies as `fix_missing`.
-- the **rule**: `rules/cmip7_ipsl.yaml` (curated, loaded first), with `fix: name` and `params` (named groups of the
+- the **rule**: `rules/variable_attributes.yaml` (curated, loaded first), with `fix: name` and `params` (named groups of the
   `check` / `message` regexes are substituted, e.g. `{var}`).
-- local check on a real report: `uv run esgf-fix-tool classify <qa_result_….json> -r rules/cmip7_ipsl.yaml -r rules/seed_20261029.yaml --rule <ID>`
+- local check on a real report: `uv run esgf-fix-tool classify <qa_result_….json> -r rules/variable_attributes.yaml -r rules/catalogue_fallbacks.yaml --rule <ID>`
 
 ## 2. Laptop → TGCC home (every time the code changes)
 

@@ -16,6 +16,24 @@ class Step:
     params: dict
 
 
+def order_steps(steps: list[Step]) -> list[Step]:
+    """Keep a stable order while enforcing dependencies among selected methods.
+
+    Do not silently add an excluded rule: an absent prerequisite must either be
+    satisfied by the file already or fail during read-only preflight.
+    """
+    dependencies = {"normalize_hybrid_coordinate": {"fix_hybrid_coefficients"}}
+    pending, ordered = list(steps), []
+    while pending:
+        for index, step in enumerate(pending):
+            if not any(s.fix in dependencies.get(step.fix, ()) for s in pending):
+                ordered.append(pending.pop(index))
+                break
+        else:
+            raise ValueError("Cyclic fix dependencies")
+    return ordered
+
+
 @dataclass
 class FixPlan:
     rules_version: str
@@ -23,7 +41,9 @@ class FixPlan:
     files: dict[str, list[Step]] = field(default_factory=dict)
 
     @classmethod
-    def from_classification(cls, c: Classification, only_rules: set[str] | None = None) -> FixPlan:
+    def from_classification(
+        cls, c: Classification, only_rules: set[str] | None = None
+    ) -> FixPlan:
         """Fixes of every finding classified FIX; ``only_rules`` keeps the fixes of these rule ids only."""
         plan = cls(c.rules_version, str(c.report.source))
         for item in c.items:
@@ -34,8 +54,11 @@ class FixPlan:
             rule = item.match.rule
             step = Step(rule.id, rule.fix, rule.resolve_params(item.match.groups))
             steps = plan.files.setdefault(item.finding.path, [])
-            if step not in steps:  # the same message can be reported for several datasets
+            if (
+                step not in steps
+            ):  # the same message can be reported for several datasets
                 steps.append(step)
+        plan.files = {path: order_steps(steps) for path, steps in plan.files.items()}
         return plan
 
     def map_paths(self, old: str, new: str) -> int:
@@ -44,7 +67,7 @@ class FixPlan:
         files, n = {}, 0
         for path, steps in self.files.items():
             if path.startswith(old):
-                path, n = new + path[len(old):], n + 1
+                path, n = new + path[len(old) :], n + 1
             files[path] = steps
         self.files = files
         return n

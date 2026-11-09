@@ -1,0 +1,62 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S002
+  check: \[CF-Conventions\] §3\.1 Units
+  message: Units "(?P<A>.+?)" for variable (?P<B>.+?) must be convertible to canonical units "(?P<C>.+?)"
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: 'basin (units=''1'' potentiellement à supprimer) mais erreur checker connue lié à celle dans l''onglet Exception. SOLTH (m vs ''1'') : à renommer en depth + standard_name "depth"'
+
+- id: S003
+  check: \[CF-Conventions\] §3\.3 Standard Name
+  message: Standard name modifier "(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Erreurs de plusieurs standard_names
+
+- id: S004
+  check: \[CF-Conventions\] §3\.3 Standard Name
+  message: 'standard_name surface_net_downward_mass_flux_of_carbon_dioxide_expressed_as_carbon is not defined in Standard Name Table v\d+\. Possible close match\(es\): \[''(?P<q0>[^'']+)'', ''(?P<q1>[^'']+)'',
+    ''(?P<q2>[^'']+)''\]'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Déjà corrigé
+  note: Contrôler l’alignement entre CV / Data Request CMIP7, branded variables et noms standards/coordonnées.
+  upstream_status: fixed_upstream
+
+- id: S005
+  check: \[CF-Conventions\] §3\.3 Standard Name
+  message: 'standard_name tendency_of_atmosphere_mass_content_of_carbon_dioxide_expressed_as_carbon_due_to_emissions_and_surface_fluxes is not defined in Standard Name Table v\d+\. Possible close match\(es\):
+    \[''(?P<q0>[^'']+)'', ''(?P<q1>[^'']+)'', ''(?P<q2>[^'']+)''\]'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Déjà corrigé
+  note: Contrôler l’alignement entre CV / Data Request CMIP7, branded variables et noms standards/coordonnées.
+  upstream_status: fixed_upstream
+
+- id: S006
+  check: \[CF-Conventions\] §3\.3 Standard Name
+  message: standard_name (?P<A>.+?) is not defined in Standard Name Table v\d+\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Déjà corrigé
+  note: Contrôler l’alignement entre CV / Data Request CMIP7, branded variables et noms standards/coordonnées.
+  upstream_status: fixed_upstream
+
+- id: S007
+  check: \[CF-Conventions\] §3\.3 Standard Name
+  message: 'standard_name (?P<A>.+?) is not defined in Standard Name Table v\d+\. Possible close match\(es\): \[''(?P<B>.+?)'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Déjà corrigé
+  note: Contrôler l’alignement entre CV / Data Request CMIP7, branded variables et noms standards/coordonnées.
+  upstream_status: fixed_upstream

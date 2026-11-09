@@ -1,0 +1,30 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S025
+  check: \[CMIP7\] \[COORD011\] Horizontal grid coordinates
+  message: It is required for '(?P<q0>[^']+)' on the configured rectilinear grid to be a 1-D coordinate variable; found '(?P<q1>[^']+)' with dimensions \['(?P<q2>[^']+)', '(?P<q3>[^']+)'\]\. Dependent horizontal-grid
+    checks could not be evaluated\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S026
+  check: \[CMIP7\] \[COORD011\] Horizontal grid coordinates
+  message: The required coordinate for the configured rectilinear grid is '(?P<q0>[^']+)' for latitude; standard_name='(?P<q1>[^']+)' identified '(?P<q2>[^']+)'\.
+  action: review
+  fix: null
+  severity: 3
+  excel_action: Vérifier
+  note: Un problème avec la latitude terminal, identique à l'avant dernière. Mauvaise valeur ? A supprimer ?
+
+- id: S027
+  check: \[CMIP7\] \[COORD011\] Horizontal grid coordinates
+  message: (?P<A>.+?) grid variable '(?P<B>.+?)'(?P<q0>[^']+)'(?P<C>.+?)'(?P<q1>[^']+)'(?P<D>.+?)'\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null

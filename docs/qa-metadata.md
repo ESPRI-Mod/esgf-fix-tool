@@ -44,4 +44,4 @@ fix_tool apply fixplan.qa-metadata.json --only-under "$copie" \
 ```
 
 Ajouter `--only-rule C079` à `plan` pour isoler une règle. Pour un plan complet, charger
-`-r rules/qa_metadata.yaml` avant le catalogue `seed_20261029.yaml`.
+`-r rules/qa_metadata.yaml` avant le catalogue `catalogue_fallbacks.yaml`.

@@ -12,7 +12,7 @@
 # reference run: the pilot on CM6-ESMCO2-FT-esm-pi-s.01 (simulation of the 2026-10-29 Excel), read-only
 : "${EFT_REF:=/ccc/scratch/cont003/gencmip6/troussel/cmip7_pilot/CM6-ESMCO2-FT-esm-pi-s.01}"
 : "${EFT_QA_TESTS:=-t wcrp_cmip7:1.0 -t cf:1.11}"
-EFT_RULES="-r $EFT_HOME/rules/cmip7_ipsl.yaml -r $EFT_HOME/rules/seed_20261029.yaml"
+EFT_RULES="-r $EFT_HOME/rules/variable_attributes.yaml -r $EFT_HOME/rules/catalogue_fallbacks.yaml"
 export IMG EFT_HOME EFT_WORK EFT_REF EFT_RULES
 
 # esgf-fix-tool (dev copy) inside the toolbox image

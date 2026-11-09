@@ -75,7 +75,7 @@ def test_surface_axis_and_label_corrections_are_independent(tmp_path,order):
 
 def test_two_surface_diagnostics_deduplicate_and_override_old_seed_waivers():
     findings=[Finding(3,'[CF-Conventions] §4.3 Vertical Coordinate',m,'dataset','file.nc') for m in MESSAGES]
-    rules=RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml',ROOT/'rules/seed_20261029.yaml')
+    rules=RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml',ROOT/'rules/catalogue_fallbacks.yaml')
     c=classify(QAReport(Path('report'),{},findings),rules)
     assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX]
     p=FixPlan.from_classification(c)
@@ -90,7 +90,7 @@ def test_hybrid_coordinate_family_selects_reference_coefficients(coordinate):
                "are ['atmosphere_hybrid_height_coordinate', 'atmosphere_hybrid_sigma_ln_pressure_coordinate', "
                "'atmosphere_hybrid_sigma_pressure_coordinate', 'atmosphere_sigma_coordinate', 'model_level_number'].")
     finding = Finding(3, '[CMIP7] [COORD012] Parametric vertical coordinate', message, 'CMIP7.ATM.test', 'file.nc')
-    rules = RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml', ROOT/'rules/seed_20261029.yaml')
+    rules = RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml', ROOT/'rules/catalogue_fallbacks.yaml')
     match = rules.match(finding)
     assert match.rule.id == 'C074' and match.groups == {'coordinate': coordinate}
     c = classify(QAReport(Path('report'), {}, [finding]), rules)

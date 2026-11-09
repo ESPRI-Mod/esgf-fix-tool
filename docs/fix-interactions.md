@@ -74,7 +74,7 @@ restent utilisables. Les nouveaux plans chargent tous les catalogues par défaut
 | horizontal_coordinates.yaml | C098 : références horizontales résiduelles |
 | dimension_order.yaml | C111 : zostoga, même méthode que C050 |
 | grid_labels.yaml | C097/C110/C113 : nom de fichier, grille et branding |
-| cmip7_ipsl.yaml | C112 : commentaires approuvés, avant la règle générique |
+| variable_attributes.yaml | C112 : commentaires approuvés, avant la règle générique |
 | consistency.yaml | C114 : comparaisons entre datasets, toujours en review |
 
 Les ID et les méthodes sont conservés. Les résultats de classification du rapport

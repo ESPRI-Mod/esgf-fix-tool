@@ -113,7 +113,7 @@ def test_later_hook_cannot_change_other_latitudes_or_scientific_data(tmp_path,mo
 def test_two_individual_diagnostics_deduplicate_to_one_profile_recipe():
     findings=[Finding(3,'[CMIP7] [COORD011] Horizontal grid coordinates',m,
                       'CMIP7.OCE.hfbasin.tavg-u-hyb-sea.mon.glb.g112.IPSL-CM6-ESMCO2.esm-piControl-spinup.r1i1p1f1','file.nc') for m in MESSAGES]
-    rules=RuleSet.load(ROOT/'rules/horizontal_coordinates.yaml',ROOT/'rules/seed_20261029.yaml')
+    rules=RuleSet.load(ROOT/'rules/horizontal_coordinates.yaml',ROOT/'rules/catalogue_fallbacks.yaml')
     c=classify(QAReport(Path('report'),{},findings),rules)
     assert all(i.outcome==Outcome.FIX and i.match.rule.id=='C070' for i in c.items)
     assert FixPlan.from_classification(c).files['file.nc']==[step('hfbasin')]

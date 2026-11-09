@@ -1,0 +1,20 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S029
+  check: '\[CMIP7\] \[FILE004a\] Internal packing : Consolidated internal metadata'
+  message: .*
+  action: other_step
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: fixed by the repack step (cmip7repack)
+
+- id: S030
+  check: \[CMIP7\] \[PATH003\] DRS Directory Vocabulary Check
+  message: .*
+  action: defer
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: checked on the DRS draft tree (final QA)

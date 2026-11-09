@@ -1,0 +1,129 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S017
+  check: \[CMIP7\] \[COORD007\] Requested coordinate values
+  message: '''(?P<A>.+?)'' does not contain requested value\(s\) within their permitted absolute differences: \[\((?P<B>.+?)'
+  action: review
+  fix: null
+  severity: 3
+  excel_action: Vérifier
+  note: 'Valeurs de coordonnées numériques hors tolérances : examiner les valeurs extrême et corriger si avéré'
+
+- id: S018
+  check: \[CMIP7\] \[COORD007\] Requested coordinate values
+  message: Scalar coordinate '(?P<q0>[^']+)'='(?P<q1>[^']+)'; the required value is '(?P<q2>[^']+)'\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Corriger la valeur de la coordonnée scalaire (dont chaînes avec caractère NUL); vérifier la valeur exacte exigée par la Data Request.
+
+- id: S019
+  check: \[CMIP7\] \[COORD007\] Requested coordinate values
+  message: Scalar coordinate '(?P<q0>[^']+)'='(?P<A>.+?)\\x00'(?P<q1>[^']+)'(?P<B>.+?)'\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Corriger la valeur de la coordonnée scalaire (dont chaînes avec caractère NUL); vérifier la valeur exacte exigée par la Data Request.
+
+- id: S020
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds
+  message: Adjacent cells in '(?P<q0>[^']+)' have overlapping bounds\.
+  action: review
+  fix: null
+  severity: 3
+  excel_action: Vérifier
+  note: Valeurs bizarre de lon et bounds_lon à corriger ?
+
+- id: S021
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds
+  message: Bounds variable '(?P<q0>[^']+)' contains bounds pairs that are not strictly increasing, consistently with the prescribed stored_direction\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Supprimer la variable et attribut time_bounds non nécessaire pour de l'instantané
+
+- id: S022
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds
+  message: It is required for '(?P<A>.+?)'(?P<q0>[^']+)'bounds' attribute according to its coordinate definition\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S023
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds
+  message: It is required for climatological time coordinate '(?P<q0>[^']+)' to have a climatology attribute naming its climatology bounds variable\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S024
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds
+  message: It is required that climatological time coordinate '(?P<q0>[^']+)' does not define a bounds attribute; found '(?P<q1>[^']+)'\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S036
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries
+  message: Bounds variable olevel_bounds and parent variable olevel have the following matching attributes \['(?P<q0>[^']+)'\]\.  It is recommended that only the parent variable of the bounds variable contains
+    these attributes
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S037
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries
+  message: 'The Boundary variables ''(?P<q0>[^'']+)'' should not have the attributes: ''(?P<q1>[^'']+)''units''(?P<q2>[^'']+)'''
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S038
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries
+  message: (?P<A>.+?) point\(s\) specified by the coordinate variable '(?P<B>.+?)'(?P<q0>[^']+)'(?P<C>.+?)'
+  action: review
+  fix: null
+  severity: 2
+  excel_action: À qualifier
+  note: null
+
+- id: S048
+  check: \[CMIP7\] \[COORD009\] Coordinate bounds naming
+  message: '''(?P<q0>[^'']+)'' bounds=''(?P<q1>[^'']+)''; the recommended name is ''(?P<q2>[^'']+)''\.'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S049
+  check: \[CMIP7\] \[COORD009\] Coordinate bounds naming
+  message: '''(?P<A>.+?)''(?P<q0>[^'']+)''(?P<B>.+?)''(?P<q1>[^'']+)''(?P<C>.+?)''\.'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S050
+  check: \[CMIP7\] \[COORD009\] Coordinate bounds naming
+  message: (?P<A>.+?) variable '(?P<B>.+?)'(?P<q0>[^']+)'(?P<C>.+?)'(?P<q1>[^']+)'(?P<D>.+?)'\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null

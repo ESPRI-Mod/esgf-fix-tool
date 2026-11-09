@@ -1,0 +1,31 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S012
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order
+  message: '''(?P<A>.+?)''(?P<q0>[^'']+)''time''(?P<q1>[^'']+)''(?P<B>.+?)''(?P<q2>[^'']+)''tau''(?P<q3>[^'']+)''lat''(?P<q4>[^'']+)''lon''(?P<q5>[^'']+)''longitude''(?P<q6>[^'']+)''latitude''(?P<q7>[^'']+)''(?P<C>.+?)''(?P<q8>[^'']+)''tau''(?P<q9>[^'']+)''time''(?P<q10>[^'']+)''time''(?P<q11>[^'']+)''tau''(?P<q12>[^'']+)''(?P<D>.+?)''(?P<q13>[^'']+)''lat''(?P<q14>[^'']+)''lon''\]
+    as their required order\.'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S013
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order
+  message: (?P<A>.+?)'(?P<q0>[^']+)'(?P<B>.+?)
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S032
+  check: \[CF-Conventions\] §2\.4 Dimensions
+  message: (?P<A>.+?)'s spatio-temporal dimensions are not in the recommended order T, Z, Y, X and/or further dimensions are not located left of T, Z, Y, X\. The dimensions \(and their guessed types\) are
+    time \(L, unlimited\), (?P<B>.+?)
+  action: waive
+  fix: null
+  severity: 2
+  excel_action: Ignorer
+  note: 'Et il ne faut pas ajouter axis="X" ou axis="Y" directement aux coordonnées auxiliaires bidimensionnelles : CF ne l''autorise pas. '

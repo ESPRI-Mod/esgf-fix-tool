@@ -1,3 +1,14 @@
+- id: C003
+  check: '\[CMIP7\] \[ATTR004\] Coordinate Variable ''(?P<var>[^'']+)'' attribute ''calendar'' enum check'
+  message: 'Value ''gregorian'' not in allowed values'
+  action: fix
+  fix: set_var_attr
+  params: {var: "{var}", attr: calendar, value: standard}
+  severity: 3
+  upstream_status: not_reported
+  note: "'gregorian' is a deprecated CF synonym of 'standard' (same calendar). New on piControl-spinup s.02 (pilot run #1)"
+
+
 - id: C095
   check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[COORD003\] Coordinate metadata$
   message: (?:Units "mb" for variable plev must be convertible to canonical units "Pa"|'plev' units 'mb' are not convertible
@@ -10,6 +21,7 @@
     add_bounds: false
   note: Validate the complete plev7c axis and fix units to Pa when the stored values already match the literal DR Pa values.
     Preserve all centers. Genuine hPa-valued axes retain hPa units. Bounds are handled separately by C103c.
+
 - id: C095b
   check: \[CMIP7\] \[COORD003\] Coordinate metadata$
   message: '''plev'' (?P<attr>axis|positive)=''''; the required value is ''(?P<value>Z|down)''\.$'

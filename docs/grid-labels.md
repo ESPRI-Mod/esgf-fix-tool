@@ -52,4 +52,4 @@ fix_tool apply fixplan.grid-labels.json --only-under "$copie" \
 
 Pour tester uniquement les sorties du nord, ajouter `--only-rule C089` à
 `plan`. Pour un plan complet, ajouter `-r rules/grid_labels.yaml` avant
-`rules/seed_20261029.yaml`.
+`rules/catalogue_fallbacks.yaml`.

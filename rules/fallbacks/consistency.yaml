@@ -1,0 +1,66 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S054
+  check: \[Consistency\] Coordinates \(Inter-Dataset\)
+  message: 'The following coordinates differ between datasets: olevel, olevel_bounds, seasurface'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S055
+  check: \[Consistency\] Coordinates \(Inter-Dataset\)
+  message: 'The following coordinates differ between datasets: (?P<A>.+?)'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+  merged_rows: 2
+
+- id: S056
+  check: \[Consistency\] Dimensions \(Inter-Dataset\)
+  message: 'The following dimensions differ between datasets: nvertex, olevel, oline, str_len, x, y'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S057
+  check: \[Consistency\] Dimensions \(Inter-Dataset\)
+  message: 'The following dimensions differ between datasets: (?P<A>.+?)'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S058
+  check: \[Consistency\] Global attributes data types \(Inter-Dataset\)
+  message: 'The following global attributes have inconsistent data types between datasets: external_variables'
+  action: review
+  fix: null
+  severity: 2
+  excel_action: Vérifier
+  note: null
+
+- id: S059
+  check: \[Consistency\] Required global attributes \(Inter-Dataset\)
+  message: 'The following global attributes differ between datasets: (?P<A>.+?)'
+  action: review
+  fix: null
+  severity: 2
+  excel_action: Vérifier
+  note: null
+
+- id: S092
+  check: \[Consistency\] Non-required global attributes \(Inter-Dataset\)
+  message: 'The following non-required global attributes differ between datasets: name, physical_parameter'
+  action: review
+  fix: null
+  severity: 1
+  excel_action: Vérifier
+  note: null

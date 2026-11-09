@@ -10,6 +10,7 @@
     coordinate: alevel
   note: C074 follow-up. Verify the supplied reference, preserve coefficients, and remove ap/b bounds attributes. CF bounds
     formula terms belong on existing lev bounds. Do not normalize or create lev values.
+
 - id: C102
   check: \[CMIP7\] \[COORD006\] Coordinate valid range$
   message: '''lev'' contains .* above required valid_max=1\.0\. The comparison permits numerical tolerance=1e-06\.$'
@@ -18,6 +19,7 @@
     arrays and remove approved temporary copies.
   fix: normalize_hybrid_coordinate
   params: {}
+
 - id: C104
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
   message: Coordinate 'alevel' could not be verified\..*Variable 'lev' has no standard_name,.*
@@ -25,12 +27,14 @@
   action: review
   note: These two al products contain 80 interface levels. Confirm the physical staggering before declaring them to be model
     centers or changing their arrays.
+
 - id: C107
   check: \[CMIP7\] \[COORD004a\] Additional permitted coordinate metadata$
   message: Coordinate 'lev' defines optional attribute computed_standard_name='air_pressure'\. No expected value is currently
     specified in the coordinate vocabulary, so this value cannot be verified\.$
   action: waive
   note: Valid CF computed_standard_name for the hybrid pressure formula. The CV has no prescribed value. Preserve useful metadata.
+
 - id: C108
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
   message: '''b'' has units=''1'', while its coordinate definition does not prescribe units; it is recommended to verify the
@@ -38,6 +42,7 @@
   action: waive
   note: The multiplicative coefficient b is dimensionless. CF permits units=1. An absent CV prescription does not forbid this
     attribute.
+
 - id: C073a
   check: \[CMIP7\] \[COORD003\] Coordinate metadata$
   message: '''seasurface'' axis=''''; the required value is ''Z''\.$'
@@ -45,6 +50,7 @@
   note: C073 follow-up. The user confirmed that the CMIP7 DR should remove axis=Z for osurf. Do not reintroduce the vertical-coordinate
     error.
 # User decisions on 2026-11-05. Load before the generated seed's older osurf waivers.
+
 - id: C073
   check: '\[CF-Conventions\] §4\.3 Vertical Coordinate$'
   message: '(?:seasurface: vertical coordinates not defining pressure must include a positive attribute that is either ''up'' or ''down''|§4\.3\.1 seasurface''s units must be defined for vertical coordinates, there is no default)$'
@@ -69,4 +75,3 @@
   note: Use the supplied reference after checking the complete lev axis. Bind ap/b to lev, and pair consecutive reference
     interfaces for alevel coefficient bounds. Preserve lev and the science arrays.
   dataset: CMIP7\.ATM\.(?!(?:edt|evu)\.)
-

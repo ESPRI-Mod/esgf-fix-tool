@@ -71,7 +71,10 @@ def drop_region_units(ds, var: str, expected: str = "1") -> bool:
     v = ds.variables.get(var)
     if v is None or "units" not in v.ncattrs():
         return False
-    if v.getncattr("units") != expected or getattr(v, "standard_name", None) != "region":
+    if (
+        v.getncattr("units") != expected
+        or getattr(v, "standard_name", None) != "region"
+    ):
         return False
 
     # 2. Remove units only; categorical codes and flags require their own recipe.
@@ -97,9 +100,14 @@ def fix_soil_depth_metadata(ds, var: str) -> bool:
 
 
 @fix("fix_invalid_standard_names")
-def fix_invalid_standard_names(ds, expected: list[str], replacement: str | None = None,
-                               units: str | None = None, var: str | list[str] | None = None,
-                               requires: list[str] | None = None) -> bool:
+def fix_invalid_standard_names(
+    ds,
+    expected: list[str],
+    replacement: str | None = None,
+    units: str | None = None,
+    var: str | list[str] | None = None,
+    requires: list[str] | None = None,
+) -> bool:
     """Resolve a QA message lacking variable names, using exact, reviewed full attribute values.
 
     Never interpret a checker suggestion as an instruction. Rules supply the explicit allowlist,
@@ -116,12 +124,17 @@ def fix_invalid_standard_names(ds, expected: list[str], replacement: str | None 
         if units is not None and getattr(v, "units", None) != units:
             continue
         required = requires
-        if required is None and replacement == "atmosphere_hybrid_sigma_pressure_coordinate":
+        if (
+            required is None
+            and replacement == "atmosphere_hybrid_sigma_pressure_coordinate"
+        ):
             # Older C014 plans predate the explicit requires parameter; enforce the guard there too.
             required = ["ap", "b"]
         missing = [term for term in (required or []) if term not in ds.variables]
         if missing:
-            raise ValueError(f"Cannot correct {name}: required coefficient variable(s) absent: {', '.join(missing)}")
+            raise ValueError(
+                f"Cannot correct {name}: required coefficient variable(s) absent: {', '.join(missing)}"
+            )
 
         # 2. Use only the explicit mapping from the rule, never the checker suggestion.
         if replacement is None:

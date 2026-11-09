@@ -1,0 +1,30 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S051
+  check: \[CMIP7\] \[COORD011\] Horizontal grid cell count
+  message: Registered grid '(?P<q0>[^']+)' defines n_cells=20592, but the file's horizontal coordinate dimensions contain 143 cells\. Please verify the horizontal dimensions and use or register an appropriate
+    grid_label for this grid\. For reduced spatial output such as hemispheric, global, or zonal means, it is recommended to register or select a separate grid_label\.
+  action: waive
+  fix: null
+  severity: 2
+  excel_action: Ignorer
+  note: Lier à l'histoire des grilles parentes en cas d'aggrégation spatiale ?
+
+- id: S052
+  check: \[CMIP7\] \[COORD011\] Registered grid region
+  message: File region='(?P<A>.+?)'(?P<q0>[^']+)'glb'(?P<q1>[^']+)'g112'(?P<q2>[^']+)'glb' is the recommended value\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: Mettre le grid_label prévues pour sh et nh
+
+- id: S053
+  check: \[CMIP7\] \[COORD011\] Registered grid-label recommendation
+  message: The file uses grid_label='(?P<A>.+?)'(?P<q0>[^']+)'(?P<B>.+?)'(?P<q1>[^']+)'(?P<C>.+?)'(?P<q2>[^']+)'(?P<D>.+?)'\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: Mettre le grid_label pour plusieurs transects océanique.

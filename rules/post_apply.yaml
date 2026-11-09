@@ -2,7 +2,7 @@
 # Includes are relative to this file and loaded once, in this reviewed priority order.
 include:
   - basin_coordinates.yaml
-  - cmip7_ipsl.yaml
+  - variable_attributes.yaml
   - coordinate_metadata.yaml
   - coordinate_values_bounds.yaml
   - surface_and_hybrid.yaml

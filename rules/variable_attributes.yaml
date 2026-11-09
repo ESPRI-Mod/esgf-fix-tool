@@ -1,3 +1,5 @@
+# Reviewed variable attributes and registry comments. Specific rules precede generic rules.
+
 - id: C112
   check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>[^']+)' attribute 'comment' registry expected-term check$
   message: Expected .*
@@ -9,9 +11,6 @@
   params:
     var: '{var}'
     replace_expected: true
-# Curated rules (written and reviewed by hand). Load this file BEFORE the generated seed:
-#   esgf-fix-tool classify REPORT -r rules/cmip7_ipsl.yaml -r rules/seed_20261029.yaml
-# First match wins. Named groups of `check` and `message` are substituted in `params`.
 
 - id: C001
   check: '\[CF-Conventions\] appendix_a'
@@ -32,16 +31,6 @@
   severity: 1
   upstream_status: not_reported
   note: rename "description" to "comment" on the variable (Excel ATTR004 rows, ~350 variables)
-
-- id: C003
-  check: '\[CMIP7\] \[ATTR004\] Coordinate Variable ''(?P<var>[^'']+)'' attribute ''calendar'' enum check'
-  message: 'Value ''gregorian'' not in allowed values'
-  action: fix
-  fix: set_var_attr
-  params: {var: "{var}", attr: calendar, value: standard}
-  severity: 3
-  upstream_status: not_reported
-  note: "'gregorian' is a deprecated CF synonym of 'standard' (same calendar). New on piControl-spinup s.02 (pilot run #1)"
 
 - id: C002a
   check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>[^']+)' attribute 'comment' registry expected-term check

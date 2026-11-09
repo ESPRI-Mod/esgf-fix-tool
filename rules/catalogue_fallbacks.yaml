@@ -1,0 +1,16 @@
+# Historical coverage only. Load after reviewed thematic catalogues.
+include:
+  - fallbacks/variable_attributes.yaml
+  - fallbacks/units_and_standard_names.yaml
+  - fallbacks/surface_and_hybrid.yaml
+  - fallbacks/required_coordinates.yaml
+  - fallbacks/dimension_order.yaml
+  - fallbacks/coordinate_metadata.yaml
+  - fallbacks/coordinate_values_bounds.yaml
+  - fallbacks/horizontal_coordinates.yaml
+  - fallbacks/publication.yaml
+  - fallbacks/continuity.yaml
+  - fallbacks/qa_metadata.yaml
+  - fallbacks/basin_coordinates.yaml
+  - fallbacks/grid_labels.yaml
+  - fallbacks/consistency.yaml

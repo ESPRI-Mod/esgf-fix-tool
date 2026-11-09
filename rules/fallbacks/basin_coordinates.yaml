@@ -1,0 +1,11 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S035
+  check: \[CF-Conventions\] §6\.1 Labels
+  message: 6\.1\.1 '(?P<q0>[^']+)' specified by '(?P<q1>[^']+)' is not a valid region
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: Ignorer mais ajouter les flags_* et supprimer units de la coordonnée basin

@@ -1,0 +1,20 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S010
+  check: \[CMIP7\] \[COORD001\] Coordinate identity and structure
+  message: Coordinate '(?P<A>.+?)'(?P<q0>[^']+)'lev'(?P<q1>[^']+)'lev' does not exist in the file\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Renommer la coordonnée presinter ou olevel en lev
+
+- id: S011
+  check: \[CMIP7\] \[COORD001\] Coordinate identity and structure
+  message: The required (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: 'Autres coordonnées attendues absentes : établir les sous-cas avant de fixer la correction.'

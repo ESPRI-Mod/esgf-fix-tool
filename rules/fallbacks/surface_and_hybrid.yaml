@@ -1,0 +1,31 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S008
+  check: \[CF-Conventions\] §4\.3 Vertical Coordinate
+  message: 'seasurface: vertical coordinates not defining pressure must include a positive attribute that is either ''(?P<q0>[^'']+)'' or ''(?P<q1>[^'']+)'''
+  action: waive
+  fix: null
+  severity: 3
+  excel_action: Ignorer
+  note: 'Coordonnée auxiliaire seasurface : CF requiert positive=up/down (et parfois units), mais ces attributs ne semblent pas demandés dans la Data Request CMIP7. Clarifier l’exigence et la solution avant
+    correction.'
+
+- id: S009
+  check: \[CF-Conventions\] §4\.3 Vertical Coordinate
+  message: §4\.3\.1 seasurface's units must be defined for vertical coordinates, there is no default
+  action: waive
+  fix: null
+  severity: 3
+  excel_action: Ignorer
+  note: 'Coordonnée auxiliaire seasurface : CF requiert positive=up/down (et parfois units), mais ces attributs ne semblent pas demandés dans la Data Request CMIP7. Clarifier l’exigence et la solution avant
+    correction.'
+
+- id: S028
+  check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate
+  message: Coordinate '(?P<A>.+?)'(?P<q0>[^']+)'lev'(?P<q1>[^']+)'(?P<B>.+?)'(?P<q2>[^']+)'x'(?P<q3>[^']+)'atmosphere_hybrid_height_coordinate'(?P<q4>[^']+)'atmosphere_hybrid_sigma_ln_pressure_coordinate'(?P<q5>[^']+)'atmosphere_hybrid_sigma_pressure_coordinate'(?P<q6>[^']+)'atmosphere_sigma_coordinate'(?P<q7>[^']+)'model_level_number'\]\.
+  action: review
+  fix: null
+  severity: 3
+  excel_action: Vérifier
+  note: Voir retour d'Arnaud

@@ -1,0 +1,95 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S014
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata
+  message: '''(?P<q0>[^'']+)'' axis=''''(?P<q1>[^'']+)''Z''\.'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S015
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata
+  message: '''(?P<q0>[^'']+)'' standard_name=''(?P<q1>[^'']+)''; the required value is ''(?P<q2>[^'']+)''\.'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+  merged_rows: 2
+
+- id: S016
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata
+  message: '''(?P<q0>[^'']+)'' defines standard_name=''(?P<q1>[^'']+)''; it is required for the attribute to be absent when its coordinate-definition value is empty\.'
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: null
+
+- id: S034
+  check: \[CF-Conventions\] §4\.4 Time Coordinate
+  message: Variable time has a calendar attribute of proleptic_gregorian and it is recommended that the units_metadata attribute is present and has one of the values \['(?P<q0>[^']+)', '(?P<q1>[^']+)',
+    '(?P<q2>[^']+)'\]
+  action: waive
+  fix: null
+  severity: 2
+  excel_action: Ignorer
+  note: null
+
+- id: S042
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: '''(?P<q0>[^'']+)'' long_name=''''(?P<q1>[^'']+)''CloudSat Simulator Equivalent Radar Reflectivity Factor''\.'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S043
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: '''(?P<q0>[^'']+)'' long_name=''''(?P<q1>[^'']+)''lidar backscattering ratio''\.'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S044
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: '''(?P<q0>[^'']+)'' long_name=''(?P<q1>[^'']+)''; the recommended value is ''(?P<A>.+?)'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S045
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: '''(?P<A>.+?)''(?P<q0>[^'']+)''(?P<B>.+?)'
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S046
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: Only latitude is required, so the zonal-mean grid is verified as rectilinear regardless of its grid metadata\. The resolved topology is '(?P<q0>[^']+)'\. It is recommended to register or select
+    a grid with a \(zonal-mean\) rectilinear topology\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: Va de pairs avec [CMIP7] [COORD011] Horizontal grid coordinates
+
+- id: S047
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations
+  message: The recommended string-length dimension for character scalar coordinate '(?P<A>.+?)'(?P<q0>[^']+)'strlen'(?P<q1>[^']+)'str_len'\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: Remplacer str_len par strlen

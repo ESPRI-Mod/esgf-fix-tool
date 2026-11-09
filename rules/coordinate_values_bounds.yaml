@@ -5,11 +5,13 @@
   fix: convert_ice_radius
   params: {}
   note: Recognize metres versus already-converted microns; convert all six approved values once and correct microne to micron.
+
 - id: C103
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'lat' to have a 'bounds' attribute according to its coordinate definition\.$
   action: review
   note: Eight latitude profiles remain review pending the real horizontal bounds geometry.
+
 - id: C103a
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'depth' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -20,6 +22,7 @@
     coordinate: depth
   note: Use the supplied 18-level ORCHIDEE thermal scheme. Validate strictly increasing edges, center containment and agreement
     with the 19-edge reference to 0.001 m.
+
 - id: C103b
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'lev' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -28,6 +31,7 @@
   fix: normalize_hybrid_coordinate
   params: {}
   note: Same normalization and coefficient-derived bounds as C102; no coefficient reconstruction.
+
 - id: C103c
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'plev' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -38,6 +42,7 @@
     coordinate: plev
   note: Use the bundled explicit DR plev7c edges after checking all seven centers and their units/order. Store bounds in the
     same pressure units as the parent.
+
 - id: C105a
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
   message: '''effectRadIc'' does not contain requested value\(s\).*'
@@ -45,6 +50,7 @@
   fix: convert_ice_radius
   params: {}
   note: Same guarded six-value metre-to-micron correction as C095a. No repeated multiplication.
+
 - id: C109
   check: \[CF-Conventions\] §7\.1 Cell Boundaries$
   message: Boundary variable (?:depth_bounds|plev_bounds|depth_bnds|plev_bnds) specified by (?:depth|plev) should have at
@@ -52,6 +58,7 @@
   action: review
   note: All twelve observed parents are scalar and their bounds have two values on one dimension, as permitted by CF 7.1.
     Reproduce this checker limitation before accepting a scoped exception. No artificial singleton axis.
+
 - id: C055
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
   message: '''dbze'' does not contain requested value\(s\) within their permitted absolute differences: \[\(\-47\.5, 0\.0475\),
@@ -62,6 +69,7 @@
     coordinate: dbze
   note: User confirmed DR centers and edges on 2026-11-05. Same idempotent recipe for COORD007/008; preserve histogram data
     and bin order.
+
 - id: C056
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
   message: '''scatratio'' does not contain requested value\(s\) within their permitted absolute differences: \[\(0\.005, 5e\-06\),
@@ -72,6 +80,7 @@
     coordinate: scatratio
   note: User confirmed DR centers and edges on 2026-11-05. Same idempotent recipe for COORD007/008; preserve histogram data
     and bin order.
+
 - id: C057
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
   message: Scalar coordinate 'seasurface'='osurf\\x00'; the required value is 'ocean_surface_layer'\.$
@@ -82,6 +91,7 @@
     expected: osurf
     value: ocean_surface_layer
   note: Registry label, not coordinate ID; write a scalar string without a NUL terminator.
+
 - id: C058
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
   message: Scalar coordinate 'type'='(?P<old>typebare|typecrop|typenatgr|typeresidual|typetree|typeveg|typec3pft|typec4pft)\\x00';
@@ -93,6 +103,7 @@
     expected: '{old}'
     value: '{value}'
   note: Six exact registry mappings; runtime checks the pair and current scalar label.
+
 - id: C059
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: Adjacent cells in 'bounds_lon' have overlapping bounds\.$
@@ -102,6 +113,7 @@
   dataset: CMIP7\.(?:ATM|SRF)\.
   note: Confirmed in shared chat turns 247–254. g111 only, 144 centers / 144x2 bounds, deviations <=1e-10 degree; accepts
     lon_bnds after rename.
+
 - id: C060
   check: \[CF-Conventions\] §3\.3 Standard Name$|\[CMIP7\] \[COORD008\] Coordinate bounds$
   message: (?:Bounds variable 'time_bounds' contains bounds pairs that are not strictly increasing, consistently with the
@@ -111,6 +123,7 @@
   params: {}
   note: Physically remove validated degenerate instantaneous time_bounds/time_bnds, including orphan arrays from previous
     runs. No standard_name or long_name added.
+
 - id: C061
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'alt' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -119,6 +132,7 @@
   params:
     coordinate: alt
   note: Add explicit registry edges only after checking actual centers/units; no interpolation.
+
 - id: C062
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'dbze' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -128,6 +142,7 @@
     coordinate: dbze
   note: User confirmed DR centers and edges on 2026-11-05. Same idempotent recipe for COORD007/008; preserve histogram data
     and bin order.
+
 - id: C063
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'iceband' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -135,6 +150,7 @@
   action: fix
   fix: fix_iceband
   note: Model bounds confirmed by the user, from 0 to 99 m. The axis uses the five upper bounds in the original class order.
+
 - id: C064
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'scatratio' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -144,6 +160,7 @@
     coordinate: scatratio
   note: User confirmed DR centers and edges on 2026-11-05. Same idempotent recipe for COORD007/008; preserve histogram data
     and bin order.
+
 - id: C065
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'tau' to have a 'bounds' attribute according to its coordinate definition\.$
@@ -152,6 +169,7 @@
   params:
     coordinate: tau
   note: Add explicit registry edges only after checking actual centers/units; no interpolation.
+
 - id: C066
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: (?:It is required for climatological time coordinate 'time' to have a climatology attribute naming its climatology
@@ -162,6 +180,7 @@
   params: {}
   note: Two diagnostics, one step per file. Reuse and rename existing intervals to climatology_bnds; switch bounds -> climatology.
     Runtime checks temporal labels, cell_methods and interval validity; no averaging/rebinning.
+
 - id: C067
   check: \[CMIP7\] \[COORD009\] Coordinate bounds naming$
   message: '''(?P<coordinate>lat|lon|nav_lat|nav_lon|latitude|longitude|time|depth|plev|lev)'' bounds=''(?P<source>bounds_lat|lat_bounds|bounds_lon|bounds_nav_lat|bounds_nav_lon|time_bounds|depth_bounds|plev_bounds|olevel_bounds)'';
@@ -174,6 +193,7 @@
     target: '{target}'
   note: Six observed combinations plus latitude/longitude after horizontal rename; runtime whitelist. Skip detached tpt bounds
     and established climatology; arrays unchanged.
+
 - id: C068
   check: \[CMIP7\] \[COORD009\] Coordinate bounds naming$
   message: Bounds variable '(?:bounds_lat|bounds_lon|lat_bounds|time_bounds)' uses trailing dimension '(?:nvertex|axis_nbounds)';

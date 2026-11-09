@@ -32,18 +32,38 @@ class FixFunction:
 REGISTRY: dict[str, FixFunction] = {}
 
 
-def fix(name: str, kind: Kind = "metadata", *, verify_data: bool = False,
-        after_close: Callable | None = None, layout_change: bool = False,
-        data_targets: Callable | None = None, verify_final: Callable | None = None):
+def fix(
+    name: str,
+    kind: Kind = "metadata",
+    *,
+    verify_data: bool = False,
+    after_close: Callable | None = None,
+    layout_change: bool = False,
+    data_targets: Callable | None = None,
+    verify_final: Callable | None = None,
+):
     if layout_change and (not verify_data or after_close is None):
-        raise ValueError("A layout change requires data verification and an after-close rewrite/verifier")
+        raise ValueError(
+            "A layout change requires data verification and an after-close rewrite/verifier"
+        )
     if data_targets is not None and (not verify_data or verify_final is None):
-        raise ValueError("Changing coordinate values requires an explicit final verifier")
+        raise ValueError(
+            "Changing coordinate values requires an explicit final verifier"
+        )
+
     def register(func):
         if name in REGISTRY:
             raise ValueError(f"fix {name!r} registered twice")
-        REGISTRY[name] = FixFunction(name, kind, func, verify_data, after_close, layout_change,
-                                    data_targets, verify_final)
+        REGISTRY[name] = FixFunction(
+            name,
+            kind,
+            func,
+            verify_data,
+            after_close,
+            layout_change,
+            data_targets,
+            verify_final,
+        )
         return func
 
     return register

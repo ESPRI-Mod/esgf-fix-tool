@@ -1,0 +1,338 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S001
+  check: \[CF-Conventions\] appendix_a
+  message: \[Appendix A\] Attribute "history" should not be present in non-coordinate data \(D\) variable "(?P<A>.+?)"\. This attribute may only appear in global attributes \(G\)\.
+  action: fix
+  fix: null
+  severity: 3
+  excel_action: Corriger
+  note: Supprimer l’attribut history des variables non coordonnées (le conserver uniquement au niveau global si nécessaire).
+
+- id: S041
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: Expected '(?P<q0>[^']+)' to equal '(?P<q1>[^']+)' from registry key '(?P<q2>[^']+)'\.
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S060
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 273
+
+- id: S061
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)', '(?P<q3>[^']+)'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 56
+
+- id: S062
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Percentage cloud cover in (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S063
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Droplets are liquid only\.  Report concentration '(?P<q2>[^']+)' over liquid cloudy portion
+    of grid cell\.  This is the value from uppermost model layer with liquid cloud or, if available, it is better to sum over all liquid cloud tops, no matter where they occur, as long as they are seen
+    from the top of the atmosphere\. Weight by total liquid cloud top fraction of  \(as seen from TOA\) each time sample when computing monthly mean\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S064
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)', '(?P<q3>[^']+)', '(?P<q4>[^']+)'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 13
+
+- id: S065
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)', '(?P<q3>[^']+)', '(?P<q4>[^']+)', '(?P<q5>[^']+)'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 4
+
+- id: S066
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Aerosol Extinction (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S067
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)'expressed_as\\'(?P<q3>[^']+)'Sinking\\'(?P<q4>[^']+)'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 2
+
+- id: S068
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Depth-integrated total heat transport from resolved and parameterized processes across different
+    lines on the Earth's surface \(based on appendix J and table J1 of Griffies et al\., 2016\)\. Formally, this means the integral along the line of the normal component of the heat transport\. Positive
+    and negative numbers refer to total northward/eastward and southward/westward transports, respectively\. The transport should be evaluated for the full depth of the ocean, except for the Pacific Equatorial
+    Undercurrent, which is averaged from the surface to 350m\. Use Celsius for temperature scale\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S069
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)', "Net flux of heat entering the liquid water column through its upper surface
+    \(excluding any '(?P<q3>[^']+)'\)\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S070
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 7
+
+- id: S071
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 2
+
+- id: S072
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Specific (?P<A>.+?)\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S073
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)'(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 2
+
+- id: S074
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Vertically integrated (?P<A>.+?) moisture transport \(Mass_weighted_vertical integral of
+    the product of northward wind by total water mass per unit mass\)'(?P<B>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S075
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Transport across_line means that which crosses a particular line on the Earth's surface \(based
+    on appendix J and table J1 of Griffies et al, 2016 \(<https://doi\.org/10\.5194/gmd-9-3231-2016>\)\. Formally this means the integral along the line of the normal component of the transport\. The transport
+    should be evaluated for the full depth of the ocean, except for the Pacific Equatorial Undercurrent, which is averaged from the surface to 350m\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S076
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)'Mole concentration\\'(?P<q3>[^']+)'nitrogen\\'(?P<q4>[^']+)'nox_expressed_as_nitrogen\\'(?P<q5>[^']+)'\]
+    is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S077
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['sum of phytoplankton (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S078
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<q2>[^']+)', '(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 2
+
+- id: S079
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Surface Downwelling Shortwave Radiation over (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S080
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Surface Upwelling Shortwave Radiation over (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S081
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Depth-integrated total salt mass transport from resolved and parameterized processes across
+    different lines on the Earth's surface \(based on appendix J and table J1 of Griffies et al\., 2016\)\. Formally, this means the integral along the line of the normal component of the heat transport\.
+    Positive and negative numbers refer to total northward/eastward and southward/westward transports, respectively\. The transport should be evaluated for the full depth of the ocean, except for the Pacific
+    Equatorial Undercurrent, which is averaged from the surface to 350m\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S082
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Ocean salt mass x transport vertically integrated over the whole ocean depth\. Contains all
+    contributions to '(?P<q2>[^']+)' salt mass transport from resolved and parameterized processes\. Report on native horizontal grid\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S083
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Ocean salt mass y transport vertically integrated over the whole ocean depth\. Contains all
+    contributions to '(?P<q2>[^']+)' salt mass transport from resolved and parameterized processes\. Report on native horizontal grid\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S084
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Sea water salinity is the salt content of sea water, often on the Practical Salinity Scale
+    of 1978\. However, the unqualified term '(?P<q2>[^']+)' is generic and does not necessarily imply any particular method of calculation\. The units of salinity are dimensionless and the units attribute
+    should normally be given as 1e-3 or 0\.001 i\.e\. parts per thousand\."(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S085
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \["Sea water salinity is the salt content of sea water, often on the Practical Salinity Scale
+    of 1978\. However, the unqualified term '(?P<q2>[^']+)' is generic and does not necessarily imply any particular method of calculation\. The units of salinity are dimensionless and the units attribute
+    should normally be given as 1e-3 or 0\.001 i\.e\. parts per thousand\."\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S086
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Air (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S087
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Diagnostic should be contributed even for models using conservative temperature as prognostic
+    field(?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S088
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Upper (?P<A>.+?), 2D field'\] is included\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S089
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['Zonal wind (?P<A>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+
+- id: S090
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: Expected '(?P<q0>[^']+)' to contain '(?P<q1>[^']+)' from registry key '(?P<q2>[^']+)'\.
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable
+  merged_rows: 2
+
+- id: S091
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' registry expected-term check
+  message: No variable '(?P<q0>[^']+)' attribute '(?P<q1>[^']+)' is defined, so none of the registered values \['(?P<A>.+?) height(?P<B>.+?)
+  action: fix
+  fix: null
+  severity: 1
+  excel_action: Corriger
+  note: Se solutionne en renommant "description" par "comment" dans les attributs de la variable

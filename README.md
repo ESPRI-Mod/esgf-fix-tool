@@ -1,5 +1,7 @@
 # esgf-fix-tool
 
+Latest maintenance: [hybrid dependencies and catalogue cleanup](docs/hybrid-dependencies-and-catalogues.md).
+
 Monthly tclm series now use [the per-file numerical climatology reconstruction](docs/monthly-climatology.md)
 (C106, shared with C065/C066). Regenerate plans before application.
 
@@ -25,14 +27,14 @@ Part of the IPSL CMIP7 publication pipeline (QA ↔ FIX loop). Design: [ARCHITEC
 ```bash
 uv sync
 # what does this report need? (exit code = decision: 0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)
-uv run esgf-fix-tool classify qa_result_XXX.json -r rules/post_apply.yaml -r rules/cmip7_ipsl.yaml -r rules/standard_name_modifiers.yaml -r rules/units_and_standard_names.yaml -r rules/vertical_coordinate_names.yaml -r rules/required_coordinates.yaml -r rules/coordinate_metadata.yaml -r rules/dimension_order.yaml -r rules/coordinate_values_bounds.yaml -r rules/horizontal_coordinates.yaml -r rules/surface_and_hybrid.yaml -r rules/qa_metadata.yaml -r rules/grid_labels.yaml -r rules/seed_20261029.yaml
+uv run esgf-fix-tool classify qa_result_XXX.json -r rules/post_apply.yaml -r rules/variable_attributes.yaml -r rules/standard_name_modifiers.yaml -r rules/units_and_standard_names.yaml -r rules/vertical_coordinate_names.yaml -r rules/required_coordinates.yaml -r rules/coordinate_metadata.yaml -r rules/dimension_order.yaml -r rules/coordinate_values_bounds.yaml -r rules/horizontal_coordinates.yaml -r rules/surface_and_hybrid.yaml -r rules/qa_metadata.yaml -r rules/grid_labels.yaml -r rules/catalogue_fallbacks.yaml
 # the fixes it would apply, per file
 uv run esgf-fix-tool plan qa_result_XXX.json -o fixplan.json
 # apply them: direct metadata updates, or one combined structural rewrite per file
 uv run esgf-fix-tool apply fixplan.json --fixlog fixlog.jsonl [--dry-run]
 ```
 `plan` loads every YAML catalogue in the project's `rules/` by default, with
-`post_apply` first and generated seeds last. Only rules whose action is `fix` and
+`post_apply` first and historical fallbacks last. Only rules whose action is `fix` and
 whose method is implemented produce steps; `review` and ignored findings stay out.
 Use the full report, not `.cluster.json`. Planning never opens the NetCDF files.
 
@@ -52,7 +54,8 @@ Rules:
 - `rules/basin_coordinates.yaml`: C032/C078/C096/C101a share `fix_basin_sector`;
   keep basin values, move region semantics to sector and describe basin as units=1 indices.
   C101 is the independent 2-D mask correction.
-- `rules/cmip7_ipsl.yaml`: curated rules with an implemented fix. Load it **first** (first match wins).
+- `rules/variable_attributes.yaml`: C001/C002/C002a/C112, variable attributes and comments.
+  C003 (calendar) is in coordinate_metadata.yaml. The default manifest sets their priority.
 - `rules/standard_name_modifiers.yaml`: C004–C006, the three investigated descriptive `standard_name` values.
   Load before the seed, or alone to apply only this correction (example below).
 - `rules/units_and_standard_names.yaml`: C007–C017, the reviewed units and invalid-name cases.
@@ -75,11 +78,12 @@ Rules:
   See [the report variants and TGCC commands](docs/qa-metadata.md).
 - `rules/grid_labels.yaml`: C089–C094, reviewed region and output-grid recommendations.
   See [variants, DRS rename suggestions, and TGCC commands](docs/grid-labels.md).
-- `rules/seed_20261029.yaml`: generated from the 2026-10-29 Excel triage (`seed-rules`, needs `--extra seed`).
-  Every rule has a decision; most still have `fix: null` (classified `fix_missing`).
+- `rules/catalogue_fallbacks.yaml`: manifest for the historical triage, split by theme under
+  `rules/fallbacks/` and loaded last. These retain the original S IDs and decisions;
+  `action: fix` with `fix: null` means `fix_missing`, not an implemented recipe.
 
-Adding a fix: write a function in `src/esgf_fix_tool/fixes/`, decorate it with `@fix("name")`, then move the matching
-seed rule into `rules/cmip7_ipsl.yaml` with `fix: name` and its `params`.
+Adding a fix: write a function in `src/esgf_fix_tool/fixes/`, decorate it with `@fix("name")`,
+then add its reviewed rule to the appropriate thematic catalogue, ahead of the historical fallbacks.
 
 ## Follow apply while a large file is being processed
 
@@ -161,11 +165,11 @@ esgf-toolbox env PYTHONPATH="$PWD/src" python -m esgf_fix_tool.cli.main --help
 ```
 
 Use that prefix instead of `uv run esgf-fix-tool` for `plan` and `apply`. For the complete rule set,
-add `-r rules/standard_name_modifiers.yaml` before `-r rules/seed_20261029.yaml`.
+add `-r rules/standard_name_modifiers.yaml` before `-r rules/catalogue_fallbacks.yaml`.
 
 ## Test only variable history removal
 
-This fix is already implemented by **C001** in `rules/cmip7_ipsl.yaml`, calling
+This fix is already implemented by **C001** in `rules/variable_attributes.yaml`, calling
 `drop_var_attr(ds, var, attr="history")`. It only addresses `ds.variables[var]`, never global attributes.
 In the full 2026-11-03 report, the 351 distinct messages differ only in variable name: they represent
 665 findings in 584 files and all need the same correction. Each finding also occurs in a failed
@@ -175,7 +179,7 @@ Use `plan --only-rule C001` to exclude other fixes from this test. With `report`
 `staging_root` defined as above:
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/cmip7_ipsl.yaml --only-rule C001 \
+uv run esgf-fix-tool plan "$report" -r rules/variable_attributes.yaml --only-rule C001 \
   --map-path "$source_root=$staging_root" -o fixplan.history.json
 uv run esgf-fix-tool apply fixplan.history.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.history.dry-run.jsonl
@@ -558,7 +562,7 @@ fix_tool apply fixplan.C073.json --only-under "$staging_root" \
 ```
 
 Remove `--dry-run` to keep the change, then rerun QA with the updated DR when available.
-Load `surface_and_hybrid.yaml` before `seed_20261029.yaml` in a combined run.
+Load `surface_and_hybrid.yaml` before `catalogue_fallbacks.yaml` in a combined run.
 
 ## Test hybrid metadata and reference coefficients (C074)
 

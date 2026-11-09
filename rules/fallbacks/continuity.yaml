@@ -1,0 +1,12 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S031
+  check: \[Continuity\] Time continuity
+  message: .*
+  action: upstream_only
+  fix: null
+  severity: 3
+  excel_action: Déjà corrigé
+  note: 'gap between files: dataset level, not a per-file fix'
+  upstream_status: fixed_upstream

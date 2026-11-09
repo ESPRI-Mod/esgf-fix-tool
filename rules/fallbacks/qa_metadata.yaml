@@ -1,0 +1,30 @@
+# Historical diagnostic fallbacks: no implemented recipe is implied by action=fix.
+# Loaded after all reviewed rules. Preserve IDs and original triage metadata.
+
+- id: S033
+  check: \[CF-Conventions\] §3\.1\.2 Temperature units
+  message: Variable (?P<A>.+?) has a temperature related standard_name and it is recommended that the units_metadata attribute is present and has one of the values \['(?P<q0>[^']+)', '(?P<q1>[^']+)', '(?P<q2>[^']+)'\]
+  action: fix
+  fix: null
+  severity: 2
+  excel_action: Corriger
+  note: null
+
+- id: S039
+  check: \[CF-Conventions\] §7\.2 Cell Measures
+  message: The cell_measures attribute for variable (?P<A>.+?) is formatted incorrectly\. It should take the form of either '(?P<q0>[^']+)' or '(?P<q1>[^']+)' where cell_var is an existing name of a variable
+    describing the cell measures\.
+  action: waive
+  fix: null
+  severity: 2
+  excel_action: Ignorer
+  note: faux positif du cf_chercker
+
+- id: S040
+  check: \[CF-Conventions\] §7\.3 Cell Methods
+  message: (?P<A>.+?)'s cell_methods name component (?P<B>.+?) does not match a dimension, area or auxiliary coordinate
+  action: review
+  fix: null
+  severity: 2
+  excel_action: Vérifier
+  note: En attente retour d'Arnaud sur les deux variables hx et hy

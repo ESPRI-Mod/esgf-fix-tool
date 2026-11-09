@@ -8,12 +8,14 @@
     target: '{target}'
   note: Validate the existing reviewed grid mapping and synchronize only the filename component. Refuse collisions before
     applying any file. Replay resolves the explicit final basename.
+
 - id: C110
   check: \[CMIP7\] \[COORD011\] Horizontal grid cell count$
   message: Registered grid 'g111' defines n_cells=20592, but the file's horizontal coordinate dimensions contain 143 cells\..*
   action: review
   note: Thirteen zonal products require an appropriate registered grid label. No approved replacement is available in this
     catalogue.
+
 - id: C113
   check: '\[CMIP7\] \[ATTR008\] Consistency: frequency vs branded_variable$|\[CMIP7\] \[ATTR012\] Consistency: region vs branded_variable$'
   message: (?:Frequency 'day' is not listed for branded variable 'sieqthick_tavg-u-hxy-si'.*Submission at additional frequencies
@@ -22,6 +24,7 @@
   action: waive
   note: The diagnostic explicitly permits these extra frequencies/regions. Preserve the data coverage and branding.
 # Reviewed output geometries in the 2026-11-03 CMIP7 report. Load before the seed.
+
 - id: C089
   check: '\[CMIP7\] \[COORD011\] Registered grid(?: region|-label recommendation)$'
   message: >-

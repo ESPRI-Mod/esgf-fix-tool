@@ -9,6 +9,7 @@
   note: Detach a bounds reference only after confirming the old auxiliary is no longer attached to any field. Preserve all
     arrays.
 # Reviewed COORD010/011 cases from the failed individual QA_results_v3 controls. Load before seed.
+
 - id: C069
   check: '\[CMIP7\] \[COORD010\] Auxiliary-coordinate associations$'
   message: 'It is required for ''(?P<var>[^'']+)'' coordinates attribute not to include horizontal (?P<role>latitude|longitude) coordinate ''(?P<coordinate>nav_lat|nav_lon|latitude|longitude)'', because (?P=role) is not required by branded variable ''(?P<branded_variable>[^'']+)''\.$'

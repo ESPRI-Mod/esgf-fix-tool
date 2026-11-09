@@ -39,7 +39,7 @@ def test_no_rules_option_loads_all_catalogues_from_any_directory(tmp_path,monkey
     p=run(tmp_path,[])
     assert set(ids(p))=={'C001','C002'}
     names=p.rules_version.split(',')
-    assert names[0]=='post_apply.yaml' and names[-1]=='seed_20261029.yaml'
+    assert names[0]=='post_apply.yaml' and names[-1]=='catalogue_fallbacks.yaml'
     assert len(names)==len(list(catalogues.DEFAULT_RULES_DIR.glob('*.yaml')))
 
 
@@ -117,8 +117,15 @@ def test_missing_catalogue_has_a_clear_error(tmp_path):
 
 
 def test_default_discovery_adds_future_catalogues_before_seeds(tmp_path,monkeypatch):
-    for n in ['seed_z.yaml','extra.yaml','post_apply.yaml','cmip7_ipsl.yaml','other.yml']:
+    for n in ['seed_z.yaml','extra.yaml','post_apply.yaml','variable_attributes.yaml','other.yml']:
         (tmp_path/n).write_text('[]')
     monkeypatch.setattr(catalogues,'DEFAULT_RULES_DIR',tmp_path)
     assert [p.name for p in catalogues.default_rule_paths()]==[
-        'post_apply.yaml','cmip7_ipsl.yaml','extra.yaml','other.yml','seed_z.yaml']
+        'post_apply.yaml','variable_attributes.yaml','extra.yaml','other.yml','seed_z.yaml']
+
+
+def test_retired_catalogues_left_by_scp_are_not_loaded_twice(tmp_path,monkeypatch):
+    for name in ('post_apply.yaml','catalogue_fallbacks.yaml','cmip7_ipsl.yaml','seed_20261029.yaml'):
+        (tmp_path/name).write_text('[]')
+    monkeypatch.setattr(catalogues,'DEFAULT_RULES_DIR',tmp_path)
+    assert [p.name for p in catalogues.default_rule_paths()] == ['post_apply.yaml','catalogue_fallbacks.yaml']

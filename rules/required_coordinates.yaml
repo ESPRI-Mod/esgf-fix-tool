@@ -10,6 +10,7 @@
     - solth
     target: depth
   note: Thermal soil depth already in meters; metadata correction C008 remains independent.
+
 - id: C022
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required one\-dimensional coordinate 'depth' \(coordinate ID 'sdepth'\) is absent, so its configured dependent
@@ -19,6 +20,7 @@
   fix: fix_orchidee_soil_depth
   params: {}
   dataset: CMIP7\.SRF\.(?:mrsfl|mrsll|mrsol|slthick)\.
+
 - id: C023
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required one\-dimensional coordinate 'effectRadIc' \(coordinate ID 'effectradic'\) is absent, so its configured
@@ -30,6 +32,7 @@
     - ReffIce
     target: effectRadIc
   note: Rename variable and dimension; units, values, standard_name and dimension order are separate fixes.
+
 - id: C024
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required one\-dimensional coordinate 'plev' \(coordinate ID 'plev7c'\) is absent, so its configured dependent
@@ -41,6 +44,7 @@
     - pressure2
     target: plev
   note: Rename variable and dimension; units, values, standard_name and dimension order are separate fixes.
+
 - id: C025
   check: \[CMIP7\] \[COORD(?:001|002)\] (?:Coordinate identity and structure|Data-variable coordinate order)$
   message: (?:The required one\-dimensional coordinate 'rlat' \(coordinate ID 'gridlatitude'\) is absent, so its configured
@@ -52,6 +56,7 @@
   fix: fix_msfty_coordinates
   params: {}
   dataset: CMIP7\.OCE\.msfty\.
+
 - id: C026
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'deltasigt' is absent, so its configured dependent coordinate checks could not be
@@ -61,6 +66,7 @@
   params:
     target: deltasigt
   note: Use bundled explicit branded-variable registry mapping, including specified scalar bounds; no filename inference.
+
 - id: C027
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'depth' is absent, so its configured dependent coordinate checks could not be evaluated\.$
@@ -69,6 +75,7 @@
   params:
     target: depth
   note: Use bundled explicit branded-variable registry mapping, including specified scalar bounds; no filename inference.
+
 - id: C028
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'height' is absent, so its configured dependent coordinate checks could not be evaluated\.$
@@ -77,6 +84,7 @@
   params:
     target: height
   note: Use bundled explicit branded-variable registry mapping, including specified scalar bounds; no filename inference.
+
 - id: C029
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'plev' is absent, so its configured dependent coordinate checks could not be evaluated\.$
@@ -85,6 +93,7 @@
   params:
     target: plev
   note: Use bundled explicit branded-variable registry mapping, including specified scalar bounds; no filename inference.
+
 - id: C030
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'type' is absent, so its configured dependent coordinate checks could not be evaluated\.$
@@ -96,6 +105,7 @@
     target: type
     rename_dimension: false
   note: Rename the existing scalar text coordinate; preserve its text and string-length dimension.
+
 - id: C031
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required scalar coordinate 'wavelength' is absent, so its configured dependent coordinate checks could not
@@ -105,6 +115,7 @@
   params:
     target: wavelength
   note: Explicit lambda443nm/lambda550nm/lambda865nm registry mappings, with nm units.
+
 - id: C033
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required text auxiliary coordinate 'sector' for coordinate ID 'modelvegtype' is absent, so its configured dependent
@@ -116,6 +127,7 @@
     target: sector
   note: Checker b3 expects sector while registry retains original out_name; copy existing text, retain original coordinate
     and order.
+
 - id: C034
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required text auxiliary coordinate 'sector' for coordinate ID 'oline' is absent, so its configured dependent
@@ -127,6 +139,7 @@
     target: sector
   note: Checker b3 expects sector while registry retains original out_name; copy existing text, retain original coordinate
     and order.
+
 - id: C035
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
   message: The required text auxiliary coordinate 'sector' for coordinate ID 'siline' is absent, so its configured dependent

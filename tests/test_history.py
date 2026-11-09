@@ -16,7 +16,7 @@ from esgf_fix_tool.report import QAReport
 from esgf_fix_tool.rules import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
-RULES = ROOT / "rules/cmip7_ipsl.yaml"
+RULES = ROOT / "rules/variable_attributes.yaml"
 
 
 def report(path, variables):

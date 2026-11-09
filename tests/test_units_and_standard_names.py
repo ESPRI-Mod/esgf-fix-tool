@@ -72,7 +72,7 @@ def test_units_and_names_pipeline(tmp_path, rule, check, message, var, old, unit
     report = tmp_path / 'qa_result_test.json'
     dataset = 'CMIP7.ATM.ta.tavg-al-hxy-u.mon' if rule == 'C014' else 'dataset'
     report.write_text(json.dumps({'fail': {'3': {check: {message: {dataset: [str(staged)]}}}}}))
-    classified = classify(QAReport.load(report), RuleSet.load(RULES, ROOT / 'rules/seed_20261029.yaml'))
+    classified = classify(QAReport.load(report), RuleSet.load(RULES, ROOT / 'rules/catalogue_fallbacks.yaml'))
     assert classified.items[0].outcome == Outcome.FIX
     plan = FixPlan.from_classification(classified)
     assert [s.rule for s in plan.files[str(staged)]] == [rule]
