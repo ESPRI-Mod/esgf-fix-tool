@@ -31,7 +31,6 @@ uv run esgf-fix-tool plan qa_result_XXX.json -o fixplan.json
 # apply them: direct metadata updates, or one combined structural rewrite per file
 uv run esgf-fix-tool apply fixplan.json --fixlog fixlog.jsonl [--dry-run]
 ```
-
 `plan` loads every YAML catalogue in the project's `rules/` by default, with
 `post_apply` first and generated seeds last. Only rules whose action is `fix` and
 whose method is implemented produce steps; `review` and ignored findings stay out.

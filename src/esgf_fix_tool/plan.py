@@ -23,10 +23,13 @@ class FixPlan:
     files: dict[str, list[Step]] = field(default_factory=dict)
 
     @classmethod
-    def from_classification(cls, c: Classification) -> FixPlan:
+    def from_classification(cls, c: Classification, only_rules: set[str] | None = None) -> FixPlan:
+        """Fixes of every finding classified FIX; ``only_rules`` keeps the fixes of these rule ids only."""
         plan = cls(c.rules_version, str(c.report.source))
         for item in c.items:
             if item.outcome is not Outcome.FIX:
+                continue
+            if only_rules and item.match.rule.id not in only_rules:
                 continue
             rule = item.match.rule
             step = Step(rule.id, rule.fix, rule.resolve_params(item.match.groups))
