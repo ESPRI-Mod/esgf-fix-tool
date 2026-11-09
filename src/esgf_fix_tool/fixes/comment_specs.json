@@ -1,0 +1,479 @@
+{
+  "cLitter_tavg-u-hxy-lnd": {
+    "var": "cLitter",
+    "variants": [
+      {
+        "observed": "\"Litter\" is dead plant material in or above the soil. It is distinct from coarse wood debris. The precise distinction between \"fine\" and \"coarse\" is model dependent. \"Content\" indicates a quantity per unit area. The sum of the quantities with standard names surface\\_litter\\_mass\\_content\\_of\\_carbon and subsurface\\_litter\\_mass\\_content\\_of\\_carbon has the standard name litter\\_mass\\_content\\_of\\_carbon.",
+        "value": "\"Litter\" is dead plant material in or above the soil. It is distinct from coarse wood debris. The precise distinction between \"fine\" and \"coarse\" is model dependent. \"Content\" indicates a quantity per unit area. The sum of the quantities with standard names surface_litter_mass_content_of_carbon and subsurface_litter_mass_content_of_carbon has the standard name litter_mass_content_of_carbon."
+      }
+    ]
+  },
+  "dcw_tavg-u-hxy-lnd": {
+    "var": "dcw",
+    "variants": [
+      {
+        "observed": "change\\_over\\_time\\_in\\_canopy\\_water\\_amount",
+        "value": "change_over_time_in_canopy_water_amount"
+      }
+    ]
+  },
+  "evspsblpot_tavg-u-hxy-lnd": {
+    "var": "evspsblpot",
+    "variants": [
+      {
+        "observed": "water\\_potential\\_evapotranspiration\\_flux",
+        "value": "water_potential_evapotranspiration_flux"
+      }
+    ]
+  },
+  "expc_tavg-d1000m-hxy-sea": {
+    "var": "expc",
+    "variants": [
+      {
+        "observed": "The phrase 'expressed\\_as' is used in the construction A\\_expressed\\_as\\_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid.",
+        "value": "The phrase 'expressed_as' is used in the construction A_expressed_as_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid."
+      }
+    ]
+  },
+  "expc_tavg-d100m-hxy-sea": {
+    "var": "expc",
+    "variants": [
+      {
+        "observed": "The phrase 'expressed\\_as' is used in the construction A\\_expressed\\_as\\_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid.",
+        "value": "The phrase 'expressed_as' is used in the construction A_expressed_as_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid."
+      }
+    ]
+  },
+  "expcalc_tavg-d1000m-hxy-sea": {
+    "var": "expcalc",
+    "variants": [
+      {
+        "observed": "The phrase 'expressed\\_as' is used in the construction A\\_expressed\\_as\\_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid. Calcite is a mineral that is a polymorph of calcium carbonate. The chemical formula of calcite is CaCO3. Standard names also exist for aragonite, another polymorph of calcium carbonate.",
+        "value": "The phrase 'expressed_as' is used in the construction A_expressed_as_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid. Calcite is a mineral that is a polymorph of calcium carbonate. The chemical formula of calcite is CaCO3. Standard names also exist for aragonite, another polymorph of calcium carbonate."
+      }
+    ]
+  },
+  "expcalc_tavg-d100m-hxy-sea": {
+    "var": "expcalc",
+    "variants": [
+      {
+        "observed": "The phrase 'expressed\\_as' is used in the construction A\\_expressed\\_as\\_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid. Calcite is a mineral that is a polymorph of calcium carbonate. The chemical formula of calcite is CaCO3. Standard names also exist for aragonite, another polymorph of calcium carbonate.",
+        "value": "The phrase 'expressed_as' is used in the construction A_expressed_as_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A. In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics.   'Sinking' is the gravitational settling of particulate matter suspended in a liquid. A sinking flux is positive downwards and is calculated relative to the movement of the surrounding fluid. Calcite is a mineral that is a polymorph of calcium carbonate. The chemical formula of calcite is CaCO3. Standard names also exist for aragonite, another polymorph of calcium carbonate."
+      }
+    ]
+  },
+  "fco2nat_tavg-u-hxy-u": {
+    "var": "fco2nat",
+    "variants": [
+      {
+        "observed": "This is what the atmosphere sees (on its own grid).  This field should be equivalent to the combined natural fluxes of carbon (requested in the L\\_mon and O\\_mon tables) that account for natural exchanges between the atmosphere and land or ocean reservoirs (i.e., \"net ecosystem biospheric productivity\", for land, and \"air to sea CO2 flux\", for ocean.)",
+        "value": "This is what the atmosphere sees (on its own grid).  This field should be equivalent to the combined natural fluxes of carbon (requested in the L_mon and O_mon tables) that account for natural exchanges between the atmosphere and land or ocean reservoirs (i.e., \"net ecosystem biospheric productivity\", for land, and \"air to sea CO2 flux\", for ocean.)"
+      }
+    ]
+  },
+  "hfls_tavg-u-hxy-is": {
+    "var": "hfls",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "hfss_tavg-u-hxy-is": {
+    "var": "hfss",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "intuadse_tavg-u-hxy-u": {
+    "var": "intuadse",
+    "variants": [
+      {
+        "observed": "Vertically integrated eastward dry static energy transport (cp.T +zg).v (Mass\\_weighted\\_vertical integral of the product of eastward wind by dry static\\_energy per mass unit)",
+        "value": "Vertically integrated eastward dry static energy transport (cp.T +zg).v (Mass_weighted_vertical integral of the product of eastward wind by dry static_energy per mass unit)"
+      }
+    ]
+  },
+  "intvadse_tavg-u-hxy-u": {
+    "var": "intvadse",
+    "variants": [
+      {
+        "observed": "Vertically integrated northward dry static energy transport (cp.T +zg).v (Mass\\_weighted\\_vertical integral of the product of northward wind by dry static\\_energy per mass unit)",
+        "value": "Vertically integrated northward dry static energy transport (cp.T +zg).v (Mass_weighted_vertical integral of the product of northward wind by dry static_energy per mass unit)"
+      }
+    ]
+  },
+  "intvaw_tavg-u-hxy-u": {
+    "var": "intvaw",
+    "variants": [
+      {
+        "observed": "Vertically integrated Northward moisture transport (Mass\\_weighted\\_vertical integral of the product of northward wind by total water mass per unit mass)",
+        "value": "Vertically integrated Northward moisture transport (Mass_weighted_vertical integral of the product of northward wind by total water mass per unit mass)"
+      },
+      {
+        "observed": "Vertically integrated northward moisture transport (Mass\\_weighted\\_vertical integral of the product of northward wind by total water mass per unit mass)",
+        "value": "Vertically integrated northward moisture transport (Mass_weighted_vertical integral of the product of northward wind by total water mass per unit mass)"
+      }
+    ]
+  },
+  "intvaw_tpt-u-hxy-u": {
+    "var": "intvaw",
+    "variants": [
+      {
+        "observed": "Vertically integrated northward moisture transport (Mass\\_weighted\\_vertical integral of the product of northward wind by total water mass per unit mass)",
+        "value": "Vertically integrated northward moisture transport (Mass_weighted_vertical integral of the product of northward wind by total water mass per unit mass)"
+      }
+    ]
+  },
+  "loadoa_tavg-u-hxy-u": {
+    "var": "loadoa",
+    "variants": [
+      {
+        "observed": "atmosphere dry organic content: This is the vertically integrated sum of atmosphere\\_primary\\_organic\\_content and atmosphere\\_secondary\\_organic\\_content (see next two table entries).",
+        "value": "atmosphere dry organic content: This is the vertically integrated sum of atmosphere_primary_organic_content and atmosphere_secondary_organic_content (see next two table entries)."
+      }
+    ]
+  },
+  "mfo_tavg-u-ht-sea": {
+    "var": "mfo",
+    "variants": [
+      {
+        "observed": "Transport across\\_line means that which crosses a particular line on the Earth's surface (based on appendix J and table J1 of Griffies et al, 2016 (<https://doi.org/10.5194/gmd-9-3231-2016>). Formally this means the integral along the line of the normal component of the transport. The transport should be evaluated for the full depth of the ocean, except for the Pacific Equatorial Undercurrent, which is averaged from the surface to 350m.",
+        "value": "Transport across_line means that which crosses a particular line on the Earth's surface (based on appendix J and table J1 of Griffies et al, 2016 (<https://doi.org/10.5194/gmd-9-3231-2016>). Formally this means the integral along the line of the normal component of the transport. The transport should be evaluated for the full depth of the ocean, except for the Pacific Equatorial Undercurrent, which is averaged from the surface to 350m."
+      }
+    ]
+  },
+  "mrro_tavg-u-hxy-is": {
+    "var": "mrro",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "mrrob_tavg-u-hxy-lnd": {
+    "var": "mrrob",
+    "variants": [
+      {
+        "observed": "subsurface\\_runoff\\_flux",
+        "value": "subsurface_runoff_flux"
+      }
+    ]
+  },
+  "mrros_tavg-u-hxy-lnd": {
+    "var": "mrros",
+    "variants": [
+      {
+        "observed": "surface\\_runoff\\_flux",
+        "value": "surface_runoff_flux"
+      }
+    ]
+  },
+  "mrtws_tavg-u-hxy-lnd": {
+    "var": "mrtws",
+    "variants": [
+      {
+        "observed": "canopy\\_and\\_surface\\_and\\_subsurface\\_water\\_amount",
+        "value": "canopy_and_surface_and_subsurface_water_amount"
+      }
+    ]
+  },
+  "netAtmosLandCO2Flux_tavg-u-hxy-lnd": {
+    "var": "netAtmosLandCO2Flux",
+    "variants": [
+      {
+        "observed": "Flux of carbon as carbon dioxide into the land. This flux should be reproducible by differencing the sum of all carbon pools (cVeg, cLitter, cSoil, and cProducts or equivalently cLand) from one time step to the next, except in the case of lateral transfer of carbon due to harvest, riverine transport of dissolved organic and/or inorganic carbon, or any other process (in which case the lateral\\_carbon\\_transfer\\_over\\_land term, see below, will be zero data).",
+        "value": "Flux of carbon as carbon dioxide into the land. This flux should be reproducible by differencing the sum of all carbon pools (cVeg, cLitter, cSoil, and cProducts or equivalently cLand) from one time step to the next, except in the case of lateral transfer of carbon due to harvest, riverine transport of dissolved organic and/or inorganic carbon, or any other process (in which case the lateral_carbon_transfer_over_land term, see below, will be zero data)."
+      }
+    ]
+  },
+  "nh4_tavg-ol-hxy-sea": {
+    "var": "nh4",
+    "variants": [
+      {
+        "observed": "Mole concentration means moles (amount of substance) per unit volume and is used in the construction mole\\_concentration\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole concentration means moles (amount of substance) per unit volume and is used in the construction mole_concentration_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ]
+  },
+  "no3_tavg-ol-hxy-sea": {
+    "var": "no3",
+    "variants": [
+      {
+        "observed": "Mole concentration means moles (amount of substance) per unit volume and is used in the construction mole\\_concentration\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole concentration means moles (amount of substance) per unit volume and is used in the construction mole_concentration_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ]
+  },
+  "npp_tavg-u-hxy-lnd": {
+    "var": "npp",
+    "variants": [
+      {
+        "observed": "\"Production of carbon\" means the production of biomass expressed as the mass of carbon which it contains. Net primary production is the excess of gross primary production (rate of synthesis of biomass from inorganic precursors) by autotrophs (\"producers\"), for example, photosynthesis in plants or phytoplankton, over the rate at which the autotrophs themselves respire some of this biomass. \"Productivity\" means production per unit area. The phrase \"expressed\\_as\" is used in the construction A\\_expressed\\_as\\_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A.",
+        "value": "\"Production of carbon\" means the production of biomass expressed as the mass of carbon which it contains. Net primary production is the excess of gross primary production (rate of synthesis of biomass from inorganic precursors) by autotrophs (\"producers\"), for example, photosynthesis in plants or phytoplankton, over the rate at which the autotrophs themselves respire some of this biomass. \"Productivity\" means production per unit area. The phrase \"expressed_as\" is used in the construction A_expressed_as_B, where B is a chemical constituent of A. It means that the quantity indicated by the standard name is calculated solely with respect to the B contained in A, neglecting all other chemical constituents of A."
+      }
+    ]
+  },
+  "o2_tavg-ol-hxy-sea": {
+    "var": "o2",
+    "variants": [
+      {
+        "observed": "'Mole concentration' means number of moles per unit volume, also called \"molarity\", and is used in the construction mole\\_concentration\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.  A chemical or biological species denoted by X may be described by a single term such as 'nitrogen' or a phrase such as 'nox\\_expressed\\_as\\_nitrogen'.",
+        "value": "'Mole concentration' means number of moles per unit volume, also called \"molarity\", and is used in the construction mole_concentration_of_X_in_Y, where X is a material constituent of Y.  A chemical or biological species denoted by X may be described by a single term such as 'nitrogen' or a phrase such as 'nox_expressed_as_nitrogen'."
+      }
+    ]
+  },
+  "obvfsq_tavg-ol-hxy-sea": {
+    "var": "obvfsq",
+    "variants": [
+      {
+        "observed": "The phrase \"square\\_of\\_X\" means X\\*X. Frequency is the number of oscillations of a wave per unit time. Brunt-Vaisala frequency is also sometimes called \"buoyancy frequency\" and is a measure of the vertical stratification of the medium.",
+        "value": "The phrase \"square_of_X\" means X*X. Frequency is the number of oscillations of a wave per unit time. Brunt-Vaisala frequency is also sometimes called \"buoyancy frequency\" and is a measure of the vertical stratification of the medium."
+      }
+    ]
+  },
+  "od550aerh2o_tavg-u-hxy-u": {
+    "var": "od550aerh2o",
+    "variants": [
+      {
+        "observed": "proposed name: atmosphere\\_optical\\_thickness\\_due\\_to\\_water\\_ambient\\_aerosol",
+        "value": "proposed name: atmosphere_optical_thickness_due_to_water_ambient_aerosol"
+      }
+    ]
+  },
+  "orog_tavg-u-hxy-is": {
+    "var": "orog",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "po4_tavg-ol-hxy-sea": {
+    "var": "po4",
+    "variants": [
+      {
+        "observed": "Mole concentration means number of moles per unit volume, also called \"molarity\", and is used in the construction \"mole\\_concentration\\_of\\_X\\_in\\_Y\", where X is a material constituent of Y. A chemical or biological species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox\\_expressed\\_as\\_nitrogen\". \"Dissolved inorganic phosphorus\" means the sum of all inorganic phosphorus in solution (including phosphate, hydrogen phosphate, dihydrogen phosphate, and phosphoric acid).",
+        "value": "Mole concentration means number of moles per unit volume, also called \"molarity\", and is used in the construction \"mole_concentration_of_X_in_Y\", where X is a material constituent of Y. A chemical or biological species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox_expressed_as_nitrogen\". \"Dissolved inorganic phosphorus\" means the sum of all inorganic phosphorus in solution (including phosphate, hydrogen phosphate, dihydrogen phosphate, and phosphoric acid)."
+      }
+    ]
+  },
+  "prra_tavg-u-hxy-lnd": {
+    "var": "prra",
+    "variants": [
+      {
+        "observed": "rainfall\\_flux",
+        "value": "rainfall_flux"
+      }
+    ]
+  },
+  "prsn_tavg-u-hxy-is": {
+    "var": "prsn",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "rivo_tavg-u-hxy-lnd": {
+    "var": "rivo",
+    "variants": [
+      {
+        "observed": "water\\_flux\\_from\\_upstream",
+        "value": "water_flux_from_upstream"
+      }
+    ]
+  },
+  "rlds_tavg-u-hxy-is": {
+    "var": "rlds",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "rlus_tavg-u-hxy-is": {
+    "var": "rlus",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "rsds_tavg-u-hxy-is": {
+    "var": "rsds",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "rsus_tavg-u-hxy-is": {
+    "var": "rsus",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "sbl_tavg-u-hxy-is": {
+    "var": "sbl",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "sftgrf_ti-u-hxy-u": {
+    "var": "sftgrf",
+    "variants": [
+      {
+        "observed": "This is needed to distinguish between grounded glaciated ice (grounded = ice sheet and glacier) and ice shelves (floating over sea water), since land\\_ice is by definition ice sheet, glacier and ice shelves",
+        "value": "This is needed to distinguish between grounded glaciated ice (grounded = ice sheet and glacier) and ice shelves (floating over sea water), since land_ice is by definition ice sheet, glacier and ice shelves"
+      }
+    ]
+  },
+  "si_tavg-ol-hxy-sea": {
+    "var": "si",
+    "variants": [
+      {
+        "observed": "Mole concentration means number of moles per unit volume, also called \"molarity\", and is used in the construction \"mole\\_concentration\\_of\\_X\\_in\\_Y\", where X is a material constituent of Y. A chemical or biological species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox\\_expressed\\_as\\_nitrogen\". \"Dissolved inorganic silicon\" means the sum of all inorganic silicon in solution (including silicic acid and its first dissociated anion SiO(OH)3-).",
+        "value": "Mole concentration means number of moles per unit volume, also called \"molarity\", and is used in the construction \"mole_concentration_of_X_in_Y\", where X is a material constituent of Y. A chemical or biological species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox_expressed_as_nitrogen\". \"Dissolved inorganic silicon\" means the sum of all inorganic silicon in solution (including silicic acid and its first dissociated anion SiO(OH)3-)."
+      }
+    ]
+  },
+  "snicem_tavg-u-hxy-is": {
+    "var": "snicem",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "tas_tavg-h2m-hxy-is": {
+    "var": "tas",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "tas_tmax-h2m-hxy-u": {
+    "var": "tas",
+    "variants": [
+      {
+        "observed": "maximum near-surface (usually, 2 meter) air temperature (add cell\\_method attribute \"time: max\")",
+        "value": "maximum near-surface (usually, 2 meter) air temperature (add cell_method attribute \"time: max\")"
+      }
+    ]
+  },
+  "tas_tmin-h2m-hxy-u": {
+    "var": "tas",
+    "variants": [
+      {
+        "observed": "minimum near-surface (usually, 2 meter) air temperature (add cell\\_method attribute \"time: min\")",
+        "value": "minimum near-surface (usually, 2 meter) air temperature (add cell_method attribute \"time: min\")"
+      }
+    ]
+  },
+  "tnhusscp_tavg-al-hxy-u": {
+    "var": "tnhusscp",
+    "variants": [
+      {
+        "observed": "The phrase \"tendency\\_of\\_X\" means derivative of X with respect to time. \"Specific\" means per unit mass. Specific humidity is the mass fraction of water vapor in (moist) air. The specification of a physical process by the phrase \"due\\_to\\_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. A variable with the standard name of tendency\\_of\\_specific\\_humidity\\_due\\_to\\_stratiform\\_cloud\\_and\\_precipitation should contain the effects of all processes which convert stratiform clouds and precipitation to or from water vapor. In an atmosphere model, stratiform cloud is that produced by large-scale convergence (not the convection schemes).",
+        "value": "The phrase \"tendency_of_X\" means derivative of X with respect to time. \"Specific\" means per unit mass. Specific humidity is the mass fraction of water vapor in (moist) air. The specification of a physical process by the phrase \"due_to_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. A variable with the standard name of tendency_of_specific_humidity_due_to_stratiform_cloud_and_precipitation should contain the effects of all processes which convert stratiform clouds and precipitation to or from water vapor. In an atmosphere model, stratiform cloud is that produced by large-scale convergence (not the convection schemes)."
+      }
+    ]
+  },
+  "tntscp_tavg-al-hxy-u": {
+    "var": "tntscp",
+    "variants": [
+      {
+        "observed": "The phrase \"tendency\\_of\\_X\" means derivative of X with respect to time. Air temperature is the bulk temperature of the air, not the surface (skin) temperature. The specification of a physical process by the phrase \"due\\_to\\_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. A variable with the standard name tendency\\_of\\_air\\_temperature\\_due\\_to\\_stratiform\\_cloud\\_and\\_precipitation should contain net latent heating effects of all processes which convert stratiform clouds and precipitation between water vapour, liquid or ice phases. In an atmosphere model, stratiform cloud is that produced by large-scale convergence (not the convection schemes).",
+        "value": "The phrase \"tendency_of_X\" means derivative of X with respect to time. Air temperature is the bulk temperature of the air, not the surface (skin) temperature. The specification of a physical process by the phrase \"due_to_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. A variable with the standard name tendency_of_air_temperature_due_to_stratiform_cloud_and_precipitation should contain net latent heating effects of all processes which convert stratiform clouds and precipitation between water vapour, liquid or ice phases. In an atmosphere model, stratiform cloud is that produced by large-scale convergence (not the convection schemes)."
+      }
+    ]
+  },
+  "ts_tavg-u-hxy-is": {
+    "var": "ts",
+    "variants": [
+      {
+        "observed": "quantity averaged over ice\\_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)",
+        "value": "quantity averaged over ice_sheet (meaning grounded ice sheet and floating ice shelf) only, to avoid contamination from other surfaces (eg: permafrost)"
+      }
+    ]
+  },
+  "wfo_tavg-u-hxy-sea": {
+    "var": "wfo",
+    "variants": [
+      {
+        "observed": "Computed as the water flux into the ocean divided by the area of the ocean portion of the grid cell. This is the sum \\*wfonocorr\\* and \\*wfcorr\\*.",
+        "value": "Computed as the water flux into the ocean divided by the area of the ocean portion of the grid cell. This is the sum *wfonocorr* and *wfcorr*."
+      }
+    ]
+  },
+  "siareaacrossline_tavg-u-ht-u": {
+    "var": "siareaacrossline",
+    "variants": [
+      {
+        "observed": "Net (sum of transport in all directions) sea ice area transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W,81.3N) to (10.5E,79.6N). 2. Canadian Arctic Archipelago: (128.2W,70.6N) to (59.3W,82.1N). 3. Barents Sea Opening: (16.8E,76.5N) to (19.2E,70.2N). 4. Bering Strait: (171W,66.2N) to (166W,65N).",
+        "value": "Net (sum of transport in all directions) sea ice area transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W, 81.3N) to (10.5E, 79.6N). 2. Canadian Arctic Archipelago: (128.2W, 70.6N) to (59.3W, 82.1N). 3. Barents Sea Opening: (16.8E, 76.5N) to (19.2E, 70.2N). 4. Bering Strait: (171W, 66.2N) to (166W, 65N)."
+      }
+    ],
+    "replace_expected": true
+  },
+  "simassacrossline_tavg-u-ht-u": {
+    "var": "simassacrossline",
+    "variants": [
+      {
+        "observed": "Net (sum of transport in all directions) sea ice mass transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W,81.3N) to (10.5E,79.6N). 2. Canadian Arctic Archipelago: (128.2W,70.6N) to (59.3W,82.1N). 3. Barents Sea Opening: (16.8E,76.5N) to (19.2E,70.2N). 4. Bering Strait: (171W,66.2N) to (166W,65N).",
+        "value": "Net (sum of transport in all directions) sea ice mass transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W, 81.3N) to (10.5E, 79.6N). 2. Canadian Arctic Archipelago: (128.2W, 70.6N) to (59.3W, 82.1N). 3. Barents Sea Opening: (16.8E, 76.5N) to (19.2E, 70.2N). 4. Bering Strait: (171W, 66.2N) to (166W, 65N)."
+      }
+    ],
+    "replace_expected": true
+  },
+  "sisnmassacrossline_tavg-u-ht-u": {
+    "var": "sisnmassacrossline",
+    "variants": [
+      {
+        "observed": "Net (sum of transport in all directions) snow mass transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W,81.3N) to (10.5E,79.6N). 2. Canadian Arctic Archipelago: (128.2W,70.6N) to (59.3W,82.1N). 3. Barents Sea Opening: (16.8E,76.5N) to (19.2E,70.2N). 4. Bering Strait: (171W,66.2N) to (166W,65N).",
+        "value": "Net (sum of transport in all directions) snow mass transport through the following four passages, positive into the Arctic Ocean. Note that the definitions of the passages are for SIMIP purposes just meant as default values as given by the physical ocean MIP described in Griffies et al. (2016). Individual models might chose slightly different definitions as given by their grid geometry. 1. Fram Strait: (11.5W, 81.3N) to (10.5E, 79.6N). 2. Canadian Arctic Archipelago: (128.2W, 70.6N) to (59.3W, 82.1N). 3. Barents Sea Opening: (16.8E, 76.5N) to (19.2E, 70.2N). 4. Bering Strait: (171W, 66.2N) to (166W, 65N)."
+      }
+    ],
+    "replace_expected": true
+  },
+  "wmo_tavg-ol-hxy-sea": {
+    "var": "wmo",
+    "variants": [
+      {
+        "observed": "All variables related to vertical velocity, w, are computed and distributed at the edge of the vertical grid cells, rather than at the mass (ie central) point.",
+        "value": "Upward mass transport from residual mean (resolved plus parameterized) advective transport."
+      }
+    ],
+    "replace_expected": true
+  },
+  "wo_tavg-ol-hxy-sea": {
+    "var": "wo",
+    "variants": [
+      {
+        "observed": "All variables related to vertical velocity, w, are computed and distributed at the edge of the vertical grid cells, rather than at the mass (ie central) point.",
+        "value": "Prognostic z-ward velocity component resolved by the model."
+      }
+    ],
+    "replace_expected": true
+  }
+}

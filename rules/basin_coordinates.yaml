@@ -1,0 +1,43 @@
+- id: C032
+  check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
+  message: The required text auxiliary coordinate 'sector' for coordinate ID 'basin' is absent, so its configured dependent
+    coordinate checks could not be evaluated\.$
+  action: fix
+  note: Shared basin recipe C032/C078/C096/C101a. Keep numeric basin values as dimensionless indices; sector carries the ordered region labels.
+  fix: fix_basin_sector
+  params: {}
+  dataset: CMIP7\.OCE\.(?:hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\.
+- id: C078
+  check: \[CF-Conventions\] §6\.1 Labels$
+  message: 6\.1\.1 '1\.02\.03\.0' specified by 'basin' is not a valid region$
+  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\..*\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  action: fix
+  note: Same shared recipe as C032. Region standard_name belongs to character sector; remove it from numeric basin without changing codes or dimension.
+  fix: fix_basin_sector
+  params: {}
+- id: C096
+  check: \[CF-Conventions\] §3\.5 Flags$
+  message: \[Appendix A\] Attribute "(?P<attr>flag_meanings|flag_values)" should not be present in coordinate data \(C\) variable
+    "basin"\. This attribute may only appear in non-coordinate data \(D\)\.$
+  action: fix
+  note: Same shared recipe as C032. Retain basin as a dimensionless index and remove flag attributes from that coordinate; text sector carries the regions.
+  fix: fix_basin_sector
+  params: {}
+  dataset: CMIP7\.OCE\.(?:hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\.
+- id: C101
+  check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[ATTR001\] Variable 'basin' attribute 'units' existence$
+  message: (?:units attribute is required for basin when variable is not a dimensionless quantity|Required variable 'basin'
+    attribute 'units' is missing\.)$
+  dataset: CMIP7\.OCE\.basin\.ti-u-hxy-u\.
+  action: fix
+  fix: convert_basin_region_mask
+  note: User-approved int32 mask on y,x with unchanged codes 0..10 and typed flag_values/flag_meanings. Missing points are
+    preserved with an int32 fill value. No units are added. The units/region checker message may persist.
+- id: C101a
+  check: \[CF-Conventions\] §3\.1 Units$
+  message: units attribute is required for basin when variable is not a dimensionless quantity$
+  action: fix
+  note: Same shared recipe as C032. Numeric basin retains its codes with units=1; sector carries region metadata. The 2-D mask is separate C101.
+  fix: fix_basin_sector
+  params: {}
+  dataset: CMIP7\.OCE\.(?:hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\.

@@ -31,11 +31,13 @@ class Rule:
     params: dict = field(default_factory=dict)
     note: str | None = None
     extra: dict = field(default_factory=dict)
+    dataset: str | None = None
 
     def __post_init__(self):
         self.action = Action(self.action)
         self._check = re.compile(_anchor(self.check))
         self._message = re.compile(_anchor(self.message))
+        self._dataset = re.compile(_anchor(self.dataset)) if self.dataset is not None else None
 
     def match(self, finding: Finding) -> dict[str, str] | None:
         """Named groups of check + message if the rule applies, else None."""
@@ -45,7 +47,10 @@ class Rule:
         m = self._message.search(finding.message)
         if not m:
             return None
-        return c.groupdict() | m.groupdict()
+        d = self._dataset.search(finding.dataset) if self._dataset is not None else None
+        if self._dataset is not None and d is None:
+            return None
+        return c.groupdict() | m.groupdict() | (d.groupdict() if d is not None else {})
 
     def resolve_params(self, groups: dict[str, str]) -> dict:
         return {k: v.format(**groups) if isinstance(v, str) else v for k, v in self.params.items()}
@@ -57,7 +62,7 @@ class RuleMatch:
     groups: dict[str, str]
 
 
-KNOWN_KEYS = {"id", "check", "message", "action", "fix", "params", "note"}
+KNOWN_KEYS = {"id", "check", "message", "action", "fix", "params", "note", "dataset"}
 
 
 class RuleSet:
@@ -71,11 +76,36 @@ class RuleSet:
     @classmethod
     def load(cls, *paths: str | Path, version: str | None = None) -> RuleSet:
         rules = []
-        for p in paths:
-            for raw in yaml.safe_load(Path(p).read_text()) or []:
+        loaded, active = set(), set()
+
+        def load_file(path):
+            path = Path(path).resolve()
+            if path in active:
+                raise ValueError(f'Circular catalogue include: {path}')
+            if path in loaded:
+                return
+            active.add(path)
+            data = yaml.safe_load(path.read_text()) or []
+            if isinstance(data, dict):
+                if set(data) - {'include', 'rules'}:
+                    raise ValueError(f'Unknown catalogue manifest keys in {path}')
+                includes = data.get('include', [])
+                if not isinstance(includes, list) or not all(isinstance(p, str) for p in includes):
+                    raise ValueError(f'Expected a list of catalogue paths in {path}')
+                for included in includes:
+                    load_file(path.parent / included)
+                data = data.get('rules', [])
+            if not isinstance(data, list):
+                raise ValueError(f'Expected a rule list in {path}')
+            for raw in data:
                 known = {k: raw[k] for k in KNOWN_KEYS if k in raw}
                 extra = {k: v for k, v in raw.items() if k not in KNOWN_KEYS}
                 rules.append(Rule(**known, extra=extra))
+            active.remove(path)
+            loaded.add(path)
+
+        for p in paths:
+            load_file(p)
         return cls(rules, version or ",".join(Path(p).name for p in paths))
 
     def match(self, finding: Finding) -> RuleMatch | None:

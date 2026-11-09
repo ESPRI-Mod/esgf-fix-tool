@@ -1,0 +1,28 @@
+# Missing generic lev: three exact observed messages. Load before the seed.
+
+- id: C018
+  check: '\[CMIP7\] \[COORD001\] Coordinate identity and structure$'
+  message: 'Coordinate ''alevel'' could not be verified\. Expected is a generic vertical coordinate with out_name ''lev''\. Variable ''lev'' does not exist in the file\.$'
+  action: fix
+  fix: rename_coordinate
+  params: {"sources": ["presinter"], "target": "lev"}
+  note: "Rename variable and dimension only; preserve standard_name, formula, formula_terms except renamed references."
+
+- id: C019
+  check: '\[CMIP7\] \[COORD001\] Coordinate identity and structure$'
+  message: 'Coordinate ''alevhalf'' could not be verified\. Expected is a generic vertical coordinate with out_name ''lev''\. Variable ''lev'' does not exist in the file\.$'
+  action: fix
+  fix: rename_coordinate
+  params: {"sources": ["presinter"], "target": "lev"}
+  note: "Rename variable and dimension only; preserve standard_name, formula, formula_terms except renamed references."
+
+- id: C020
+  check: \[CMIP7\] \[COORD(?:001|012)\] (?:Coordinate identity and structure|Parametric vertical coordinate)$
+  message: Coordinate 'olevel' could not be verified\. Expected is a generic vertical coordinate with out_name 'lev'\. Variable
+    'lev' (?:does not exist in the file|has no standard_name, which is required to select a model_level_coordinate)\.$
+  action: fix
+  fix: fix_ocean_vertical_metadata
+  params: {}
+  note: Rename the existing dimensional NEMO depth axis if necessary and complete depth/Z/down metadata. Verify finite increasing
+    depths in metres. No numeric change.
+

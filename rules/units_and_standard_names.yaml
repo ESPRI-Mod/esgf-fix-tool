@@ -1,0 +1,91 @@
+# Load alone for this test, or BEFORE seed_20261029.yaml. Only the eleven observed messages match.
+# Current attributes are checked again by each fix; the checker suggestions are never auto-applied.
+
+- id: C007
+  check: '\[CF-Conventions\] §3\.1 Units$'
+  message: 'Units "1" for variable (?P<var>basin) must be convertible to canonical units "None"$'
+  action: fix
+  fix: drop_region_units
+  params: {var: "{var}", expected: "1"}
+  note: remove only region units=1; categorical flags and codes need their own recipe
+
+- id: C008
+  check: '\[CF-Conventions\] §3\.1 Units$'
+  message: 'Units "m" for variable (?P<var>solth|depth) must be convertible to canonical units "1"$'
+  action: fix
+  fix: fix_soil_depth_metadata
+  params: {var: "{var}"}
+  note: keep meters; set depth/Z/down per sdepth; coordinate rename and physical bounds remain separate
+
+- id: C009
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name ReffIce is not defined in Standard Name Table v95\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [ReffIce]}
+  note: effectradic defines no standard_name; preserve description; units, values and renaming are separate
+
+- id: C010
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name ReffLiq is not defined in Standard Name Table v95\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [ReffLiq]}
+  note: effectradli defines no standard_name; keep existing long_name and units
+
+- id: C011
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name bounds is not defined in Standard Name Table v95\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [bounds]}
+  note: remove invalid standard_name on the technical index; keep values and bounds references
+
+- id: C012
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name dbze is not defined in Standard Name Table v95\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [dbze], replacement: equivalent_reflectivity_factor, units: dBZ, var: dbze}
+  note: explicit dbze registry mapping; bin centers and physical bounds remain separate
+
+- id: C013
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name number is not defined in Standard Name Table v95\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [number of layer interfaces, number of layers]}
+  note: same attributes as C004/C005; match full descriptions, never remove a name merely starting with number
+
+- id: C014
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name x is not defined in Standard Name Table v95\.$'
+  dataset: 'CMIP7\.ATM\.'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [x], replacement: atmosphere_hybrid_sigma_pressure_coordinate, var: lev, requires: [ap, b]}
+  note: user-confirmed atmospheric lev mapping; require ap and b to exist; no inference of coefficients, units or formula_terms
+
+- id: C015
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name Pressure is not defined in Standard Name Table v95\. Possible close match\(es\): \[''air_pressure''\]$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [Pressure at interface of vertical levels]}
+  note: same attribute as C006; preserve description, do not turn this descriptive axis into air_pressure
+
+- id: C016
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name pressure is not defined in Standard Name Table v95\. Possible close match\(es\): \[''air_pressure'', ''sea_water_pressure'', ''reference_pressure''\]$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [pressure], replacement: air_pressure, units: mb, var: [pressure2, plev]}
+  note: ISCCP plev7c explicitly requires air_pressure; retain values and current units; mb is an area unit in UDUNITS and needs separate investigation
+
+- id: C017
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name scatratio is not defined in Standard Name Table v95\. Possible close match\(es\): \[''backscattering_ratio''\]$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {expected: [scatratio], replacement: backscattering_ratio, units: "1", var: scatratio}
+  note: scatratio registry mapping; backscattering_ratio is a valid CF v95 alias; bins and bounds remain separate

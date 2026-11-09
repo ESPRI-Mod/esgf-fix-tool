@@ -99,6 +99,15 @@ def test_apply_never_touches_a_hardlinked_source(tmp_path, rules):
     staged.parent.mkdir()
     os.link(src, staged)  # what `cp -al` does
     assert os.stat(staged).st_nlink == 2
+    # Direct metadata writes must never modify a hardlinked simulator original.
+    unsafe = FixPlan.from_classification(classify(QAReport.load(make_report(tmp_path, staged)), rules))
+    before = src.read_bytes()
+    with pytest.raises(PermissionError, match="hardlinks"):
+        apply_plan(unsafe, tmp_path / "refused.jsonl")
+    assert src.read_bytes() == staged.read_bytes() == before
+    independent = tmp_path / "independent.nc"
+    shutil.copyfile(src, independent)
+    os.replace(independent, staged)
 
     plan = FixPlan.from_classification(classify(QAReport.load(make_report(tmp_path, staged)), rules))
     assert [s.fix for s in plan.files[str(staged)]] == ["drop_var_attr"]

@@ -1,0 +1,17 @@
+# Compatibility entry point: rules now live in the thematic catalogues below.
+# Includes are relative to this file and loaded once, in this reviewed priority order.
+include:
+  - basin_coordinates.yaml
+  - cmip7_ipsl.yaml
+  - coordinate_metadata.yaml
+  - coordinate_values_bounds.yaml
+  - surface_and_hybrid.yaml
+  - grid_labels.yaml
+  - qa_metadata.yaml
+  - dimension_order.yaml
+  - standard_name_modifiers.yaml
+  - units_and_standard_names.yaml
+  - vertical_coordinate_names.yaml
+  - required_coordinates.yaml
+  - horizontal_coordinates.yaml
+  - consistency.yaml

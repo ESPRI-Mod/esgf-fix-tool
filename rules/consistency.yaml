@@ -1,0 +1,6 @@
+- id: C114
+  check: \[Consistency\].*\(Inter-Dataset\)$
+  message: .*
+  action: review
+  note: Cross-dataset comparisons need compatible variable/grid groups and a reference choice. No automatic normalization
+    across unrelated products.

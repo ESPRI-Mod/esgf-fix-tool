@@ -1,0 +1,32 @@
+# Load alone to test this correction, or BEFORE seed_20261029.yaml in the full rule set.
+# Three observed descriptions; the variable name comes from the current QA message.
+
+- id: C004
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'Standard name modifier "of layer interfaces" for variable (?P<var>\S+) is not a valid modifier according to CF Appendix C$'
+  action: fix
+  fix: drop_descriptive_standard_name
+  params: {var: "{var}", expected: "number of layer interfaces"}
+  severity: 3
+  upstream_status: not_reported
+  note: keep the description in long_name; remove only the exact expected standard_name
+
+- id: C005
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'Standard name modifier "of layers" for variable (?P<var>\S+) is not a valid modifier according to CF Appendix C$'
+  action: fix
+  fix: drop_descriptive_standard_name
+  params: {var: "{var}", expected: "number of layers"}
+  severity: 3
+  upstream_status: not_reported
+  note: keep the description in long_name; remove only the exact expected standard_name
+
+- id: C006
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'Standard name modifier "at interface of vertical levels" for variable (?P<var>\S+) is not a valid modifier according to CF Appendix C$'
+  action: fix
+  fix: drop_descriptive_standard_name
+  params: {var: "{var}", expected: "Pressure at interface of vertical levels"}
+  severity: 3
+  upstream_status: not_reported
+  note: preserve units and the description; do not infer air_pressure or change the vertical coordinate

@@ -1,0 +1,72 @@
+- id: C074a
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries$
+  message: (?:\[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "(?:ap|b)"\..*|'(?:ap_bnds|b_bnds)'
+    has attr 'long_name'.*|Bounds variable (?:ap_bnds|b_bnds) and parent variable (?:ap|b) have the following (?:matching
+    attributes|non matching boundary related attributes).*|The Boundary variables '(?:ap_bnds|b_bnds)' should not have the
+    attributes:.*)$
+  action: fix
+  fix: fix_hybrid_coefficients
+  params:
+    coordinate: alevel
+  note: C074 follow-up. Verify the supplied reference, preserve coefficients, and remove ap/b bounds attributes. CF bounds
+    formula terms belong on existing lev bounds. Do not normalize or create lev values.
+- id: C102
+  check: \[CMIP7\] \[COORD006\] Coordinate valid range$
+  message: '''lev'' contains .* above required valid_max=1\.0\. The comparison permits numerical tolerance=1e-06\.$'
+  action: fix
+  note: Use existing ap/P_REF+b and coefficient bounds with P_REF=101325. Check containment before writing. Preserve coefficient
+    arrays and remove approved temporary copies.
+  fix: normalize_hybrid_coordinate
+  params: {}
+- id: C104
+  check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
+  message: Coordinate 'alevel' could not be verified\..*Variable 'lev' has no standard_name,.*
+  dataset: CMIP7\.ATM\.(edt|evu)\.
+  action: review
+  note: These two al products contain 80 interface levels. Confirm the physical staggering before declaring them to be model
+    centers or changing their arrays.
+- id: C107
+  check: \[CMIP7\] \[COORD004a\] Additional permitted coordinate metadata$
+  message: Coordinate 'lev' defines optional attribute computed_standard_name='air_pressure'\. No expected value is currently
+    specified in the coordinate vocabulary, so this value cannot be verified\.$
+  action: waive
+  note: Valid CF computed_standard_name for the hybrid pressure formula. The CV has no prescribed value. Preserve useful metadata.
+- id: C108
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: '''b'' has units=''1'', while its coordinate definition does not prescribe units; it is recommended to verify the
+    extra attribute\.$'
+  action: waive
+  note: The multiplicative coefficient b is dimensionless. CF permits units=1. An absent CV prescription does not forbid this
+    attribute.
+- id: C073a
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata$
+  message: '''seasurface'' axis=''''; the required value is ''Z''\.$'
+  action: waive
+  note: C073 follow-up. The user confirmed that the CMIP7 DR should remove axis=Z for osurf. Do not reintroduce the vertical-coordinate
+    error.
+# User decisions on 2026-11-05. Load before the generated seed's older osurf waivers.
+- id: C073
+  check: '\[CF-Conventions\] §4\.3 Vertical Coordinate$'
+  message: '(?:seasurface: vertical coordinates not defining pressure must include a positive attribute that is either ''up'' or ''down''|§4\.3\.1 seasurface''s units must be defined for vertical coordinates, there is no default)$'
+  action: fix
+  fix: drop_osurf_axis
+  params: {}
+  note: User received the DR decision to remove axis=Z from categorical osurf (NetCDF seasurface). Preserve the label, arrays and other attributes; accepts old/canonical label independently of C057.
+
+- id: C074
+  check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
+  message: (?=.*'(?P<coordinate>alevel|alevhalf)')(?:Coordinate '(?P=coordinate)' could not be verified\. Expected is a generic
+    vertical coordinate with out_name 'lev'\. No model_level_coordinate marked for generic_level_name='(?P=coordinate)' has
+    standard_name='x'; available standard names are \['atmosphere_hybrid_height_coordinate', 'atmosphere_hybrid_sigma_ln_pressure_coordinate',
+    'atmosphere_hybrid_sigma_pressure_coordinate', 'atmosphere_sigma_coordinate', 'model_level_number'\]\.|Formula term '(?:ap|b)'
+    has dimensions \['(?:klev|klevp1)'\]; its coordinate definition describes \['(?P=coordinate)'\]; the (?:required|recommended)
+    netCDF/C dimensions are \['lev'\]\.|Coordinate '(?P=coordinate)' could not be verified\. Expected is a generic vertical
+    coordinate with out_name 'lev'\. Variable 'lev' has no standard_name, which is required to select a model_level_coordinate\.)$
+  action: fix
+  fix: fix_hybrid_coefficients
+  params:
+    coordinate: '{coordinate}'
+  note: Use the supplied reference after checking the complete lev axis. Bind ap/b to lev, and pair consecutive reference
+    interfaces for alevel coefficient bounds. Preserve lev and the science arrays.
+  dataset: CMIP7\.ATM\.(?!(?:edt|evu)\.)
+

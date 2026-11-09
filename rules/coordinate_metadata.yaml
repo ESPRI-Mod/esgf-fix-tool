@@ -1,0 +1,55 @@
+- id: C095
+  check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[COORD003\] Coordinate metadata$
+  message: (?:Units "mb" for variable plev must be convertible to canonical units "Pa"|'plev' units 'mb' are not convertible
+    to the required units 'Pa'\.)$
+  dataset: CMIP7\.ATM\.clisccp\.tavg-p7c-hxy-air\.
+  action: fix
+  fix: add_reviewed_coordinate_bounds
+  params:
+    coordinate: plev
+    add_bounds: false
+  note: Validate the complete plev7c axis and fix units to Pa when the stored values already match the literal DR Pa values.
+    Preserve all centers. Genuine hPa-valued axes retain hPa units. Bounds are handled separately by C103c.
+- id: C095b
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata$
+  message: '''plev'' (?P<attr>axis|positive)=''''; the required value is ''(?P<value>Z|down)''\.$'
+  action: fix
+  fix: set_var_attr_if_matches
+  params:
+    var: plev
+    attr: '{attr}'
+    expected: ''
+    value: '{value}'
+# Four exact COORD003 diagnostics, independently selectable. Load before the seed.
+
+- id: C036
+  check: '\[CMIP7\] \[COORD003\] Coordinate metadata$'
+  message: '''alt'' axis=''''; the required value is ''Z''\.$'
+  action: fix
+  fix: set_var_attr_if_matches
+  params: {"var": "alt", "attr": "axis", "expected": "", "value": "Z"}
+  note: "Explicit COORD003 requirement; axis is absent in all five reviewed snapshots. No data change."
+
+- id: C037
+  check: '\[CMIP7\] \[COORD003\] Coordinate metadata$'
+  message: '''dbze'' standard_name=''dbze''; the required value is ''equivalent_reflectivity_factor''\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {"expected": ["dbze"], "replacement": "equivalent_reflectivity_factor", "units": "dBZ", "var": "dbze"}
+  note: "Same reviewed coordinate metadata as the corresponding CF diagnostic; no data change."
+
+- id: C038
+  check: '\[CMIP7\] \[COORD003\] Coordinate metadata$'
+  message: '''effectRadLi'' defines standard_name=''ReffLiq''; it is required for the attribute to be absent when its coordinate\-definition value is empty\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {"expected": ["ReffLiq"], "var": "effectRadLi"}
+  note: "Same correction as C010; preserve long_name and units."
+
+- id: C039
+  check: '\[CMIP7\] \[COORD003\] Coordinate metadata$'
+  message: '''scatratio'' standard_name=''scatratio''; the required value is ''backscattering_ratio''\.$'
+  action: fix
+  fix: fix_invalid_standard_names
+  params: {"expected": ["scatratio"], "replacement": "backscattering_ratio", "units": "1", "var": "scatratio"}
+  note: "Same reviewed coordinate metadata as the corresponding CF diagnostic; no data change."

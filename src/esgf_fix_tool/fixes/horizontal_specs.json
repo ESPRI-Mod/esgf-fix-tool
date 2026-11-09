@@ -1,0 +1,244 @@
+{
+  "universe_commit": "e8711372fddb0295916afff1e90c6e5469d8537f",
+  "brands": {
+    "bigthetao_tavg-u-hm-sea": {
+      "variable": "bigthetao",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "hfbasin_tavg-u-hyb-sea": {
+      "variable": "hfbasin",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "hfbasinpmadv_tavg-u-hyb-sea": {
+      "variable": "hfbasinpmadv",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "hfbasinpmdiff_tavg-u-hyb-sea": {
+      "variable": "hfbasinpmdiff",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "htovgyre_tavg-u-hyb-sea": {
+      "variable": "htovgyre",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "htovovrt_tavg-u-hyb-sea": {
+      "variable": "htovovrt",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "masso_tavg-u-hm-sea": {
+      "variable": "masso",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "msfty_tavg-ol-ht-sea": {
+      "variable": "msfty",
+      "dimensions": [
+        "gridlatitude",
+        "olevel",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "siarea_tavg-u-hm-u": {
+      "variable": "siarea",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "siextent_tavg-u-hm-u": {
+      "variable": "siextent",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "sisnmass_tavg-u-hm-si": {
+      "variable": "sisnmass",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "sivol_tavg-u-hm-u": {
+      "variable": "sivol",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "sltbasin_tavg-u-hyb-sea": {
+      "variable": "sltbasin",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "sltovgyre_tavg-u-hyb-sea": {
+      "variable": "sltovgyre",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "sltovovrt_tavg-u-hyb-sea": {
+      "variable": "sltovovrt",
+      "dimensions": [
+        "latitude",
+        "basin",
+        "time"
+      ],
+      "omit_roles": [
+        "longitude"
+      ]
+    },
+    "so_tavg-u-hm-sea": {
+      "variable": "so",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "sos_tavg-u-hm-sea": {
+      "variable": "sos",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "thetao_tavg-u-hm-sea": {
+      "variable": "thetao",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "tos_tavg-u-hm-sea": {
+      "variable": "tos",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "volo_tavg-u-hm-sea": {
+      "variable": "volo",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    },
+    "zostoga_tavg-u-hm-sea": {
+      "variable": "zostoga",
+      "dimensions": [
+        "time"
+      ],
+      "omit_roles": [
+        "latitude",
+        "longitude"
+      ]
+    }
+  },
+  "coordinates": {
+    "latitude": {
+      "source": "nav_lat",
+      "target": "latitude",
+      "units": "degrees_north"
+    },
+    "longitude": {
+      "source": "nav_lon",
+      "target": "longitude",
+      "units": "degrees_east"
+    }
+  },
+  "curvilinear_grids": [
+    "g112",
+    "g168",
+    "g169",
+    "g186"
+  ]
+}

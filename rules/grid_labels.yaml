@@ -1,0 +1,80 @@
+- id: C097
+  check: '\[CMIP7\] \[ATTR005\] Consistency: Filename vs Global Attributes$'
+  message: Filename component 'grid_label' \('(?P<source>g111|g112)'\) does not match global attribute \('(?P<target>g010|g011|g012|g014)'\)\.$
+  action: fix
+  fix: sync_filename_grid_label
+  params:
+    source: '{source}'
+    target: '{target}'
+  note: Validate the existing reviewed grid mapping and synchronize only the filename component. Refuse collisions before
+    applying any file. Replay resolves the explicit final basename.
+- id: C110
+  check: \[CMIP7\] \[COORD011\] Horizontal grid cell count$
+  message: Registered grid 'g111' defines n_cells=20592, but the file's horizontal coordinate dimensions contain 143 cells\..*
+  action: review
+  note: Thirteen zonal products require an appropriate registered grid label. No approved replacement is available in this
+    catalogue.
+- id: C113
+  check: '\[CMIP7\] \[ATTR008\] Consistency: frequency vs branded_variable$|\[CMIP7\] \[ATTR012\] Consistency: region vs branded_variable$'
+  message: (?:Frequency 'day' is not listed for branded variable 'sieqthick_tavg-u-hxy-si'.*Submission at additional frequencies
+    is allowed\.|Region 'glb' is not listed for branded variable '(?:intdic|intpbfe|intpbsi|intpn2)_tavg-u-hxy-sea'.*Submission
+    for additional regions is allowed\.)$
+  action: waive
+  note: The diagnostic explicitly permits these extra frequencies/regions. Preserve the data coverage and branding.
+# Reviewed output geometries in the 2026-11-03 CMIP7 report. Load before the seed.
+- id: C089
+  check: '\[CMIP7\] \[COORD011\] Registered grid(?: region|-label recommendation)$'
+  message: >-
+    (?:File region='nh' is inconsistent with the registered grid region='glb' for registered grid 'g112'\. Verify the intended output region and make the region and grid_label selections consistent\.|The file uses grid_label='g112', but for horizontal_label='hm' and region='nh' it is recommended to use the registered grid_label='g011'\.)$
+  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.nh\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  action: fix
+  fix: set_reduced_grid_label
+  params: {source: g112, horizontal: hm, region: nh, target: g011}
+  note: Keep the northern hemisphere region. The two diagnostics share this operation.
+
+- id: C090
+  check: '\[CMIP7\] \[COORD011\] Registered grid(?: region|-label recommendation)$'
+  message: >-
+    (?:File region='sh' is inconsistent with the registered grid region='glb' for registered grid 'g112'\. Verify the intended output region and make the region and grid_label selections consistent\.|The file uses grid_label='g112', but for horizontal_label='hm' and region='sh' it is recommended to use the registered grid_label='g012'\.)$
+  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.sh\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  action: fix
+  fix: set_reduced_grid_label
+  params: {source: g112, horizontal: hm, region: sh, target: g012}
+  note: Keep the southern hemisphere region. The two diagnostics share this operation.
+
+- id: C091
+  check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
+  message: >-
+    The file uses grid_label='(?P<source>g111|g112)', but for horizontal_label='hm' and region='glb' it is recommended to use the registered grid_label='g010'\.$
+  dataset: '(?:CMIP7\.ATM\.co2mass\.tavg-u-hm-u\.mon\.glb\.g111|CMIP7\.OCE\.(bigthetao|masso|so|sos|thetao|tos|volo)\.tavg-u-hm-sea\.mon\.glb\.g112)\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  action: fix
+  fix: set_reduced_grid_label
+  params: {source: "{source}", horizontal: hm, region: glb, target: g010}
+  note: One atmospheric time series and seven ocean reductions with singleton y/x.
+
+- id: C092
+  check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
+  message: >-
+    The file uses grid_label='g112', but for horizontal_label='ht' and region='glb' it is recommended to use the registered grid_label='g014'\.$
+  dataset: 'CMIP7\.OCE\.(hfacrossline|mfo|sfacrossline|siareaacrossline|simassacrossline|sisnmassacrossline)\.tavg-u-ht-(sea|u)\.mon\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  action: fix
+  fix: set_reduced_grid_label
+  params: {source: g112, horizontal: ht, region: glb, target: g014}
+  note: The ocean straits have 16 labels and the sea ice passages have four. Keep both inventories intact.
+
+- id: C093
+  check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
+  message: >-
+    The file uses grid_label='g112' with registered grid_type='tripolar', but for horizontal_label='(?:hyb|ht)' it is recommended to register and/or use a grid_label with grid_type='basin_by_latitude'\.$
+  action: waive
+  note: User waived this recommendation for the eight hyb profiles and msfty. C054 removes singleton x. C025 still tracks the separate missing rlat coordinate.
+
+- id: C094
+  check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
+  message: >-
+    The file uses grid_label='g112', but for horizontal_label='hm' and region='glb' it is recommended to use the registered grid_label='g010'\.$
+  dataset: 'CMIP7\.OCE\.zostoga\.tavg-u-hm-sea\.(day|mon)\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  action: fix
+  fix: set_reduced_grid_label
+  params: {source: g112, horizontal: hm, region: glb, target: g010}
+  note: User approved g010 for both zostoga files. The full spatial payload remains unchanged pending the C050 decision.

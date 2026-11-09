@@ -1,3 +1,14 @@
+- id: C112
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>[^']+)' attribute 'comment' registry expected-term check$
+  message: Expected .*
+  action: fix
+  note: User authorized replacing the five observed scientific comments by the exact expected registry text. Guard against
+    unrelated content changes.
+  dataset: CMIP7\.[^.]+\.(?:siareaacrossline\.tavg\-u\-ht\-u|simassacrossline\.tavg\-u\-ht\-u|sisnmassacrossline\.tavg\-u\-ht\-u|wmo\.tavg\-ol\-hxy\-sea|wo\.tavg\-ol\-hxy\-sea)\.
+  fix: fix_registry_comment
+  params:
+    var: '{var}'
+    replace_expected: true
 # Curated rules (written and reviewed by hand). Load this file BEFORE the generated seed:
 #   esgf-fix-tool classify REPORT -r rules/cmip7_ipsl.yaml -r rules/seed_20261029.yaml
 # First match wins. Named groups of `check` and `message` are substituted in `params`.
@@ -31,3 +42,14 @@
   severity: 3
   upstream_status: not_reported
   note: "'gregorian' is a deprecated CF synonym of 'standard' (same calendar). New on piControl-spinup s.02 (pilot run #1)"
+
+- id: C002a
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>[^']+)' attribute 'comment' registry expected-term check
+  message: Expected .+ to contain .+ from registry key 'comment'\.$
+  dataset: CMIP7\.[^.]+\.(?:cLitter\.tavg\-u\-hxy\-lnd|dcw\.tavg\-u\-hxy\-lnd|evspsblpot\.tavg\-u\-hxy\-lnd|expc\.tavg\-d1000m\-hxy\-sea|expc\.tavg\-d100m\-hxy\-sea|expcalc\.tavg\-d1000m\-hxy\-sea|expcalc\.tavg\-d100m\-hxy\-sea|fco2nat\.tavg\-u\-hxy\-u|hfls\.tavg\-u\-hxy\-is|hfss\.tavg\-u\-hxy\-is|intuadse\.tavg\-u\-hxy\-u|intvadse\.tavg\-u\-hxy\-u|intvaw\.tavg\-u\-hxy\-u|intvaw\.tpt\-u\-hxy\-u|loadoa\.tavg\-u\-hxy\-u|mfo\.tavg\-u\-ht\-sea|mrro\.tavg\-u\-hxy\-is|mrrob\.tavg\-u\-hxy\-lnd|mrros\.tavg\-u\-hxy\-lnd|mrtws\.tavg\-u\-hxy\-lnd|netAtmosLandCO2Flux\.tavg\-u\-hxy\-lnd|nh4\.tavg\-ol\-hxy\-sea|no3\.tavg\-ol\-hxy\-sea|npp\.tavg\-u\-hxy\-lnd|o2\.tavg\-ol\-hxy\-sea|obvfsq\.tavg\-ol\-hxy\-sea|od550aerh2o\.tavg\-u\-hxy\-u|orog\.tavg\-u\-hxy\-is|po4\.tavg\-ol\-hxy\-sea|prra\.tavg\-u\-hxy\-lnd|prsn\.tavg\-u\-hxy\-is|rivo\.tavg\-u\-hxy\-lnd|rlds\.tavg\-u\-hxy\-is|rlus\.tavg\-u\-hxy\-is|rsds\.tavg\-u\-hxy\-is|rsus\.tavg\-u\-hxy\-is|sbl\.tavg\-u\-hxy\-is|sftgrf\.ti\-u\-hxy\-u|si\.tavg\-ol\-hxy\-sea|snicem\.tavg\-u\-hxy\-is|tas\.tavg\-h2m\-hxy\-is|tas\.tmax\-h2m\-hxy\-u|tas\.tmin\-h2m\-hxy\-u|tnhusscp\.tavg\-al\-hxy\-u|tntscp\.tavg\-al\-hxy\-u|ts\.tavg\-u\-hxy\-is|wfo\.tavg\-u\-hxy\-sea)\.
+  action: fix
+  fix: fix_registry_comment
+  params:
+    var: '{var}'
+  note: C002 follow-up. Remove only escaped underscores/asterisks when the normalized comment contains a registered expected
+    term. Preserve the original scientific text.

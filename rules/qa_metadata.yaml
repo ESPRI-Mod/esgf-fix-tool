@@ -1,0 +1,168 @@
+- id: C099
+  check: \[CF-Conventions\] §5 Coordinate Systems$
+  message: (?P<var>line|type) shares the same name as one of its dimensions$
+  action: fix
+  fix: rename_redundant_text_label
+  params:
+    var: '{var}'
+  note: Delete line/type and legacy line_label/type_label only after comparing ordered labels with sector, ignoring trailing NUL/space padding. Keep dimensions. Delegate the three corrupt four-passage ice products to C105's approved method.
+- id: C100
+  check: \[CMIP7\] \[COORD007\] Requested coordinate values$
+  message: '''sector'' is missing requested label\(s\) \[''barents_opening''.*; found \[''barents_opening\\x00''.*Additional
+    labels and any label order are allowed\.$'
+  action: fix
+  fix: normalize_text_padding
+  note: Three readable sixteen-passage arrays. Replace trailing NUL bytes with spaces, keeping every label and its order.
+    Control characters inside labels are rejected.
+- id: C105
+  check: \[CMIP7\] \[COORD007\] Requested coordinate values$
+  message: '''sector'' is missing requested label\(s\) \[''fram_strait''.*'
+  action: fix
+  note: Use the four labels and their explicit line-index order supplied by the user. Remove redundant corrupted label arrays
+    and use strlen=21.
+  fix: fix_ice_passage_sector
+  params: {}
+- id: C106
+  check: \[CF-Conventions\] §7\.4 Climatological Statistics$
+  message: 'The "time: method within years/days over years/days" format is not correct in variable .*'
+  dataset: CMIP7\.[^.]+\.[^.]+\.tclm-[^.]+\.mon\.
+  action: fix
+  fix: rebuild_monthly_climatology
+  params: {}
+  note: User-approved per-file equal-year monthly climatology. Validate complete calendar months, average all time-dependent floating fields including ps, rebuild 12 times and climatology bounds. Preserve branding and static arrays. Replays validate existing 12-point climatologies.
+- id: C106r
+  check: \[CF-Conventions\] §7\.4 Climatological Statistics$
+  message: 'The "time: method within years/days over years/days" format is not correct in variable .*'
+  action: review
+  note: Non-tclm products (including tmaxavg/tminavg) need their own approved statistic. No monthly-climatology averaging is applied.
+- id: C108a
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: '''sector'' has units=''1'', while its coordinate definition does not prescribe units; it is recommended to verify
+    the extra attribute\.$'
+  action: fix
+  fix: drop_var_attr
+  params:
+    var: sector
+    attr: units
+  note: Character labels have no physical units. Preserve their text.
+- id: C075
+  check: \[CF-Conventions\] §3\.1\.2 Temperature units$
+  message: Variable (?P<var>ta|tas|tatp|tdps|ts|tslsi|tsl|sitempsnic|bigthetao|thetao|thetaot|tob|tos|tnt|tnta|tntc|tntd|tntmp|tntpbl|tntr|tntrlcs|tntrscs|tntscp|tntscpbl)
+    has a temperature related standard_name and it is recommended that the units_metadata attribute is present and has one
+    of the values .*
+  action: fix
+  fix: add_temperature_units_metadata
+  params:
+    var: '{var}'
+  note: Use on_scale for the reviewed absolute temperatures and difference for air-temperature tendencies in K s-1.
+- id: C076
+  check: \[CF-Conventions\] §3\.1\.2 Temperature units$
+  message: Variable tossq has a temperature related standard_name and it is recommended that the units_metadata attribute
+    is present and has one of the values .*
+  action: fix
+  fix: add_temperature_units_metadata
+  params: {var: tossq}
+  note: User approved temperature:on_scale for the observed square_of_sea_surface_temperature in degC2.
+- id: C077
+  check: \[CF-Conventions\] §4\.4 Time Coordinate$
+  message: Variable time has a calendar attribute of proleptic_gregorian and it is recommended that the units_metadata attribute
+    is present and has one of the values .*
+  dataset: CMIP7\..*\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  action: waive
+  note: The reviewed files declare CF 1.13. Its proleptic Gregorian calendar excludes leap seconds.
+- id: C079
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries$
+  message: '(?:Bounds variable olevel_bounds and parent variable olevel have the following matching attributes \[''units''\]\.\s+It
+    is recommended that only the parent variable of the bounds variable contains these attributes|The Boundary variables ''olevel_bounds''
+    should not have the attributes: ''\[''units''\]'')$'
+  action: fix
+  fix: drop_olevel_bounds_units
+  note: The duplicate and forbidden-attribute messages collapse to the same guarded deletion per file.
+- id: C080
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries$
+  message: \d+ point\(s\) specified by the coordinate variable '(nav_lat|nav_lon|latitude|longitude)' lie outside the bounding
+    box of the associated boundary variable '(bounds_nav_lat|bounds_nav_lon|vertices_latitude|vertices_longitude)'$
+  action: review
+  note: Compare the actual NEMO grid geometry, masks, and checker results. Keep centers and vertices unchanged.
+- id: C081
+  check: \[CF-Conventions\] §7\.2 Cell Measures$
+  message: 'The cell_measures attribute for variable \w+ is formatted incorrectly\. It should take the form of either ''area:
+    cell_var'' or ''volume: cell_var'' where cell_var is an existing name of a variable describing the cell measures\.$'
+  dataset: '(?x:CMIP7\.OCE\.(?: agessc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| bigthetao\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    chl\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| chldiat\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| chlmisc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    detoc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| dfe\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| dissic\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    dissoc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| expc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| expcalc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    graz\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| hfx\.tavg\-ol\-hxy\-sea\.mon\.glb\.g168| hfy\.tavg\-ol\-hxy\-sea\.mon\.glb\.g169|
+    masscello\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| nh4\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| no3\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    o2\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| obvfsq\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| ph\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    phyc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| phydiat\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| phymisc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    po4\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| si\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| so\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    talk\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| thetao\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| thkcello\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    umo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g168| uo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g168| vmo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g169|
+    vo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g169| wmo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| wo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    zfullo\.tavg\-ol\-hxy\-sea\.yr\.glb\.g112| zmeso\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| zmicro\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
+    zooc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112 )\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1)$'
+  action: waive
+  note: The reviewed datasets declare both areacello and volcello in external_variables and use the valid two-measure syntax.
+- id: C082
+  check: \[CF-Conventions\] §7\.3 Cell Methods$
+  message: \w+'s cell_methods name component (depth|height|longitude|grid_longitude) does not match a dimension, area or auxiliary
+    coordinate$
+  action: waive
+  note: These are valid CF standard names for this syntax. Scientific questions about the described operations are independent.
+- id: C083
+  check: \[CMIP7\] \[ATTR004\] Variable 'rsus' attribute 'cell_methods' registry expected-term check$
+  message: 'Expected ''area: mean where land time: mean'' to equal ''area: time: mean where land'' from registry key ''cell_methods''\.$'
+  dataset: CMIP7\.SRF\.rsus\.tavg-u-hxy-lnd\.mon\.glb\.g111\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  action: fix
+  fix: set_var_attr_if_matches
+  params:
+    var: rsus
+    attr: cell_methods
+    expected: 'area: mean where land time: mean'
+    value: 'area: time: mean where land'
+  note: Apply the exact registry text for the reviewed land product.
+- id: C084
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: '''(?P<var>dbze|scatratio|deltasigt|effectRadIc|lev|plev|wavelength|depth|height|ap|b)'' long_name=''(?P<expected>[^'']*)'';
+    the recommended value is ''(?P<value>[^'']*)''\.$'
+  action: fix
+  fix: set_var_attr_if_matches
+  params:
+    var: '{var}'
+    attr: long_name
+    expected: '{expected}'
+    value: '{value}'
+  note: Copy only the explicit long_name recommendation while the observed old value still matches. All numeric arrays are
+    preserved.
+- id: C085
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: '''time'' long_name=''Time axis''; the recommended value is ''(?P<value>Time Intervals|Time Points|Monthly Climatology|Monthly
+    Mean Daily Statistics)''\.$'
+  action: fix
+  fix: set_reviewed_time_long_name
+  params:
+    value: '{value}'
+- id: C086
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: '''(?P<coordinate>lat|nav_lat|nav_lon)'' long_name=''(?:|Latitude|Longitude)''; the recommended value is ''(?P<value>Latitude|latitude|longitude)''\.$'
+  action: fix
+  fix: set_reviewed_coordinate_long_name
+  params:
+    coordinate: '{coordinate}'
+    value: '{value}'
+- id: C087
+  check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
+  message: The recommended string-length dimension for (?:character scalar coordinate )?'(?P<coordinate>seasurface|type|sector)'
+    is 'strlen'; found 'str_len'\.$
+  action: fix
+  fix: rename_scalar_strlen
+  params:
+    coordinate: '{coordinate}'
+- id: C088
+  check: \[CMIP7\] \[COORD009\] Coordinate bounds naming recommendations$
+  message: Vertex variable '(bounds_nav_lat|bounds_nav_lon|vertices_latitude|vertices_longitude)' uses trailing dimension
+    'nvertex'; the configured recommended name is 'vertices'\.$
+  action: fix
+  fix: rename_ocean_vertices_dimension
+  note: Rename the shared dimension of size four once per file, independently of the size-two bounds dimensions.

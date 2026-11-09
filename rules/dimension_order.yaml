@@ -1,0 +1,200 @@
+- id: C111
+  check: \[CF-Conventions\] §5\.6 Horizontal Coordinate Reference Systems, Grid Mappings, Projections$
+  message: zostoga has no coordinate associated with a variable identified as true latitude/longitude;.*
+  action: fix
+  note: Same reduction as C050; preserve time and its genuine interval bounds.
+  fix: reduce_replicated_zostoga
+  params: {}
+- id: C040
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''ReffIce'', ''tau'', ''lat'', ''lon''\]; coordinate
+    IDs \[''longitude'', ''latitude'', ''effectradic'', ''tau'', ''time''\] require \[''time'', ''tau'', ''effectRadIc'',
+    ''lat'', ''lon''\] as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: '{var}'
+    target_order:
+    - time
+    - tau
+    - effectRadIc
+    - lat
+    - lon
+    aliases:
+      ReffIce: effectRadIc
+  note: Normalize the reviewed coordinate name if needed, then transpose only; prefer ncpdq, otherwise verified Python rewrite.
+- id: C041
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''effectRadLi'', ''tau'', ''lat'', ''lon''\];
+    coordinate IDs \[''longitude'', ''latitude'', ''effectradli'', ''tau'', ''time''\] require \[''time'', ''tau'', ''effectRadLi'',
+    ''lat'', ''lon''\] as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: '{var}'
+    target_order:
+    - time
+    - tau
+    - effectRadLi
+    - lat
+    - lon
+  note: Normalize the reviewed coordinate name if needed, then transpose only; prefer ncpdq, otherwise verified Python rewrite.
+- id: C042
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''pressure2'', ''tau'', ''lat'', ''lon''\]; coordinate
+    IDs \[''longitude'', ''latitude'', ''plev7c'', ''tau'', ''time''\] require \[''time'', ''tau'', ''plev'', ''lat'', ''lon''\]
+    as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: '{var}'
+    target_order:
+    - time
+    - tau
+    - plev
+    - lat
+    - lon
+    aliases:
+      pressure2: plev
+  note: Normalize the reviewed coordinate name if needed, then transpose only; prefer ncpdq, otherwise verified Python rewrite.
+- id: C043
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''olevel'', ''y'', ''x''\]; coordinate IDs \[''longitude'',
+    ''latitude'', ''olevel'', ''time''\] require \[''time'', ''lev'', ''y'', ''x''\] as their required order\.$'
+  action: fix
+  fix: rename_coordinate
+  params:
+    sources:
+    - olevel
+    target: lev
+  note: Same rename as C020; axes y/x keep their order.
+- id: C044
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''presinter'', ''lat'', ''lon''\]; coordinate
+    IDs \[''longitude'', ''latitude'', ''(?:alevel|alevhalf)'', ''time''\] require \[''time'', ''lev'', ''lat'', ''lon''\]
+    as their required order\.$'
+  action: fix
+  fix: rename_coordinate
+  params:
+    sources:
+    - presinter
+    target: lev
+  note: Same rename as C018/C019; no formula or coefficient inference.
+- id: C045
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''solth'', ''lat'', ''lon''\]; coordinate IDs
+    \[''longitude'', ''latitude'', ''sdepth'', ''time''\] require \[''time'', ''depth'', ''lat'', ''lon''\] as their required
+    order\.$'
+  action: fix
+  fix: rename_coordinate
+  params:
+    sources:
+    - solth
+    target: depth
+  note: Same thermal soil coordinate rename as C021; preserve meter values.
+- id: C046
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''oline''\]; coordinate IDs \[''oline'', ''time''\]
+    require \[''time'', ''line''\] as their required order\.$'
+  action: fix
+  fix: rename_auxiliary_dimension
+  params:
+    var: '{var}'
+    source: oline
+    target: line
+    coordinate: line
+  note: Rename only the index dimension; the canonical text coordinate already exists. Keep labels and order.
+- id: C047
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''siline''\]; coordinate IDs \[''siline'', ''time''\]
+    require \[''time'', ''line''\] as their required order\.$'
+  action: fix
+  fix: rename_auxiliary_dimension
+  params:
+    var: '{var}'
+    source: siline
+    target: line
+    coordinate: line
+  note: Rename only the index dimension; the canonical text coordinate already exists. Keep labels and order.
+- id: C048
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''vegtype'', ''lat'', ''lon''\]; coordinate IDs
+    \[''longitude'', ''latitude'', ''modelvegtype'', ''time''\] require \[''time'', ''type'', ''lat'', ''lon''\] as their
+    required order\.$'
+  action: fix
+  fix: rename_auxiliary_dimension
+  params:
+    var: '{var}'
+    source: vegtype
+    target: type
+    coordinate: type
+  note: Rename only the index dimension; the canonical text coordinate already exists. Keep labels and order.
+- id: C049
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''y'', ''x''\]; coordinate IDs \[''time''\] require
+    \[''time''\] as their required order\.$'
+  dataset: CMIP7\.OCE\.(?:bigthetao|masso|siarea|siextent|sisnmass|sivol|so|sos|thetao|tos|volo)\.tavg-u-hm-(?:sea|u|si)\.
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: '{var}'
+    target_order:
+    - time
+    drop:
+    - y
+    - x
+  note: Only reviewed global diagnostics; runtime requires x=y=1. Squeeze without averaging; retain other variables.
+- id: C050
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''y'', ''x''\]; coordinate IDs \[''time''\] require
+    \[''time''\] as their required order\.$'
+  action: fix
+  note: Verify exact identity of all finite valid grid values at every time before reduction.
+  fix: reduce_replicated_zostoga
+  params: {}
+  dataset: CMIP7\.OCE\.zostoga\.tavg-u-hm-sea\.
+- id: C051
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''olevel'', ''y'', ''x''\]; coordinate IDs \[''longitude'',
+    ''latitude'', ''time''\] require \[''time'', ''y'', ''x''\] as their required order\.$'
+  action: review
+  note: hfx/hfy retain y=332 and x=362 in the target order. The extra olevel has 75 levels.
+- id: C052
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''solay'', ''lat'', ''lon''\]; coordinate IDs
+    \[''longitude'', ''latitude'', ''sdepth'', ''time''\] require \[''time'', ''depth'', ''lat'', ''lon''\] as their required
+    order\.$'
+  action: fix
+  note: Same soil recipe C022; preserve values, dimension rename and approved midpoint bounds.
+  fix: fix_orchidee_soil_depth
+  params: {}
+- id: C053
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''solay'', ''lat'', ''lon''\]; coordinate IDs \[''longitude'',
+    ''latitude'', ''sdepth''\] require \[''depth'', ''lat'', ''lon''\] as their required order\.$'
+  action: fix
+  note: Same soil recipe C022 for the static thickness field.
+  fix: fix_orchidee_soil_depth
+  params: {}
+- id: C054
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''msfty'' dimensions in netCDF/C order are \[''time'', ''basin'', ''(?:olevel|lev)'', ''y'', ''x''\]; coordinate
+    IDs \[''gridlatitude'', ''olevel'', ''basin'', ''time''\] require \[''time'', ''basin'', ''lev'', ''rlat''\] as their
+    required order\.$'
+  dataset: CMIP7\.OCE\.msfty\.tavg-ol-ht-sea\.mon\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: msfty
+    target_order:
+    - time
+    - basin
+    - lev
+    - y
+    aliases:
+      olevel: lev
+    drop:
+    - x
+    drop_shared: true
+  note: Remove only singleton x, including from auxiliary variables. Keep all 332 y positions. The verified rlat coordinate
+    remains a separate review under C025.

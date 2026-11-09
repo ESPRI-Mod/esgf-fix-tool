@@ -1,0 +1,43 @@
+- id: C098
+  check: \[CF-Conventions\] §7\.1 Cell Boundaries$
+  message: \[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "(?P<var>nav_lat|nav_lon)"\.
+    This attribute may only appear in coordinate data \(C\)\.$
+  action: fix
+  fix: drop_unused_horizontal_bounds
+  params:
+    var: '{var}'
+  note: Detach a bounds reference only after confirming the old auxiliary is no longer attached to any field. Preserve all
+    arrays.
+# Reviewed COORD010/011 cases from the failed individual QA_results_v3 controls. Load before seed.
+- id: C069
+  check: '\[CMIP7\] \[COORD010\] Auxiliary-coordinate associations$'
+  message: 'It is required for ''(?P<var>[^'']+)'' coordinates attribute not to include horizontal (?P<role>latitude|longitude) coordinate ''(?P<coordinate>nav_lat|nav_lon|latitude|longitude)'', because (?P=role) is not required by branded variable ''(?P<branded_variable>[^'']+)''\.$'
+  action: fix
+  fix: drop_unrequested_horizontal_reference
+  params: {var: "{var}", role: "{role}", coordinate: "{coordinate}", branded_variable: "{branded_variable}"}
+  note: Remove only the requested tokens, accepting canonical names after rename. Preserve arrays and other coordinates; runtime enforces 21 reviewed DR policies.
+
+- id: C070
+  check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
+  message: '(?:It is required for ''lat'' on the configured rectilinear grid to be a 1-D coordinate variable; found ''nav_lat'' with dimensions \[''y'', ''x''\]\. Dependent horizontal-grid checks could not be evaluated\.|The required coordinate for the configured rectilinear grid is ''lat\(lat\)'' for latitude; standard_name=''latitude'' identified ''nav_lat''\.)$'
+  dataset: 'CMIP7\.OCE\.(?P<var>hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|sltbasin|sltovgyre|sltovovrt)\.tavg-u-hyb-sea\.'
+  action: fix
+  fix: fix_basin_profile_latitude
+  params: {var: "{var}"}
+  note: User relayed model-engineer approval for final latitude 89.36999 instead of the repeated 89.36998. Convert nav_lat(y,1) to lat(lat), squeeze singleton x without deleting any of the 332 rows, preserve all field values and the unreferenced longitude auxiliary. Do not invent latitude bounds or change grid metadata.
+
+- id: C071
+  check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
+  message: 'Latitude grid variable ''nav_lat'' was identified by standard_name=''latitude'', but its required variable name is ''latitude''\.$'
+  action: fix
+  fix: rename_horizontal_coordinate
+  params: {role: latitude}
+  note: Rename only the 2-D auxiliary variable, update CF references, retain y/x, and restore/verify values after close.
+
+- id: C072
+  check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
+  message: 'Longitude grid variable ''nav_lon'' was identified by standard_name=''longitude'', but its required variable name is ''longitude''\.$'
+  action: fix
+  fix: rename_horizontal_coordinate
+  params: {role: longitude}
+  note: Rename only the 2-D auxiliary variable, update CF references, retain y/x, and restore/verify values after close.
