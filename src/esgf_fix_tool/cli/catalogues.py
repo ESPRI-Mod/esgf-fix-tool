@@ -4,7 +4,6 @@ from pathlib import Path
 
 import typer
 
-
 # Shipped inside the package, so installed copies (wheel, Docker image) find them too.
 DEFAULT_RULES_DIR = Path(__file__).resolve().parents[1] / "rules"
 PRIORITY = (

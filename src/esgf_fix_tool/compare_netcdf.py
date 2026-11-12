@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 from netCDF4 import Dataset
 
-
 # Configuration
 MAX_ELEMENTS = 2_000_000
 MAX_EXAMPLES = 5
@@ -121,14 +120,14 @@ def compare_values(a, b):
     """Compare coordinate values exactly, including masks."""
     if a.shape != b.shape:
         return [
-            f"      {status('SKIPPED')} Values: "
-            f"shape {a.shape} -> {b.shape}"
+            (f"      {status('SKIPPED')} Values: "
+             f"shape {a.shape} -> {b.shape}")
         ]
 
     if a.size > MAX_ELEMENTS:
         return [
-            f"      {status('SKIPPED')} Values: "
-            f"{a.size:,} elements exceed limit"
+            (f"      {status('SKIPPED')} Values: "
+             f"{a.size:,} elements exceed limit")
         ]
 
     old = np.ma.asarray(a[...])
@@ -173,8 +172,8 @@ def compare_values(a, b):
 
     lines = [
         f"      {status('MODIFIED')} {count:,}/{a.size:,} values changed",
-        f"          Significant differences (>{tolerance:g}): "
-        f"{significant:,}",
+        (f"          Significant differences (>{tolerance:g}): "
+         f"{significant:,}"),
     ]
 
     # Always display the first exact changes, even within tolerance.

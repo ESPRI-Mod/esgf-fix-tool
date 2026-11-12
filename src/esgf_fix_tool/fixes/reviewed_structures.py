@@ -3,6 +3,7 @@
 import netCDF4
 import numpy as np
 
+from ..progress import io_progress
 from . import fix
 from .coordinates import (
     REFERENCE_ATTRS,
@@ -11,7 +12,6 @@ from .coordinates import (
     rename_coordinate,
 )
 from .layouts import _copy_attrs, _raw
-from ..progress import io_progress
 
 
 def unreferenced(ds, names, ignoring=()):

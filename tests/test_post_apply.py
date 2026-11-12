@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.fixes.hybrid import _coefficient_reference
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def run(path, tmp, steps):
@@ -173,8 +173,8 @@ def test_eighty_interface_coefficients_use_reference_without_normalizing_lev(tmp
 
 
 def test_unapproved_latitude_bounds_remain_in_review(tmp_path):
-    from esgf_fix_tool.classify import classify,Outcome
-    from esgf_fix_tool.report import QAReport,Finding
+    from esgf_fix_tool.classify import Outcome, classify
+    from esgf_fix_tool.report import Finding, QAReport
     from esgf_fix_tool.ruleset import RuleSet
     rules=RuleSet.load(Path(__file__).parents[1]/'src/esgf_fix_tool/rules/post_apply.yaml')
     findings=[Finding(3,'[CMIP7] [COORD008] Coordinate bounds',

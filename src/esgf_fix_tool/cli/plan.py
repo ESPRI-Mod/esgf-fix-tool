@@ -8,8 +8,8 @@ from typing import Annotated
 import typer
 
 from ..plan import FixPlan
-from .common import Final, Previous, Report, classification
 from .catalogues import resolve_catalogues
+from .common import Final, Previous, Report, classification
 
 NAME = "plan"
 

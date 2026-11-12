@@ -1,6 +1,4 @@
 """Approved physical changes compose into one output and preserve data ordering."""
-import json
-from pathlib import Path
 
 import netCDF4
 import numpy as np
@@ -8,9 +6,9 @@ import pytest
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.batch_write import Batch
-from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.fixes.hybrid import _coefficient_reference
 from esgf_fix_tool.fixes.reviewed_structures import BASIN_LABELS
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def apply_checked(path, tmp, steps, monkeypatch, rewrite=True):

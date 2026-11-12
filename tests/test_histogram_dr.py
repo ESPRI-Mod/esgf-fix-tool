@@ -1,7 +1,7 @@
 import shutil
+
 """User-approved DR tables; synthetic histogram payloads are never rebinned."""
 from pathlib import Path
-import os
 
 import netCDF4
 import numpy as np
@@ -9,7 +9,7 @@ import pytest
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import classify
-from esgf_fix_tool.fixes import FixFunction, REGISTRY
+from esgf_fix_tool.fixes import REGISTRY, FixFunction
 from esgf_fix_tool.fixes.bounds import _specs
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport

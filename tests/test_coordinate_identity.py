@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -11,8 +10,12 @@ from typer.testing import CliRunner
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.cli.main import app
-from esgf_fix_tool.fixes import FixFunction, REGISTRY
-from esgf_fix_tool.fixes.coordinates import add_registry_scalar, add_text_coordinate_alias, rename_coordinate
+from esgf_fix_tool.fixes import REGISTRY, FixFunction
+from esgf_fix_tool.fixes.coordinates import (
+    add_registry_scalar,
+    add_text_coordinate_alias,
+    rename_coordinate,
+)
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet

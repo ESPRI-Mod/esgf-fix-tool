@@ -1,14 +1,12 @@
 """Default catalogue coverage and explicit inclusion/exclusion through the CLI."""
 import json
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
-from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.cli import catalogues
+from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.plan import FixPlan
-
 
 HISTORY = ('[Appendix A] Attribute "history" should not be present in non-coordinate data (D) variable "tas". '
            'This attribute may only appear in global attributes (G).')

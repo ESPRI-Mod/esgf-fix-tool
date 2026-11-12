@@ -1,20 +1,20 @@
 """Reviewed dimension permutations and singleton removal; no averaging or arbitrary axis deletion."""
 
-import os
 import ctypes
-from functools import lru_cache
-from pathlib import Path
+import os
 import shutil
 import subprocess
 import tempfile
+from functools import lru_cache
+from pathlib import Path
 
 import netCDF4
 import numpy as np
 
-from . import fix
-from .coordinates import rename_coordinate, _restore_coordinate_values
 from ..data_integrity import data_blocks
 from ..progress import activity
+from . import fix
+from .coordinates import _restore_coordinate_values, rename_coordinate
 
 
 @lru_cache(maxsize=1)
@@ -305,7 +305,7 @@ def _finish_layout(
                 rebuilt,
             ]
             with activity("Permutation NCO ncpdq"):
-                result = subprocess.run(command, capture_output=True, text=True)
+                result = subprocess.run(command, capture_output=True, text=True, check=False)
             if result.returncode:
                 raise RuntimeError(f"ncpdq failed: {result.stderr[-2000:]}")
             # Keep provenance in fixlog, not additional global attributes added by NCO.

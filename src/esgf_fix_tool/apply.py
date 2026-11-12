@@ -9,10 +9,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-
 from . import __version__, fixes
 from .plan import FixPlan, Step, order_steps
-from .progress import ProgressEvent, notify, reporting, step_scope, activity
+from .progress import ProgressEvent, activity, notify, reporting, step_scope
 
 
 def _rename_request(path, steps):

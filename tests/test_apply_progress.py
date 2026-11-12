@@ -1,6 +1,5 @@
 import hashlib
 import json
-import threading
 from pathlib import Path
 
 import netCDF4
@@ -105,7 +104,7 @@ def test_cli_displays_titles_parameters_and_persists_live_events(tmp_path):
 
 
 def test_renderer_has_no_periodic_worker(tmp_path):
-    import esgf_fix_tool.cli.progress as progress
+    from esgf_fix_tool.cli import progress
     assert not hasattr(progress, 'threading')
     with ConsoleProgress(tmp_path/'events') as display:
         assert not hasattr(display, 'thread')

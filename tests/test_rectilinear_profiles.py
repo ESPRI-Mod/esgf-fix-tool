@@ -1,15 +1,15 @@
 import shutil
 from pathlib import Path
-import os
+
 import netCDF4
 import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
+from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.plan import FixPlan, Step
-from esgf_fix_tool.report import Finding,QAReport
+from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
-from esgf_fix_tool.classify import classify,Outcome
 
 ROOT=Path(__file__).resolve().parents[1]
 VARS=['hfbasin','hfbasinpmadv','hfbasinpmdiff','htovgyre','htovovrt','sltbasin','sltovgyre','sltovovrt']
@@ -98,7 +98,7 @@ def test_unreviewed_profile_changes_are_refused_atomically(tmp_path,invalid):
 
 @pytest.mark.parametrize('corrupt',['latitude','main_data'])
 def test_later_hook_cannot_change_other_latitudes_or_scientific_data(tmp_path,monkeypatch,corrupt):
-    from esgf_fix_tool.fixes import REGISTRY,FixFunction
+    from esgf_fix_tool.fixes import REGISTRY, FixFunction
     p=tmp_path/'test.nc';make(p)
     def damage(source,output):
         with netCDF4.Dataset(output,'a') as ds:

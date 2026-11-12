@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -9,7 +8,9 @@ import pytest
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.attributes import (
-    drop_region_units, fix_invalid_standard_names, fix_soil_depth_metadata,
+    drop_region_units,
+    fix_invalid_standard_names,
+    fix_soil_depth_metadata,
 )
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import Finding, QAReport

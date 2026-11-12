@@ -10,7 +10,6 @@ from esgf_fix_tool.fixes.coordinates import _replace_references
 from esgf_fix_tool.fixes.reviewed_structures import BASIN_LABELS, unreferenced
 from esgf_fix_tool.plan import FixPlan, Step
 
-
 METHODS = ('depth: longitude: sum where sea '
            '(along a zig-zag grid path spanning a basin) where sea time: mean')
 
@@ -32,7 +31,6 @@ def test_sector_preserves_basin_and_exact_cell_methods(tmp_path, fmt, numeric):
             basin.standard_name = 'region'
             basin.flag_values = np.array([1, 2, 3], dtype='i4')
             basin.flag_meanings = 'global_ocean atlantic_ocean indo_pacific_ocean'
-            saved_attrs = {a: basin.getncattr(a) for a in basin.ncattrs()}
         else:
             # Old tool outputs may already have sector and no numeric basin.
             ds.createDimension('strlen', 21)
