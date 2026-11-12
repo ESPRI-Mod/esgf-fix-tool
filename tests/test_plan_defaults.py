@@ -43,6 +43,15 @@ def test_no_rules_option_loads_all_catalogues_from_any_directory(tmp_path,monkey
     assert len(names)==len(list(catalogues.DEFAULT_RULES_DIR.glob('*.yaml')))
 
 
+def test_classify_without_rules_option_loads_all_catalogues(tmp_path,monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    source,_=report(tmp_path)
+    result=CliRunner().invoke(app,['classify',str(source),'--json'])
+    names=json.loads(result.output)['rules_version'].split(',')
+    assert names[0]=='post_apply.yaml' and names[-1]=='catalogue_fallbacks.yaml'
+    assert len(names)==len(list(catalogues.DEFAULT_RULES_DIR.glob('*.yaml')))
+
+
 def test_r_selects_rule_identifiers(tmp_path):
     assert ids(run(tmp_path,['-r','C001']))==['C001']
 
