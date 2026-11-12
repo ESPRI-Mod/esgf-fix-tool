@@ -4,7 +4,7 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-12
 
 First release, from the CMIP7 pilot on `CM6-ESMCO2-FT-esm-pi-s.01`
 (pilot notes at the [`pilot-2026-11`](https://github.com/ESPRI-Mod/esgf-fix-tool/tree/pilot-2026-11) tag).
