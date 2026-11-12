@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Fix CMIP7 netCDF files from an esgqa report and a set of rules"
 readme = "README.md"
 authors = [
-    { name = "TROUSSELLIER Laurent", email = "laurent.troussellier@ipsl.fr" }
+    { name = "TROUSSELLIER Laurent", email = "laurent.troussellier@ipsl.fr" },
+    { name = "LEVAVASSEUR Guillaume", email = "Guillaume.Levavasseur@ipsl.fr" },
 ]
 requires-python = ">=3.12"
 dependencies = [
