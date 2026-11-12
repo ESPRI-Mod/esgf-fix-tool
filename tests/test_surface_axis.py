@@ -73,7 +73,7 @@ def test_surface_axis_and_label_corrections_are_independent(tmp_path,order):
     for p in plans:assert apply_plan(p,tmp_path/'log')['changed']==0
 
 
-def test_two_surface_diagnostics_deduplicate_and_override_old_seed_waivers():
+def test_two_surface_diagnostics_deduplicate_and_override_old_fallback_waivers():
     findings=[Finding(3,'[CF-Conventions] §4.3 Vertical Coordinate',m,'dataset','file.nc') for m in MESSAGES]
     rules=RuleSet.load(ROOT/'src/esgf_fix_tool/rules/surface_and_hybrid.yaml',ROOT/'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml')
     c=classify(QAReport(Path('report'),{},findings),rules)

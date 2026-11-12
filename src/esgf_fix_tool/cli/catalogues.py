@@ -28,15 +28,8 @@ PRIORITY = (
 def default_rule_paths():
     """Use the packaged catalogues, independently of the invocation directory."""
     root = DEFAULT_RULES_DIR
-    # scp overlays may leave retired files at the destination. Do not rediscover
-    # those duplicate catalogues after their entries moved to thematic files.
-    retired = {"cmip7_ipsl.yaml", "seed_20261029.yaml"}
     paths = sorted(
-        p
-        for p in root.glob("*")
-        if p.is_file()
-        and p.suffix.lower() in (".yaml", ".yml")
-        and p.name not in retired
+        p for p in root.glob("*") if p.is_file() and p.suffix.lower() in (".yaml", ".yml")
     )
     if not paths:
         raise typer.BadParameter(
@@ -49,7 +42,7 @@ def default_rule_paths():
         paths,
         key=lambda p: (
             2
-            if p.stem == "catalogue_fallbacks" or p.stem.startswith("seed_")
+            if p.stem == "catalogue_fallbacks"
             else 0
             if p.stem in rank
             else 1,

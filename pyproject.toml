@@ -16,11 +16,6 @@ dependencies = [
 [project.scripts]
 esgf-fix-tool = "esgf_fix_tool.cli.main:app"
 
-[project.optional-dependencies]
-seed = [
-    "openpyxl>=3.1.5",
-]
-
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"

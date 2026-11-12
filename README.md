@@ -57,7 +57,7 @@ Rules:
 - `src/esgf_fix_tool/rules/variable_attributes.yaml`: C001/C002/C002a/C112, variable attributes and comments.
   C003 (calendar) is in coordinate_metadata.yaml. The default manifest sets their priority.
 - `src/esgf_fix_tool/rules/standard_name_modifiers.yaml`: C004–C006, the three investigated descriptive `standard_name` values.
-  Load before the seed, or alone to apply only this correction (example below).
+  Load before the fallbacks, or alone to apply only this correction (example below).
 - `src/esgf_fix_tool/rules/units_and_standard_names.yaml`: C007–C017, the reviewed units and invalid-name cases.
   C014 now fixes atmospheric lev:standard_name=x using the mapping confirmed by the user on 2026-11-05.
 - `src/esgf_fix_tool/rules/vertical_coordinate_names.yaml`: C018–C020, the three missing-generic-lev messages.
@@ -70,7 +70,7 @@ Rules:
 - `src/esgf_fix_tool/rules/horizontal_coordinates.yaml`: C069–C072, unnecessary horizontal references and curvilinear
   auxiliary names; C070 now converts the eight reviewed rectilinear profiles and applies the approved terminal latitude.
 - `src/esgf_fix_tool/rules/surface_and_hybrid.yaml`: C073 removes only categorical `seasurface:axis="Z"` per the user's
-  updated DR decision; load before the seed's older waivers. C074 records the two hybrid COORD012
+  updated DR decision; load before the older fallback waivers. C074 records the two hybrid COORD012
   variants and uses the bundled IPSL reference to align ap/b with lev. Science arrays stay unchanged.
 - `src/esgf_fix_tool/rules/qa_metadata.yaml`: C075–C088, reviewed CF and CMIP7 recommendations.
   C076 now adds the user-approved temperature:on_scale for tossq.
@@ -364,7 +364,7 @@ checked by their dimensions, so prior renames such as nav_lat → latitude work 
 The resulting main dimensions are `time, basin, lev, y`. C025 now exposes the approved
 existing meridional coordinate as `rlat`, completing the names and attributes.
 
-Load the two catalogues before the seed. Alone they select only these diagnostics. For example,
+Load the two catalogues before the fallbacks. Alone they select only these diagnostics. For example,
 with `report`, `source_root` and `staging_root` defined as above:
 
 ```bash
@@ -405,7 +405,7 @@ See the [NCO manual](https://nco.sourceforge.net/nco.html) for dimension permuta
 
 ## Test coordinate values and bounds (COORD007/008/009)
 
-Load `src/esgf_fix_tool/rules/coordinate_values_bounds.yaml` before the seed, or alone to test this batch.
+Load `src/esgf_fix_tool/rules/coordinate_values_bounds.yaml` before the fallbacks, or alone to test this batch.
 All **3,430 findings / 28 exact messages / 584 files** were reconciled with failed individual
 controls (`value[0] < value[1]`, priority 3) in QA_results_v3. The plan has **2,676 steps / 584 files**
 after deduplicating operations on shared dimensions and the two climatology diagnostics.
@@ -535,7 +535,7 @@ uv run esgf-fix-tool apply fixplan.C071.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C071.dry-run.jsonl
 ```
 
-Use the previously documented esgf-toolbox Python prefix at TGCC. Load this catalogue before the seed,
+Use the previously documented esgf-toolbox Python prefix at TGCC. Load this catalogue before the fallbacks,
 or alone for this batch. Remove --dry-run to keep changes, then rerun QA. No network or new dependency
 is needed in the prepared environment. Run these functions through apply for coordinate protection
 and verification. Direct renames check affected auxiliaries without scanning science fields and
@@ -548,7 +548,7 @@ them into one operation per file and calls `drop_osurf_axis(ds)` in `fixes/surfa
 only `axis="Z"` from the reviewed string coordinate `seasurface`; it accepts `osurf` and
 `ocean_surface_layer`, so it works before or after C057's separate label correction.
 Arrays, global attributes and other variable attributes are preserved. No units, positive value
-or numeric depth are introduced. The user's DR clarification supersedes the older seed waivers;
+or numeric depth are introduced. The user's DR clarification supersedes the older fallback waivers;
 the currently published DR still contains axis=Z, so an older DR/checker can continue requesting it.
 
 ```bash
