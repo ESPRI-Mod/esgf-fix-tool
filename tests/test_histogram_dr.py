@@ -13,7 +13,7 @@ from esgf_fix_tool.fixes import FixFunction, REGISTRY
 from esgf_fix_tool.fixes.bounds import _specs
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = {'dbze': ('cfadDbze94', 'C055', 'C062', '[(-47.5, 0.0475), (22.5, 0.0225)]'),
@@ -52,7 +52,7 @@ def plan(path, coordinate, order='both'):
     findings = [Finding(3, check, message, f'CMIP7.ATM.{main}.tavg-h40-hxy-air.mon.glb', str(path))
                 for _, check, message in messages]
     c = classify(QAReport(Path('synthetic-report'), {}, findings),
-                 RuleSet.load(ROOT / 'rules/coordinate_values_bounds.yaml'))
+                 RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/coordinate_values_bounds.yaml'))
     p = FixPlan.from_classification(c)
     assert len(p.files[str(path)]) == len(findings)
     assert all(s.fix == 'fix_dr_histogram' for s in p.files[str(path)])

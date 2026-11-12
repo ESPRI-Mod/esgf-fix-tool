@@ -11,7 +11,7 @@ from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.batch_write import Batch
 from esgf_fix_tool.fixes.qa_metadata import BASIN_MASK_MEANINGS
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 from esgf_fix_tool.classify import classify
 
 
@@ -109,7 +109,7 @@ def test_actual_report_selects_one_mask_and_distinct_sector_fixes_for_nine_axes(
     root=Path('/Users/glipsl/Desktop/QA_results_v3_fixed')
     if not root.is_dir():pytest.skip('Local QA fixture not available')
     report=next(p for p in root.glob('qa_result_*.json') if '.cluster.' not in p.name)
-    rules=RuleSet.load(Path(__file__).parents[1]/'rules/post_apply.yaml')
+    rules=RuleSet.load(Path(__file__).parents[1]/'src/esgf_fix_tool/rules/post_apply.yaml')
     result=classify(QAReport.load(report),rules)
     matches=[item for item in result.items if item.match and item.match.rule.id in ('C101','C101a','C096')]
     mask=[item for item in matches if item.match.rule.id=='C101']

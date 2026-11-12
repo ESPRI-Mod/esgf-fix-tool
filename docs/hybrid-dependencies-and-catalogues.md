@@ -39,14 +39,14 @@ The former cmip7_ipsl.yaml contained five reviewed rules. All are kept:
 
 | Rules | New location |
 | --- | --- |
-| C001, C002, C002a, C112 | rules/variable_attributes.yaml |
-| C003 | rules/coordinate_metadata.yaml |
+| C001, C002, C002a, C112 | src/esgf_fix_tool/rules/variable_attributes.yaml |
+| C003 | src/esgf_fix_tool/rules/coordinate_metadata.yaml |
 
 The former seed_20261029.yaml contained 92 historical diagnostic patterns: 74
 `fix` decisions without an implemented method, 9 review, 6 waive, 1 other_step,
 1 defer and 1 upstream_only. Removing an entire unused-looking pattern would
 discard coverage of potential future or older reports, so their original IDs,
-patterns, notes and decisions are retained under rules/fallbacks/, split by theme.
+patterns, notes and decisions are retained under src/esgf_fix_tool/rules/fallbacks/, split by theme.
 The new catalogue_fallbacks.yaml manifest loads them after reviewed catalogues.
 No speculative correction or new equivalence is introduced.
 
@@ -74,6 +74,6 @@ fix_tool plan "$report" -o fixplan.all.json
 fix_tool apply fixplan.all.json --only-under "$copie" --fixlog fixlog.all.jsonl
 ```
 
-Transfer the complete updated tree, including rules/fallbacks/ and the Python
+Transfer the complete updated tree, including src/esgf_fix_tool/rules/fallbacks/ and the Python
 changes. Old fix plans remain executable with the dependency-aware application,
 but regenerate them to record the current catalogue names.

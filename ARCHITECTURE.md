@@ -10,7 +10,7 @@ esgqa full report (qa_result_*.json)
   report.py ── QAReport: file → [Finding(severity, check, message)] + checker errors
         │
         ▼
-  rules.py ─── RuleSet (rules/*.yaml): (check regex, message regex with named groups) → action
+  ruleset.py ─ RuleSet (src/esgf_fix_tool/rules/*.yaml): (check regex, message regex with named groups) → action
         │
         ▼
   classify.py ─ every finding gets an Outcome; one Decision for the whole run
@@ -29,7 +29,7 @@ esgqa full report (qa_result_*.json)
 | | What | Notes |
 |---|---|---|
 | in | full esgqa report `qa_result_*.json` | `fail[severity][check][message][dataset] → [files]`, `error{}`, `info{}`. Not the `.cluster.json` |
-| in | `rules/*.yaml` | versioned in git; the rules version is recorded in every output |
+| in | `src/esgf_fix_tool/rules/*.yaml` | versioned in git; the rules version is recorded in every output |
 | in | previous report (optional) | to detect "no change" between two loop iterations |
 | out | classification (JSON + text summary, exit code) | drives the loop: `jobs/qa.sh` reads the exit code |
 | out | fix plan (JSON) | reviewable before applying |
@@ -131,7 +131,7 @@ much of the report the tool can fix today.
 ```
 src/esgf_fix_tool/
   report.py      read the esgqa report
-  rules.py       Rule, RuleSet, matching
+  ruleset.py     Rule, RuleSet, matching
   classify.py    Outcome, Decision, summary
   plan.py        FixPlan from classified findings
   apply.py       plan iteration and fix log
@@ -142,7 +142,7 @@ src/esgf_fix_tool/
   seed.py        Excel + cluster report → rules YAML (optional dependency: openpyxl)
   cli/           Typer app: main.py (entry point) + one file per command
                  (classify.py, plan.py, apply.py, seed_rules.py; common.py = shared options)
-rules/           rule files (versioned)
+  rules/         rule files (versioned, shipped in the package; fallbacks/ included by catalogue_fallbacks.yaml)
 tests/           small synthetic reports and netCDF files
 ```
 

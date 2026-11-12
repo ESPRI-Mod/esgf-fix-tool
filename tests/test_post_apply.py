@@ -175,8 +175,8 @@ def test_eighty_interface_coefficients_use_reference_without_normalizing_lev(tmp
 def test_unapproved_latitude_bounds_remain_in_review(tmp_path):
     from esgf_fix_tool.classify import classify,Outcome
     from esgf_fix_tool.report import QAReport,Finding
-    from esgf_fix_tool.rules import RuleSet
-    rules=RuleSet.load(Path(__file__).parents[1]/'rules/post_apply.yaml')
+    from esgf_fix_tool.ruleset import RuleSet
+    rules=RuleSet.load(Path(__file__).parents[1]/'src/esgf_fix_tool/rules/post_apply.yaml')
     findings=[Finding(3,'[CMIP7] [COORD008] Coordinate bounds',
                       "It is required for 'lat' to have a 'bounds' attribute according to its coordinate definition.",'dataset','file.nc')]
     result=classify(QAReport(Path('s'),{},findings),rules)

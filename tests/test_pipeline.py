@@ -9,7 +9,7 @@ from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Decision, Outcome, classify
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 from esgf_fix_tool.seed import template_to_regex
 
 HISTORY = ('[Appendix A] Attribute "history" should not be present in non-coordinate data (D) variable "tas". '

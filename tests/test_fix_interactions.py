@@ -8,7 +8,7 @@ import pytest
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.plan import FixPlan, Step
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 
 def apply(path, tmp, steps):
@@ -156,7 +156,7 @@ def test_recursive_manifest_is_rejected(tmp_path):
 
 def test_basin_trigger_rules_are_together_and_call_one_method():
     root = Path(__file__).resolve().parents[1]
-    rules = RuleSet.load(root/'rules/basin_coordinates.yaml')
+    rules = RuleSet.load(root/'src/esgf_fix_tool/rules/basin_coordinates.yaml')
     shared = [r for r in rules.rules if r.id in ('C032','C078','C096','C101a')]
     assert len(shared) == 4
     assert {r.fix for r in shared} == {'fix_basin_sector'}

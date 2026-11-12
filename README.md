@@ -6,7 +6,7 @@ Monthly tclm series now use [the per-file numerical climatology reconstruction](
 (C106, shared with C065/C066). Regenerate plans before application.
 
 Latest maintenance: [shared basin recipe, text-label deletion, tossq and thematic catalogues](docs/fix-interactions.md).
-`rules/post_apply.yaml` is now a compatibility manifest. Rules themselves live in
+`src/esgf_fix_tool/rules/post_apply.yaml` is now a compatibility manifest. Rules themselves live in
 the thematic YAML files; IDs and the `plan`/`apply` commands are preserved.
 
 Latest approved corrections: [normalized lev/bounds, four ice passages, micron radii,
@@ -18,7 +18,7 @@ C101 converts only the 2-D `basin_ti-u-hxy-u` mask to int32 with the approved
 separately approved region labels in sector.
 Regenerate plans. See [the latest reviewed structures and grouped deletions](docs/reviewed-structures-20261109.md).
 
-Follow-up to the 2026-11-06 QA: load `rules/post_apply.yaml` first and regenerate
+Follow-up to the 2026-11-06 QA: load `src/esgf_fix_tool/rules/post_apply.yaml` first and regenerate
 the plan. See [changes, review cases and the complete TGCC command](docs/post-apply-20261106.md).
 
 Fix CMIP7 netCDF files from an **esgqa report** (`qa_result_*.json`) and a set of **rules**.
@@ -27,13 +27,13 @@ Part of the IPSL CMIP7 publication pipeline (QA ↔ FIX loop). Design: [ARCHITEC
 ```bash
 uv sync
 # what does this report need? (exit code = decision: 0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)
-uv run esgf-fix-tool classify qa_result_XXX.json -r rules/post_apply.yaml -r rules/variable_attributes.yaml -r rules/standard_name_modifiers.yaml -r rules/units_and_standard_names.yaml -r rules/vertical_coordinate_names.yaml -r rules/required_coordinates.yaml -r rules/coordinate_metadata.yaml -r rules/dimension_order.yaml -r rules/coordinate_values_bounds.yaml -r rules/horizontal_coordinates.yaml -r rules/surface_and_hybrid.yaml -r rules/qa_metadata.yaml -r rules/grid_labels.yaml -r rules/catalogue_fallbacks.yaml
+uv run esgf-fix-tool classify qa_result_XXX.json -r src/esgf_fix_tool/rules/post_apply.yaml -r src/esgf_fix_tool/rules/variable_attributes.yaml -r src/esgf_fix_tool/rules/standard_name_modifiers.yaml -r src/esgf_fix_tool/rules/units_and_standard_names.yaml -r src/esgf_fix_tool/rules/vertical_coordinate_names.yaml -r src/esgf_fix_tool/rules/required_coordinates.yaml -r src/esgf_fix_tool/rules/coordinate_metadata.yaml -r src/esgf_fix_tool/rules/dimension_order.yaml -r src/esgf_fix_tool/rules/coordinate_values_bounds.yaml -r src/esgf_fix_tool/rules/horizontal_coordinates.yaml -r src/esgf_fix_tool/rules/surface_and_hybrid.yaml -r src/esgf_fix_tool/rules/qa_metadata.yaml -r src/esgf_fix_tool/rules/grid_labels.yaml -r src/esgf_fix_tool/rules/catalogue_fallbacks.yaml
 # the fixes it would apply, per file
 uv run esgf-fix-tool plan qa_result_XXX.json -o fixplan.json
 # apply them: direct metadata updates, or one combined structural rewrite per file
 uv run esgf-fix-tool apply fixplan.json --fixlog fixlog.jsonl [--dry-run]
 ```
-`plan` loads every YAML catalogue in the project's `rules/` by default, with
+`plan` loads every YAML catalogue in the project's `src/esgf_fix_tool/rules/` by default, with
 `post_apply` first and historical fallbacks last. Only rules whose action is `fix` and
 whose method is implemented produce steps; `review` and ignored findings stay out.
 Use the full report, not `.cluster.json`. Planning never opens the NetCDF files.
@@ -46,40 +46,40 @@ uv run esgf-fix-tool plan qa_result_XXX.json --exclude-rule C103c -o fixplan.oth
 ```
 
 `--only-rule ID` remains supported. Exclusions take precedence over inclusions;
-unknown IDs are rejected. Existing `-r rules/catalogue.yaml` commands still work:
+unknown IDs are rejected. Existing `-r src/esgf_fix_tool/rules/catalogue.yaml` commands still work:
 explicit catalogue paths replace the defaults and retain their supplied order.
 If paths and IDs are combined, the IDs select within those catalogues.
 
 Rules:
-- `rules/basin_coordinates.yaml`: C032/C078/C096/C101a share `fix_basin_sector`;
+- `src/esgf_fix_tool/rules/basin_coordinates.yaml`: C032/C078/C096/C101a share `fix_basin_sector`;
   keep basin values, move region semantics to sector and describe basin as units=1 indices.
   C101 is the independent 2-D mask correction.
-- `rules/variable_attributes.yaml`: C001/C002/C002a/C112, variable attributes and comments.
+- `src/esgf_fix_tool/rules/variable_attributes.yaml`: C001/C002/C002a/C112, variable attributes and comments.
   C003 (calendar) is in coordinate_metadata.yaml. The default manifest sets their priority.
-- `rules/standard_name_modifiers.yaml`: C004–C006, the three investigated descriptive `standard_name` values.
+- `src/esgf_fix_tool/rules/standard_name_modifiers.yaml`: C004–C006, the three investigated descriptive `standard_name` values.
   Load before the seed, or alone to apply only this correction (example below).
-- `rules/units_and_standard_names.yaml`: C007–C017, the reviewed units and invalid-name cases.
+- `src/esgf_fix_tool/rules/units_and_standard_names.yaml`: C007–C017, the reviewed units and invalid-name cases.
   C014 now fixes atmospheric lev:standard_name=x using the mapping confirmed by the user on 2026-11-05.
-- `rules/vertical_coordinate_names.yaml`: C018–C020, the three missing-generic-lev messages.
-- `rules/required_coordinates.yaml`: C021–C035, missing coordinates with explicit fix/review decisions.
-- `rules/coordinate_metadata.yaml`: C036–C039, the four reviewed COORD003 attribute messages.
-- `rules/dimension_order.yaml`: C040–C054, reviewed COORD002 permutations, renames and singleton removal;
+- `src/esgf_fix_tool/rules/vertical_coordinate_names.yaml`: C018–C020, the three missing-generic-lev messages.
+- `src/esgf_fix_tool/rules/required_coordinates.yaml`: C021–C035, missing coordinates with explicit fix/review decisions.
+- `src/esgf_fix_tool/rules/coordinate_metadata.yaml`: C036–C039, the four reviewed COORD003 attribute messages.
+- `src/esgf_fix_tool/rules/dimension_order.yaml`: C040–C054, reviewed COORD002 permutations, renames and singleton removal;
   C051 remains in review. C050/C052/C053 use the newly approved definitions; C054 removes singleton x from msfty.
-- `rules/coordinate_values_bounds.yaml`: C055–C068, reviewed COORD007/008/009 values and bounds;
+- `src/esgf_fix_tool/rules/coordinate_values_bounds.yaml`: C055–C068, reviewed COORD007/008/009 values and bounds;
   DR histogram centers/edges and the five IPSL ice thickness classes are approved fixes.
-- `rules/horizontal_coordinates.yaml`: C069–C072, unnecessary horizontal references and curvilinear
+- `src/esgf_fix_tool/rules/horizontal_coordinates.yaml`: C069–C072, unnecessary horizontal references and curvilinear
   auxiliary names; C070 now converts the eight reviewed rectilinear profiles and applies the approved terminal latitude.
-- `rules/surface_and_hybrid.yaml`: C073 removes only categorical `seasurface:axis="Z"` per the user's
+- `src/esgf_fix_tool/rules/surface_and_hybrid.yaml`: C073 removes only categorical `seasurface:axis="Z"` per the user's
   updated DR decision; load before the seed's older waivers. C074 records the two hybrid COORD012
   variants and uses the bundled IPSL reference to align ap/b with lev. Science arrays stay unchanged.
-- `rules/qa_metadata.yaml`: C075–C088, reviewed CF and CMIP7 recommendations.
+- `src/esgf_fix_tool/rules/qa_metadata.yaml`: C075–C088, reviewed CF and CMIP7 recommendations.
   C076 now adds the user-approved temperature:on_scale for tossq.
   It also holds C099/C100/C105/C106/C108a for text coordinates and related checks.
   See [the report variants and TGCC commands](docs/qa-metadata.md).
-- `rules/grid_labels.yaml`: C089–C094, reviewed region and output-grid recommendations.
+- `src/esgf_fix_tool/rules/grid_labels.yaml`: C089–C094, reviewed region and output-grid recommendations.
   See [variants, DRS rename suggestions, and TGCC commands](docs/grid-labels.md).
-- `rules/catalogue_fallbacks.yaml`: manifest for the historical triage, split by theme under
-  `rules/fallbacks/` and loaded last. These retain the original S IDs and decisions;
+- `src/esgf_fix_tool/rules/catalogue_fallbacks.yaml`: manifest for the historical triage, split by theme under
+  `src/esgf_fix_tool/rules/fallbacks/` and loaded last. These retain the original S IDs and decisions;
   `action: fix` with `fix: null` means `fix_missing`, not an implemented recipe.
 
 Adding a fix: write a function in `src/esgf_fix_tool/fixes/`, decorate it with `@fix("name")`,
@@ -144,7 +144,7 @@ report="/path/to/qa_result_20261103-1557_89a5a6651ffe774d3afdcb2b44b22dde.json"
 source_root="/ccc/work/cont003/gencmip7/p86caub/IGCM_OUT/ESMCO2/PROD/esm-piControl-spinup/CM6-ESMCO2-FT-esm-pi-s.01"
 staging_root="/path/to/COPY/CM6-ESMCO2-FT-esm-pi-s.01"
 
-uv run esgf-fix-tool plan "$report" -r rules/standard_name_modifiers.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/standard_name_modifiers.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.standard-name.json
 uv run esgf-fix-tool apply fixplan.standard-name.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.standard-name.dry-run.jsonl
@@ -165,11 +165,11 @@ esgf-toolbox env PYTHONPATH="$PWD/src" python -m esgf_fix_tool.cli.main --help
 ```
 
 Use that prefix instead of `uv run esgf-fix-tool` for `plan` and `apply`. For the complete rule set,
-add `-r rules/standard_name_modifiers.yaml` before `-r rules/catalogue_fallbacks.yaml`.
+add `-r src/esgf_fix_tool/rules/standard_name_modifiers.yaml` before `-r src/esgf_fix_tool/rules/catalogue_fallbacks.yaml`.
 
 ## Test only variable history removal
 
-This fix is already implemented by **C001** in `rules/variable_attributes.yaml`, calling
+This fix is already implemented by **C001** in `src/esgf_fix_tool/rules/variable_attributes.yaml`, calling
 `drop_var_attr(ds, var, attr="history")`. It only addresses `ds.variables[var]`, never global attributes.
 In the full 2026-11-03 report, the 351 distinct messages differ only in variable name: they represent
 665 findings in 584 files and all need the same correction. Each finding also occurs in a failed
@@ -179,7 +179,7 @@ Use `plan --only-rule C001` to exclude other fixes from this test. With `report`
 `staging_root` defined as above:
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/variable_attributes.yaml --only-rule C001 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/variable_attributes.yaml --only-rule C001 \
   --map-path "$source_root=$staging_root" -o fixplan.history.json
 uv run esgf-fix-tool apply fixplan.history.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.history.dry-run.jsonl
@@ -198,7 +198,7 @@ values), leave other variables' history alone, and check raw data, compression a
 
 ## Test units and invalid standard names
 
-Load `rules/units_and_standard_names.yaml` alone to test these three diagnostic families.
+Load `src/esgf_fix_tool/rules/units_and_standard_names.yaml` alone to test these three diagnostic families.
 The full 2026-11-03 report contains 11 exact messages / 260 fixable findings / 98 files. C014 now
 replaces atmospheric `lev:standard_name="x"` with `atmosphere_hybrid_sigma_pressure_coordinate`
 following the user confirmation of 2026-11-05. Suggestions printed by the checker are never applied automatically.
@@ -228,7 +228,7 @@ such as dropping all standard_names starting with `number` or `Pressure` are not
 With `report`, `source_root` and `staging_root` defined as above:
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/units_and_standard_names.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/units_and_standard_names.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.units-standard-names.json
 uv run esgf-fix-tool apply fixplan.units-standard-names.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.units-standard-names.dry-run.jsonl
@@ -287,13 +287,13 @@ With the same `report`, `source_root`, and `staging_root` variables as above:
 
 ```bash
 # Only the first diagnostic family: 61 steps / 61 files.
-uv run esgf-fix-tool plan "$report" -r rules/vertical_coordinate_names.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/vertical_coordinate_names.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.lev.json
 # Only the second family: 91 steps / 91 files; the review cases stay out of the plan.
-uv run esgf-fix-tool plan "$report" -r rules/required_coordinates.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/required_coordinates.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.required.json
 # Only one variant: height scalars, 34 steps / 34 files.
-uv run esgf-fix-tool plan "$report" -r rules/required_coordinates.yaml --only-rule C028 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/required_coordinates.yaml --only-rule C028 \
   --map-path "$source_root=$staging_root" -o fixplan.height.json
 uv run esgf-fix-tool apply fixplan.lev.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.lev.dry-run.jsonl
@@ -326,7 +326,7 @@ Units are preserved without being a prerequisite, so a separate units fix does n
 No coefficient, formula, formula_terms, array value or variable name is added or changed.
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/units_and_standard_names.yaml --only-rule C014 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/units_and_standard_names.yaml --only-rule C014 \
   --map-path "$source_root=$staging_root" -o fixplan.C014.json
 uv run esgf-fix-tool apply fixplan.C014.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C014.dry-run.jsonl
@@ -369,12 +369,12 @@ with `report`, `source_root` and `staging_root` defined as above:
 
 ```bash
 # One real permutation only: 1 file.
-uv run esgf-fix-tool plan "$report" -r rules/dimension_order.yaml --only-rule C040 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/dimension_order.yaml --only-rule C040 \
   --map-path "$source_root=$staging_root" -o fixplan.C040.json
 # All fixable order cases: 88 steps / 88 files; metadata alone gives 8 steps / 6 files.
-uv run esgf-fix-tool plan "$report" -r rules/dimension_order.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/dimension_order.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.order.json
-uv run esgf-fix-tool plan "$report" -r rules/coordinate_metadata.yaml \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/coordinate_metadata.yaml \
   --map-path "$source_root=$staging_root" -o fixplan.metadata.json
 uv run esgf-fix-tool apply fixplan.C040.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C040.dry-run.jsonl
@@ -405,7 +405,7 @@ See the [NCO manual](https://nco.sourceforge.net/nco.html) for dimension permuta
 
 ## Test coordinate values and bounds (COORD007/008/009)
 
-Load `rules/coordinate_values_bounds.yaml` before the seed, or alone to test this batch.
+Load `src/esgf_fix_tool/rules/coordinate_values_bounds.yaml` before the seed, or alone to test this batch.
 All **3,430 findings / 28 exact messages / 584 files** were reconciled with failed individual
 controls (`value[0] < value[1]`, priority 3) in QA_results_v3. The plan has **2,676 steps / 584 files**
 after deduplicating operations on shared dimensions and the two climatology diagnostics.
@@ -427,7 +427,7 @@ after deduplicating operations on shared dimensions and the two climatology diag
 With the report and path variables defined above, for one rule:
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/coordinate_values_bounds.yaml --only-rule C059 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/coordinate_values_bounds.yaml --only-rule C059 \
   --map-path "$source_root=$staging_root" -o fixplan.C059.json
 uv run esgf-fix-tool apply fixplan.C059.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C059.dry-run.jsonl
@@ -473,7 +473,7 @@ It reuses an existing size-two `bnds`, or renames the sole compatible legacy dim
 place to avoid a subsequent merge. The size-four ocean vertex dimension stays intact.
 
 ```bash
-fix_tool plan "$report" -r rules/coordinate_values_bounds.yaml --only-rule C063 \
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/coordinate_values_bounds.yaml --only-rule C063 \
   --map-path "$source_root=$copie" -o fixplan.iceband.json
 fix_tool apply fixplan.iceband.json --only-under "$copie" --fixlog fixlog.iceband.jsonl
 ```
@@ -529,7 +529,7 @@ and squeezed losslessly. No latitude bounds, grid_label change or regridding is 
 See [profile guards and testing](docs/basin-profile.md). Use --only-rule C070 to test this error alone.
 
 ```bash
-uv run esgf-fix-tool plan "$report" -r rules/horizontal_coordinates.yaml --only-rule C071 \
+uv run esgf-fix-tool plan "$report" -r src/esgf_fix_tool/rules/horizontal_coordinates.yaml --only-rule C071 \
   --map-path "$source_root=$staging_root" -o fixplan.C071.json
 uv run esgf-fix-tool apply fixplan.C071.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C071.dry-run.jsonl
@@ -555,7 +555,7 @@ the currently published DR still contains axis=Z, so an older DR/checker can con
 fix_tool() {
   esgf-toolbox env PYTHONPATH="$PWD/src" python -m esgf_fix_tool.cli.main "$@"
 }
-fix_tool plan "$report" -r rules/surface_and_hybrid.yaml --only-rule C073 \
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/surface_and_hybrid.yaml --only-rule C073 \
   --map-path "$source_root=$staging_root" -o fixplan.C073.json
 fix_tool apply fixplan.C073.json --only-under "$staging_root" \
   --dry-run --fixlog fixlog.C073.dry-run.jsonl

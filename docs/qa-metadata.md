@@ -36,7 +36,7 @@ d'attributs et des renommages de dimensions. Sur des copies indépendantes, elle
 directement si le même plan ne contient pas de transformation structurelle pour le fichier.
 
 ```bash
-fix_tool plan "$report" -r rules/qa_metadata.yaml \
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/qa_metadata.yaml \
   --map-path "$source_root=$copie" -o fixplan.qa-metadata.json
 
 fix_tool apply fixplan.qa-metadata.json --only-under "$copie" \
@@ -44,4 +44,4 @@ fix_tool apply fixplan.qa-metadata.json --only-under "$copie" \
 ```
 
 Ajouter `--only-rule C079` à `plan` pour isoler une règle. Pour un plan complet, charger
-`-r rules/qa_metadata.yaml` avant le catalogue `catalogue_fallbacks.yaml`.
+`-r src/esgf_fix_tool/rules/qa_metadata.yaml` avant le catalogue `catalogue_fallbacks.yaml`.

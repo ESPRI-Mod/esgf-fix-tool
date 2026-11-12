@@ -229,12 +229,12 @@ def test_changed_comment_content_is_not_silently_overwritten(tmp_path,brand):
 
 def test_actual_report_classifies_all_approved_variants_and_keeps_latitude_review():
     from esgf_fix_tool.report import QAReport
-    from esgf_fix_tool.rules import RuleSet
+    from esgf_fix_tool.ruleset import RuleSet
     from esgf_fix_tool.classify import classify, Outcome
     root=Path('/Users/glipsl/Desktop/QA_results_v3_fixed')
     if not root.is_dir():pytest.skip('Local QA fixture is unavailable')
     report=QAReport.load(next(p for p in root.glob('qa_result_*.json') if '.cluster.' not in p.name))
-    c=classify(report,RuleSet.load(Path(__file__).parents[1]/'rules/post_apply.yaml'))
+    c=classify(report,RuleSet.load(Path(__file__).parents[1]/'src/esgf_fix_tool/rules/post_apply.yaml'))
     counts={'C102':62,'C103a':2,'C103b':56,'C103c':1,'C105':3,'C105a':1,'C112':5}
     for rid,count in counts.items():
         found=[item for item in c.items if item.match and item.match.rule.id==rid]
