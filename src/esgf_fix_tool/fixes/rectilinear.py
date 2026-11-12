@@ -1,15 +1,15 @@
 """Reviewed basin profiles: squeeze x=1, expose lat(lat), correct only the approved endpoint."""
 
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 import netCDF4
 import numpy as np
 
-from . import fix
 from ..data_integrity import data_blocks
-from .coordinates import _main_variable, _replace_references, REFERENCE_ATTRS
+from . import fix
+from .coordinates import REFERENCE_ATTRS, _main_variable, _replace_references
 from .horizontal import _specs
 from .layouts import _copy_attrs, _creation_options, _raw, _same_attrs, _transform
 

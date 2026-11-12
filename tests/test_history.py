@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -13,10 +12,10 @@ from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.fixes.attributes import drop_var_attr
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
-RULES = ROOT / "rules/variable_attributes.yaml"
+RULES = ROOT / "src/esgf_fix_tool/rules/variable_attributes.yaml"
 
 
 def report(path, variables):

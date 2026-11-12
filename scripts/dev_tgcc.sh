@@ -7,12 +7,12 @@
 # Override any variable before sourcing, e.g.  IMG=my-toolbox source ~/esgf-fix-tool/scripts/dev_tgcc.sh
 
 : "${IMG:=et}"                                           # your esgf-toolbox image: `pcocc-rs image list`
-: "${EFT_HOME:=$HOME/esgf-fix-tool}"                     # where `rsync src rules scripts <tgcc>:esgf-fix-tool/` puts the code
+: "${EFT_HOME:=$HOME/esgf-fix-tool}"                     # where `rsync src scripts <tgcc>:esgf-fix-tool/` puts the code
 : "${EFT_WORK:=$CCCSCRATCHDIR/eft_dev}"                  # YOUR work area
 # reference run: the pilot on CM6-ESMCO2-FT-esm-pi-s.01 (simulation of the 2026-10-29 Excel), read-only
 : "${EFT_REF:=/ccc/scratch/cont003/gencmip6/troussel/cmip7_pilot/CM6-ESMCO2-FT-esm-pi-s.01}"
 : "${EFT_QA_TESTS:=-t wcrp_cmip7:1.0 -t cf:1.11}"
-EFT_RULES="-r $EFT_HOME/rules/variable_attributes.yaml -r $EFT_HOME/rules/catalogue_fallbacks.yaml"
+EFT_RULES="-r $EFT_HOME/src/esgf_fix_tool/rules/variable_attributes.yaml -r $EFT_HOME/src/esgf_fix_tool/rules/catalogue_fallbacks.yaml"
 export IMG EFT_HOME EFT_WORK EFT_REF EFT_RULES
 
 # esgf-fix-tool (dev copy) inside the toolbox image

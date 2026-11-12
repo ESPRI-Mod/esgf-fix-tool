@@ -68,7 +68,7 @@ suppression ou une restructuration. L'outil conserve les autres variables.
 ## Utilisation
 
 Régénérer le plan avec le JSON complet du QA (pas le cluster) et les mêmes
-catalogues, en gardant rules/post_apply.yaml en premier. La procédure complète
+catalogues, en gardant src/esgf_fix_tool/rules/post_apply.yaml en premier. La procédure complète
 reste dans [post-apply-20261106.md](post-apply-20261106.md).
 
 Pour isoler un test, utiliser --only-rule C060, C050, C074a, C022, C025 ou C032

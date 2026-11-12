@@ -1,18 +1,17 @@
 """Observable I/O guarantees: zero file copy for metadata, one stream for all structural fixes."""
 import json
 import os
-from pathlib import Path
 import shutil
 
 import netCDF4
 import numpy as np
 import pytest
+from test_dimension_order import make_histogram
+from test_rectilinear_profiles import make as make_profile
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.batch_write import Batch
-from esgf_fix_tool.plan import FixPlan,Step
-from test_dimension_order import make_histogram
-from test_rectilinear_profiles import make as make_profile
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def plan(path,steps):return FixPlan('test','report',{str(path):steps})

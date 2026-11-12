@@ -3,7 +3,7 @@
 Les variantes ont été recoupées avec les rapports individuels de QA_results_v3_fixed.
 Les recettes complètent les méthodes existantes et restent rejouables. Régénérer
 les plans. La sélection par défaut charge désormais tous les catalogues, avec
-rules/post_apply.yaml en premier.
+src/esgf_fix_tool/rules/post_apply.yaml en premier.
 
 | Recettes | Fichiers du rapport actuel | Correction |
 | --- | ---: | --- |

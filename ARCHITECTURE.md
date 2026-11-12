@@ -10,7 +10,7 @@ esgqa full report (qa_result_*.json)
   report.py ── QAReport: file → [Finding(severity, check, message)] + checker errors
         │
         ▼
-  rules.py ─── RuleSet (rules/*.yaml): (check regex, message regex with named groups) → action
+  ruleset.py ─ RuleSet (src/esgf_fix_tool/rules/*.yaml): (check regex, message regex with named groups) → action
         │
         ▼
   classify.py ─ every finding gets an Outcome; one Decision for the whole run
@@ -29,7 +29,7 @@ esgqa full report (qa_result_*.json)
 | | What | Notes |
 |---|---|---|
 | in | full esgqa report `qa_result_*.json` | `fail[severity][check][message][dataset] → [files]`, `error{}`, `info{}`. Not the `.cluster.json` |
-| in | `rules/*.yaml` | versioned in git; the rules version is recorded in every output |
+| in | `src/esgf_fix_tool/rules/*.yaml` | versioned in git; the rules version is recorded in every output |
 | in | previous report (optional) | to detect "no change" between two loop iterations |
 | out | classification (JSON + text summary, exit code) | drives the loop: `jobs/qa.sh` reads the exit code |
 | out | fix plan (JSON) | reviewable before applying |
@@ -114,24 +114,18 @@ output. Real application records `verification_scope`, `write_mode` and `rewrite
 Per-file completion means every step/check succeeded; recipes remain idempotent. File renames
 (DRS changes) continue to use the separate `renames.tsv` workflow.
 
-## Seeding the rules from the 2026-10-29 Excel triage (`seed-rules`)
+## Historical fallbacks
 
-One-off import, so the Excel is not needed at runtime:
-- template from the cluster report → regex (`{A}` → named group, the "(N occurrences, e.g. …)" suffix removed),
-- quoted names in check labels generalised (`Variable 'abs550aer' attribute 'comment'…` → one rule for all variables),
-- Excel action → rule action: Corriger → fix, Déjà corrigé → fix (`upstream_status: fixed_upstream`),
-  Ignorer → waive, Vérifier / À qualifier → review,
-- overrides: PATH001–003 → defer, FILE004* → other_step (repack), `[Continuity]` → upstream_only.
-
-Generated rules have `fix: null` until someone writes the function: they classify as `FIX_MISSING`, which shows how
-much of the report the tool can fix today.
+`rules/catalogue_fallbacks.yaml` and `rules/fallbacks/` were generated once from the 2026-10-29 Excel triage
+(the one-off `seed-rules` importer has since been removed; see git history). They are always loaded after the
+reviewed thematic catalogues. Rules with `fix: null` classify as `FIX_MISSING`.
 
 ## Layout
 
 ```
 src/esgf_fix_tool/
   report.py      read the esgqa report
-  rules.py       Rule, RuleSet, matching
+  ruleset.py     Rule, RuleSet, matching
   classify.py    Outcome, Decision, summary
   plan.py        FixPlan from classified findings
   apply.py       plan iteration and fix log
@@ -139,10 +133,9 @@ src/esgf_fix_tool/
   batch_write.py compose final schema and one source-to-output mapping
   execute.py     direct update / one rewrite / no-op execution
   fixes/         registry + fix functions (attributes.py, …)
-  seed.py        Excel + cluster report → rules YAML (optional dependency: openpyxl)
   cli/           Typer app: main.py (entry point) + one file per command
-                 (classify.py, plan.py, apply.py, seed_rules.py; common.py = shared options)
-rules/           rule files (versioned)
+                 (classify.py, plan.py, apply.py; common.py = shared options)
+  rules/         rule files (versioned, shipped in the package; fallbacks/ included by catalogue_fallbacks.yaml)
 tests/           small synthetic reports and netCDF files
 ```
 

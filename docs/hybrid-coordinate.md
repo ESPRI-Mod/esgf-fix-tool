@@ -48,7 +48,7 @@ recette. Régénérer le plan pour inclure les coefficients. C074 reconnaît aus
 diagnostics ultérieurs où `ap` ou `b` est encore lié à `klev` ou `klevp1`.
 
 ```bash
-fix_tool plan "$report" -r rules/surface_and_hybrid.yaml --only-rule C074 \
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/surface_and_hybrid.yaml --only-rule C074 \
   --map-path "$source_root=$copie" -o fixplan.C074.json
 fix_tool apply fixplan.C074.json --only-under "$copie" --fixlog fixlog.C074.jsonl
 ```

@@ -1,10 +1,10 @@
 """Bounded-memory raw-data check for identifier changes and auxiliary-coordinate additions."""
 
-from collections import Counter
 import hashlib
 import itertools
 import json
 import math
+from collections import Counter
 
 import numpy as np
 

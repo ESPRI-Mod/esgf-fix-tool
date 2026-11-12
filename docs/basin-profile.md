@@ -21,7 +21,7 @@ le format, la compression et les attributs globaux sont préservés. Les chunks 
 leur composante x singleton. Une autre taille de grille, une autre anomalie de latitude, des bornes
 latitudinales préexistantes non examinées ou d'autres tableaux spatiaux font refuser le fichier.
 
-Pour tester cette erreur seule : `plan -r rules/horizontal_coordinates.yaml --only-rule C070`,
+Pour tester cette erreur seule : `plan -r src/esgf_fix_tool/rules/horizontal_coordinates.yaml --only-rule C070`,
 puis `apply --dry-run`, avec les paramètres de chemins habituels. Retirer --dry-run pour conserver
 le changement. Aucun NCO supplémentaire, accès réseau ou nouvelle dépendance n'est requis : le
 Python netCDF4 existant du conteneur esgf-toolbox effectue et vérifie la conversion.

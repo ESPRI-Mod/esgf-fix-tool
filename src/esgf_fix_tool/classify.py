@@ -8,7 +8,7 @@ from enum import IntEnum, StrEnum
 
 from . import fixes
 from .report import Finding, QAReport
-from .rules import Action, RuleMatch, RuleSet
+from .ruleset import Action, RuleMatch, RuleSet
 
 BLOCKING_SEVERITY = 3
 

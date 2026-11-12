@@ -3,10 +3,10 @@
 The preview contains headers only, never a memory copy of a large scientific field.
 Numeric edits are limited to the small auxiliary arrays used by reviewed recipes.
 """
-import numpy as np
 import netCDF4
+import numpy as np
 
-from .fixes.layouts import _copy_attrs, _raw, _creation_options
+from .fixes.layouts import _copy_attrs, _creation_options, _raw
 
 MAX_AUX_BYTES = 8 * 1024 * 1024
 

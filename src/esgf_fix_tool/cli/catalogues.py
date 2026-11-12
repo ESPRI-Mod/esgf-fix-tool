@@ -4,8 +4,8 @@ from pathlib import Path
 
 import typer
 
-
-DEFAULT_RULES_DIR = Path(__file__).resolve().parents[3] / "rules"
+# Shipped inside the package, so installed copies (wheel, Docker image) find them too.
+DEFAULT_RULES_DIR = Path(__file__).resolve().parents[1] / "rules"
 PRIORITY = (
     "post_apply",
     "basin_coordinates",
@@ -25,21 +25,14 @@ PRIORITY = (
 
 
 def default_rule_paths():
-    """Use the source project's rules, independently of the invocation directory."""
-    root = DEFAULT_RULES_DIR if DEFAULT_RULES_DIR.is_dir() else Path.cwd() / "rules"
-    # scp overlays may leave retired files at the destination. Do not rediscover
-    # those duplicate catalogues after their entries moved to thematic files.
-    retired = {"cmip7_ipsl.yaml", "seed_20261029.yaml"}
+    """Use the packaged catalogues, independently of the invocation directory."""
+    root = DEFAULT_RULES_DIR
     paths = sorted(
-        p
-        for p in root.glob("*")
-        if p.is_file()
-        and p.suffix.lower() in (".yaml", ".yml")
-        and p.name not in retired
+        p for p in root.glob("*") if p.is_file() and p.suffix.lower() in (".yaml", ".yml")
     )
     if not paths:
         raise typer.BadParameter(
-            "Default catalogues not found; run from the project or provide -r PATH.",
+            f"Default catalogues not found in {root}; provide -r PATH.",
             param_hint="--rules",
         )
     rank = {name: i for i, name in enumerate(PRIORITY)}
@@ -48,7 +41,7 @@ def default_rule_paths():
         paths,
         key=lambda p: (
             2
-            if p.stem == "catalogue_fallbacks" or p.stem.startswith("seed_")
+            if p.stem == "catalogue_fallbacks"
             else 0
             if p.stem in rank
             else 1,

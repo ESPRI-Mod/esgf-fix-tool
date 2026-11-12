@@ -1,7 +1,7 @@
 """Reference binding must precede normalization and define its verification baseline."""
 
-from itertools import permutations
 import json
+from itertools import permutations
 
 import netCDF4
 import numpy as np

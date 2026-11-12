@@ -9,6 +9,7 @@ from typing import Annotated
 import typer
 
 from ..classify import BLOCKING_SEVERITY
+from .catalogues import default_rule_paths
 from .common import Final, OnlyRules, Previous, Report, Rules, classification
 
 NAME = "classify"
@@ -16,7 +17,7 @@ NAME = "classify"
 
 def run(
     report: Report,
-    rules: Rules,
+    rules: Rules = None,
     previous: Previous = None,
     final: Final = False,
     as_json: Annotated[bool, typer.Option("--json", help="JSON output")] = False,
@@ -25,7 +26,7 @@ def run(
 ):
     """Classify a report, print the decision, exit with its code
     (0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)."""
-    c = classification(report, rules, previous, final)
+    c = classification(report, rules or default_rule_paths(), previous, final)
     decision = c.decision()
     if as_json:
         print(json.dumps({

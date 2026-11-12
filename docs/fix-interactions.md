@@ -3,7 +3,7 @@
 ## Bassins : quatre diagnostics, une méthode
 
 C032, C078, C096 et C101a sont regroupés dans
-[basin_coordinates.yaml](../rules/basin_coordinates.yaml). Tous appellent
+[basin_coordinates.yaml](../src/esgf_fix_tool/rules/basin_coordinates.yaml). Tous appellent
 `fix_basin_sector` dans
 [reviewed_structures.py](../src/esgf_fix_tool/fixes/reviewed_structures.py).
 Ces identifiants restent distincts pour retrouver chaque diagnostic dans le QA

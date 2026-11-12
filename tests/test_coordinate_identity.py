@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -11,15 +10,19 @@ from typer.testing import CliRunner
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.cli.main import app
-from esgf_fix_tool.fixes import FixFunction, REGISTRY
-from esgf_fix_tool.fixes.coordinates import add_registry_scalar, add_text_coordinate_alias, rename_coordinate
+from esgf_fix_tool.fixes import REGISTRY, FixFunction
+from esgf_fix_tool.fixes.coordinates import (
+    add_registry_scalar,
+    add_text_coordinate_alias,
+    rename_coordinate,
+)
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
-VERTICAL = ROOT / 'rules/vertical_coordinate_names.yaml'
-REQUIRED = ROOT / 'rules/required_coordinates.yaml'
+VERTICAL = ROOT / 'src/esgf_fix_tool/rules/vertical_coordinate_names.yaml'
+REQUIRED = ROOT / 'src/esgf_fix_tool/rules/required_coordinates.yaml'
 CHECK = '[CMIP7] [COORD001] Coordinate identity and structure'
 
 
@@ -235,7 +238,7 @@ def test_same_depth_message_is_classified_by_dataset_and_can_make_separate_plans
 
 
 def test_existing_attribute_rules_still_work_after_coordinate_renames(tmp_path):
-    rules = RuleSet.load(ROOT / 'rules/units_and_standard_names.yaml')
+    rules = RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/units_and_standard_names.yaml')
     with netCDF4.Dataset(tmp_path / 'test.nc', 'w') as ds:
         ds.createDimension('solth', 2)
         soil = ds.createVariable('solth', 'f8', ('solth',))

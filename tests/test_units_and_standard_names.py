@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -9,14 +8,16 @@ import pytest
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.attributes import (
-    drop_region_units, fix_invalid_standard_names, fix_soil_depth_metadata,
+    drop_region_units,
+    fix_invalid_standard_names,
+    fix_soil_depth_metadata,
 )
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
-RULES = ROOT / 'rules/units_and_standard_names.yaml'
+RULES = ROOT / 'src/esgf_fix_tool/rules/units_and_standard_names.yaml'
 UNITS = '[CF-Conventions] §3.1 Units'
 NAMES = '[CF-Conventions] §3.3 Standard Name'
 
@@ -72,7 +73,7 @@ def test_units_and_names_pipeline(tmp_path, rule, check, message, var, old, unit
     report = tmp_path / 'qa_result_test.json'
     dataset = 'CMIP7.ATM.ta.tavg-al-hxy-u.mon' if rule == 'C014' else 'dataset'
     report.write_text(json.dumps({'fail': {'3': {check: {message: {dataset: [str(staged)]}}}}}))
-    classified = classify(QAReport.load(report), RuleSet.load(RULES, ROOT / 'rules/catalogue_fallbacks.yaml'))
+    classified = classify(QAReport.load(report), RuleSet.load(RULES, ROOT / 'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml'))
     assert classified.items[0].outcome == Outcome.FIX
     plan = FixPlan.from_classification(classified)
     assert [s.rule for s in plan.files[str(staged)]] == [rule]

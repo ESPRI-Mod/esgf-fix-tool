@@ -1,16 +1,15 @@
 import shutil
 from pathlib import Path
-import os
 
 import netCDF4
 import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.classify import classify, Outcome
+from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -124,7 +123,7 @@ def test_next_qa_with_canonical_names_still_matches_bounds_and_association_rules
         f"'{target}' bounds='{source}'; the required name is 'vertices_{role}'.",'dataset','file.nc')
     association=Finding(3,'[CMIP7] [COORD010] Auxiliary-coordinate associations',
         f"It is required for 'bigthetao' coordinates attribute not to include horizontal {role} coordinate '{target}', because {role} is not required by branded variable 'bigthetao_tavg-u-hm-sea'.",'dataset','file.nc')
-    rules=RuleSet.load(ROOT/'rules/coordinate_values_bounds.yaml',ROOT/'rules/horizontal_coordinates.yaml')
+    rules=RuleSet.load(ROOT/'src/esgf_fix_tool/rules/coordinate_values_bounds.yaml',ROOT/'src/esgf_fix_tool/rules/horizontal_coordinates.yaml')
     c=classify(QAReport(Path('synthetic'),{},[bounds,association]),rules)
     assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX]
     assert [i.match.rule.id for i in c.items]==['C067','C069']

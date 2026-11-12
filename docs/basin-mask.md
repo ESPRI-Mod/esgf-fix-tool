@@ -52,7 +52,7 @@ fix_tool habituelle utilisant le Python de esgf-toolbox :
 report="../QA_results_v3_fixed/qa_result_20261106-1802_df22cad6bd5d2d4ff9ce6c70bee55ce8.json"
 copie="/ccc/work/cont003/cmip7/levavasg/CM6-ESMCO2-FT-esm-pi-s.01"
 
-fix_tool plan "$report" -r rules/post_apply.yaml --only-rule C101 -o fixplan.C101.json
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/post_apply.yaml --only-rule C101 -o fixplan.C101.json
 fix_tool apply fixplan.C101.json --only-under "$copie" --fixlog fixlog.C101.jsonl
 ```
 

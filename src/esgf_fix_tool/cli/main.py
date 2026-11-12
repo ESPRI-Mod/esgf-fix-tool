@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from .. import __version__
-from . import apply, classify, plan, seed_rules
+from . import apply, classify, plan
 
 app = typer.Typer(help=__doc__, no_args_is_help=True, add_completion=False)
 
@@ -23,7 +23,7 @@ def main(version: Annotated[bool, typer.Option("--version", callback=_version, i
     pass
 
 
-for module in (classify, plan, apply, seed_rules):
+for module in (classify, plan, apply):
     app.command(module.NAME)(module.run)
 
 

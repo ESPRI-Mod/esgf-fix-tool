@@ -1,9 +1,9 @@
 """Optional structured progress, independent of terminal output and NetCDF operations."""
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-import time
-
+from types import MappingProxyType
 
 TITLES = {
     'rebuild_monthly_climatology': 'Reconstruction des douze moyennes climatologiques mensuelles',
@@ -77,7 +77,8 @@ class ProgressEvent:
 
 
 _callback = ContextVar('fix_progress_callback', default=None)
-_scope = ContextVar('fix_progress_scope', default={})
+# Read-only default: every scope sets a new dict, none is mutated in place.
+_scope = ContextVar('fix_progress_scope', default=MappingProxyType({}))
 
 
 @contextmanager

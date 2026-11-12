@@ -1,12 +1,11 @@
 import json
-from pathlib import Path
 
 import netCDF4
 import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.fixes import FixFunction, REGISTRY
+from esgf_fix_tool.fixes import REGISTRY, FixFunction
 from esgf_fix_tool.fixes import bounds as fixes
 from esgf_fix_tool.plan import FixPlan, Step
 

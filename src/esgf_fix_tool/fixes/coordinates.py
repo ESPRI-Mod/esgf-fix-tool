@@ -1,14 +1,13 @@
 """Reviewed COORD001 corrections; no physical-coordinate conversion or hybrid-formula inference."""
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
-import numpy as np
 import netCDF4
+import numpy as np
 
 from . import fix
-
 
 REFERENCE_ATTRS = (
     "coordinates",
@@ -153,9 +152,9 @@ def rename_auxiliary_dimension(
             f"Data variable {var} or auxiliary coordinate {coordinate} is absent"
         )
     data, coord = ds.variables[var], ds.variables[coordinate]
-    if source not in ds.dimensions and target in ds.dimensions:
-        if target in data.dimensions and coord.dimensions[0] == target:
-            return False
+    if (source not in ds.dimensions and target in ds.dimensions
+            and target in data.dimensions and coord.dimensions[0] == target):
+        return False
     if source not in ds.dimensions or target in ds.dimensions:
         raise ValueError(
             f"Cannot rename auxiliary dimension {source} -> {target}: missing source or collision"

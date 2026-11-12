@@ -8,8 +8,8 @@ from typing import Annotated
 import typer
 
 from ..plan import FixPlan
-from .common import Final, Previous, Report, classification
 from .catalogues import resolve_catalogues
+from .common import Final, Previous, Report, classification
 
 NAME = "plan"
 
@@ -42,7 +42,7 @@ def run(
         selected &= set(only_rule)
     selected -= set(exclude_rule or ())
     # Filter planned steps, never the matching catalogue: an excluded finding must
-    # not fall through to a broader seed rule and reappear under another identifier.
+    # not fall through to a broader fallback rule and reappear under another identifier.
     p.files = {path: [s for s in steps if s.rule in selected] for path, steps in p.files.items()}
     p.files = {path: steps for path, steps in p.files.items() if steps}
     if map_path:

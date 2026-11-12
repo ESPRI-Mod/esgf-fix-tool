@@ -16,11 +16,6 @@ dependencies = [
 [project.scripts]
 esgf-fix-tool = "esgf_fix_tool.cli.main:app"
 
-[project.optional-dependencies]
-seed = [
-    "openpyxl>=3.1.5",
-]
-
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
@@ -29,4 +24,10 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.2.0",
     "ruff>=0.17.3",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "C408",    # dict(key=value) is the house style for record-like dicts
+    "TRY004",  # ValueError on bad file/attribute content is a data error, not a caller's type error
 ]

@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 
 import netCDF4
@@ -11,7 +10,7 @@ from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.attributes import drop_descriptive_standard_name
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = [
@@ -45,7 +44,7 @@ def test_modifier_rule_pipeline_and_idempotence(tmp_path, rule_id, var, modifier
     report = tmp_path / "qa_result_test.json"
     report.write_text(json.dumps({"fail": {"3": {"[CF-Conventions] §3.3 Standard Name": {
         message: {"dataset": [str(staged)]}}}}}))
-    rules = RuleSet.load(ROOT / "rules/standard_name_modifiers.yaml", ROOT / "rules/catalogue_fallbacks.yaml")
+    rules = RuleSet.load(ROOT / "src/esgf_fix_tool/rules/standard_name_modifiers.yaml", ROOT / "src/esgf_fix_tool/rules/catalogue_fallbacks.yaml")
     classified = classify(QAReport.load(report), rules)
     assert classified.items[0].outcome is Outcome.FIX
     plan = FixPlan.from_classification(classified)
@@ -89,7 +88,7 @@ def test_changed_or_missing_standard_name_is_left_alone(tmp_path):
 
 def test_current_report_variable_name_is_used(tmp_path):
     # No dependency on a previous/next coordinate rename or its original name.
-    rules = RuleSet.load(ROOT / "rules/standard_name_modifiers.yaml")
+    rules = RuleSet.load(ROOT / "src/esgf_fix_tool/rules/standard_name_modifiers.yaml")
     from esgf_fix_tool.report import Finding
 
     finding = Finding(3, "[CF-Conventions] §3.3 Standard Name",
@@ -105,7 +104,7 @@ def test_current_report_variable_name_is_used(tmp_path):
 def test_other_modifiers_do_not_acquire_an_unverified_fix():
     from esgf_fix_tool.report import Finding
 
-    rules = RuleSet.load(ROOT / "rules/standard_name_modifiers.yaml", ROOT / "rules/catalogue_fallbacks.yaml")
+    rules = RuleSet.load(ROOT / "src/esgf_fix_tool/rules/standard_name_modifiers.yaml", ROOT / "src/esgf_fix_tool/rules/catalogue_fallbacks.yaml")
     finding = Finding(3, "[CF-Conventions] §3.3 Standard Name",
                       'Standard name modifier "uninvestigated" for variable other '
                       'is not a valid modifier according to CF Appendix C', "dataset", "file.nc")

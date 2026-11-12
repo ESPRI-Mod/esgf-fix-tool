@@ -2,18 +2,18 @@
 
 import json
 import os
-from pathlib import Path
 import re
 import tempfile
+from pathlib import Path
 
 import netCDF4
 import numpy as np
 
+from ..data_integrity import data_blocks
 from . import fix
 from .auxiliary import ORIGINAL_PREFIX, replace_auxiliary
 from .coordinates import _replace_references
 from .layouts import _python_rewrite, _raw, _verify_rewrite
-from ..data_integrity import data_blocks
 
 
 def _specs():
@@ -308,7 +308,7 @@ def _time_bounds(ds, name):
 @fix("detach_instantaneous_time_bounds", verify_data=True)
 def detach_instantaneous_time_bounds(ds) -> bool:
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
-    main = ds[getattr(ds, "variable_id")]
+    main = ds[ds.variable_id]
     if getattr(ds, "temporal_label", "") != "tpt" or not re.search(
         r"\btime:\s*point\b", getattr(main, "cell_methods", "")
     ):
@@ -529,7 +529,7 @@ def fix_climatology_reference(ds, _metadata_only=False) -> bool:
 
         return rebuild_monthly_climatology(ds)
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
-    main = ds[getattr(ds, "variable_id")]
+    main = ds[ds.variable_id]
     label = getattr(ds, "temporal_label", "")
     methods = getattr(main, "cell_methods", "")
     if (

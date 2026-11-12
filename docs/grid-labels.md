@@ -36,14 +36,14 @@ garde les chemins du plan et écrit une entrée `drs_rename` avec `source` et
 après les corrections sur la copie. Un journal de simulation signale les
 noms prévus avec `dry_run: true`.
 
-Après le QA du 6 novembre, C097 dans `rules/post_apply.yaml` réalise désormais
+Après le QA du 6 novembre, C097 dans `src/esgf_fix_tool/rules/post_apply.yaml` réalise désormais
 ce renommage sur les fichiers dont ATTR005 signale l'incohérence. Il refuse les
 collisions avant toute écriture et conserve l'inode et les tableaux. Le fixlog
 indique `final_file`. Le même plan résout ce nom final lors d'un second passage.
 Voir [la procédure complète](post-apply-20261106.md).
 
 ```bash
-fix_tool plan "$report" -r rules/grid_labels.yaml \
+fix_tool plan "$report" -r src/esgf_fix_tool/rules/grid_labels.yaml \
   --map-path "$source_root=$copie" -o fixplan.grid-labels.json
 
 fix_tool apply fixplan.grid-labels.json --only-under "$copie" \
@@ -51,5 +51,5 @@ fix_tool apply fixplan.grid-labels.json --only-under "$copie" \
 ```
 
 Pour tester uniquement les sorties du nord, ajouter `--only-rule C089` à
-`plan`. Pour un plan complet, ajouter `-r rules/grid_labels.yaml` avant
-`rules/catalogue_fallbacks.yaml`.
+`plan`. Pour un plan complet, ajouter `-r src/esgf_fix_tool/rules/grid_labels.yaml` avant
+`src/esgf_fix_tool/rules/catalogue_fallbacks.yaml`.
