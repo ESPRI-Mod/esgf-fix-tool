@@ -1,5 +1,7 @@
 # Normalisation et bornes approuvées le 9 novembre
 
+Mise à jour pour edt/evu : [conversion de 80 interfaces à 79 centres approuvée le 12 novembre](edt-evu-centering-20261112.md). Le précédent statut review de ces deux produits est remplacé par C103e/C104.
+
 Les variantes ont été recoupées avec les rapports individuels de QA_results_v3_fixed.
 Les recettes complètent les méthodes existantes et restent rejouables. Régénérer
 les plans. La sélection par défaut charge désormais tous les catalogues, avec

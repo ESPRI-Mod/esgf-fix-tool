@@ -1,3 +1,45 @@
+- id: C115
+  check: \[CF-Conventions\] §3\.3 Standard Name$
+  message: Attribute long_name or/and standard_name is highly recommended for variable fix_original_.*
+  action: fix
+  fix: clean_retired_metadata
+  params: {}
+  note: Retired temporary arrays are removed, not relabeled. Retained CF references must not use them.
+
+- id: C116
+  check: \[Consistency\] (?:Variable attributes|Variable attributes data types)$
+  message: "For variable '(?:ta|zg)' the following variable attributes (?:differ|have inconsistent data types): description$"
+  dataset: CMIP7\.ATM\.(?:ta|zg)\.tpt-al-hxy-u\.6hr\.
+  action: fix
+  fix: harmonize_main_description
+  params: {}
+  note: Preserve comments and restore matching descriptions with NC_CHAR storage. Air Temperature for ta, Geopotential height for zg.
+
+- id: C068b
+  check: \[Consistency\] Dimensions \(Inter-Dataset\)$
+  message: 'The following dimensions differ between datasets: axis_nbounds, bnds$'
+  action: fix
+  fix: normalize_bounds_dimension
+  params: {}
+  note: Rename fixed axis_nbounds=2 to bnds; merge if bnds already exists. The common final pass also covers axis_nbounds when another rule selected the file. Preserve four-vertex grid dimensions.
+
+- id: C068a
+  check: \[Consistency\] Dimensions$
+  message: 'The following dimensions differ: (?:axis_nbounds|axis_bounds), nvertex$'
+  action: fix
+  fix: normalize_bounds_dimension
+  params: {}
+  note: Merge only fixed size-two endpoint dimensions into bnds, then remove unused legacy dimensions. Four-vertex polygon dimensions stay intact.
+
+- id: C103f
+  check: \[Consistency\] Coordinates \(Inter-Dataset\)$
+  message: 'The following coordinates differ between datasets: basin, lat,.*'
+  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|sltbasin|sltovgyre|sltovovrt)\.
+  action: fix
+  fix: add_basin_latitude_bounds
+  params: {}
+  note: Apply the shared conventional bounds and unused-alias cleanup only on the eight reviewed basin profiles. Keep basin and sector; do not align unrelated grids.
+
 - id: C114
   check: \[Consistency\].*\(Inter-Dataset\)$
   message: .*

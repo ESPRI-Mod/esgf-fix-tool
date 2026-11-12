@@ -40,6 +40,8 @@ TENDENCIES = {
     "tntscpbl": "_due_to_stratiform_cloud_and_precipitation_and_boundary_layer_mixing",
 }
 OBSERVED_TEMPERATURE_METHODS = {
+    "time: maximum within days time: mean over days area: mean",
+    "time: minimum within days time: mean over days area: mean",
     "area: depth: time: mean where sea",
     "area: mean time: maximum",
     "area: mean time: maximum within days time: mean over days",
@@ -193,7 +195,7 @@ def _verify_basin_mask(source, output):
             v.dtype != np.dtype("i4")
             or not np.array_equal(actual_mask, mask)
             or not np.array_equal(actual, expected)
-            or "units" in v.ncattrs()
+            or getattr(v, "units", None) != "1"
             or np.asarray(getattr(v, "flag_values", [])).dtype != np.dtype("i4")
             or not np.array_equal(v.flag_values, np.arange(11, dtype="i4"))
             or getattr(v, "flag_meanings", "") != BASIN_MASK_MEANINGS
@@ -248,18 +250,17 @@ def convert_basin_region_mask(ds):
         changed = True
 
     # 2. Set typed flag values and the exact approved meaning for each integer.
-    # No units are added. The standard_name=region checker warning may persist.
+    # The user explicitly requires units=1 on this integer region mask.
     wanted = dict(
         standard_name="region",
         long_name="Region Selection Index",
         flag_values=np.arange(11, dtype="i4"),
         flag_meanings=BASIN_MASK_MEANINGS,
+        units="1",
     )
     if "units" in v.ncattrs():
         if v.units != "1":
             raise ValueError("Unexpected physical units on the basin region mask")
-        v.delncattr("units")
-        changed = True
     for a, value in wanted.items():
         current = v.getncattr(a) if a in v.ncattrs() else None
         if (
@@ -322,6 +323,7 @@ COORDINATE_LONG_NAMES = {
     "dbze": ("", "CloudSat Simulator Equivalent Radar Reflectivity Factor"),
     "scatratio": ("", "lidar backscattering ratio"),
     "lat": ("", "Latitude"),
+    "rlat": ("Latitude", "Grid Latitude"),
     "nav_lat": ("Latitude", "latitude"),
     "nav_lon": ("Longitude", "longitude"),
 }
@@ -333,7 +335,7 @@ def set_reviewed_coordinate_long_name(ds, coordinate, value):
     if observed is None or observed[1] != value:
         raise ValueError(f"Unreviewed long_name for {coordinate}: {value!r}")
     expected, wanted = observed
-    if coordinate in ("dbze", "scatratio", "lat"):
+    if coordinate in ("dbze", "scatratio", "lat", "rlat"):
         v = ds.variables.get(coordinate)
         if v is None or v.dimensions != (coordinate,):
             raise ValueError(f"Expected a one-dimensional coordinate {coordinate}")
@@ -344,6 +346,14 @@ def set_reviewed_coordinate_long_name(ds, coordinate, value):
         v = ds[names[0]]
         if v.ndim != 2 or getattr(v, "standard_name", "") != wanted:
             raise ValueError(f"Unexpected curvilinear coordinate for {wanted}")
+    if coordinate == "rlat" and (
+        getattr(ds, "variable_id", "") != "msfty"
+        or getattr(v, "standard_name", "") != "grid_latitude"
+        or getattr(v, "units", "") != "degrees"
+    ):
+        raise ValueError(
+            "Grid Latitude is approved for the reviewed msfty rlat coordinate"
+        )
     return set_var_attr_if_matches(ds, v.name, "long_name", expected, wanted)
 
 
@@ -550,8 +560,14 @@ def fix_registry_comment(ds, var, replace_expected=False):
 @fix("drop_unused_horizontal_bounds")
 def drop_unused_horizontal_bounds(ds, var):
     """Detach bounds only from an unreferenced auxiliary left by a reduction."""
-    if var not in ("nav_lat", "nav_lon") or var not in ds.variables:
+    if var not in ("nav_lat", "nav_lon", "bounds_nav_lat", "bounds_nav_lon"):
         raise ValueError("Expected an orphan original horizontal auxiliary")
+    if getattr(ds, "horizontal_label", "") == "hm":
+        return _delete_reduced_horizontal_arrays(ds)
+    # A structural reduction may already have removed this auxiliary entirely.
+    # Missing approved names are a no-op; invalid names still indicate bad input.
+    if var not in ds.variables:
+        return False
     v = ds[var]
     if "bounds" not in v.ncattrs():
         return False
@@ -568,3 +584,56 @@ def drop_unused_horizontal_bounds(ds, var):
         raise ValueError("Do not remove bounds from a dimension coordinate")
     v.delncattr("bounds")
     return True
+
+
+def _delete_reduced_horizontal_arrays(ds):
+    """Delete unused horizontal coordinates/vertices from reviewed reduced outputs."""
+    from .reviewed_structures import delete_variables
+
+    main = ds.variables.get(getattr(ds, "variable_id", ""))
+    if (
+        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
+        or main is None
+        or "-hm-" not in getattr(ds, "branded_variable", "")
+        or getattr(ds, "grid_label", "") not in ("g010", "g011", "g012", "g112")
+    ):
+        raise ValueError(
+            "Unreviewed horizontal reduction; no coordinate may be deleted"
+        )
+    if any(
+        len(ds.dimensions[d]) != 1
+        for d in main.dimensions
+        if d in ("x", "y", "lat", "lon", "latitude", "longitude")
+    ):
+        raise ValueError(
+            "A retained non-singleton horizontal field is still an active grid dependency"
+        )
+    names = {
+        "nav_lat",
+        "nav_lon",
+        "bounds_nav_lat",
+        "bounds_nav_lon",
+        "latitude",
+        "longitude",
+        "vertices_latitude",
+        "vertices_longitude",
+    } & ds.variables.keys()
+    for name, variable in ds.variables.items():
+        if name not in names and any(
+            len(ds.dimensions[d]) > 1 for d in variable.dimensions if d in ("x", "y")
+        ):
+            raise ValueError(f"Retained spatial variable {name} still needs its grid")
+    for name in names:
+        if any(d not in ("x", "y", "nvertex", "vertices") for d in ds[name].dimensions):
+            raise ValueError(
+                f"Unexpected dimensions on orphan horizontal auxiliary {name}"
+            )
+    # All remaining CF references are checked together before deleting any array.
+    changed = delete_variables(ds, names)
+    for dim in ("x", "y", "nvertex", "vertices"):
+        if dim in ds.dimensions and not any(
+            dim in v.dimensions for v in ds.variables.values()
+        ):
+            ds.deleteDimension(dim)
+            changed = True
+    return changed

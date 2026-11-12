@@ -16,11 +16,24 @@
   check: '\[CF-Conventions\] appendix_a'
   message: '\[Appendix A\] Attribute "history" should not be present in non-coordinate data \(D\) variable "(?P<var>[^"]+)"'
   action: fix
-  fix: drop_var_attr
-  params: {var: "{var}", attr: history}
+  fix: drop_variable_histories
+  params: {}
   severity: 3
   upstream_status: not_reported
-  note: keep history as a global attribute only (Excel S001)
+  note: Sweep every variable in the selected file, including ps and other unreported auxiliaries. Preserve global history and numeric arrays. Repeat the sweep after all recipes to cover new/replaced variables (Excel S001).
+
+- id: C002b
+  check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>ta|zg)' attribute 'comment' registry expected-term check$
+  message: No variable '(?:ta|zg)' attribute 'comment' is defined, so none of the registered values \['(?P<value>Air Temperature|Geopotential height)'\] is included\.$
+  dataset: CMIP7\.ATM\.(?:ta|zg)\.tpt-al-hxy-u\.6hr\.
+  action: fix
+  fix: set_var_attr_if_matches
+  params:
+    var: '{var}'
+    attr: comment
+    expected: ''
+    value: '{value}'
+  note: Add the exact user-approved missing comment. Keep an existing comment and preserve description if present.
 
 - id: C002
   check: '\[CMIP7\] \[ATTR004\] Variable ''(?P<var>[^'']+)'' attribute ''comment'' registry expected-term check'

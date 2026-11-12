@@ -169,8 +169,11 @@
   check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
   message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''olevel'', ''y'', ''x''\]; coordinate IDs \[''longitude'',
     ''latitude'', ''time''\] require \[''time'', ''y'', ''x''\] as their required order\.$'
-  action: review
-  note: hfx/hfy retain y=332 and x=362 in the target order. The extra olevel has 75 levels.
+  action: fix
+  fix: integrate_heat_transport
+  params: {}
+  dataset: CMIP7\.OCE\.(hfx|hfy)\.tavg-u-hxy-sea\.
+  note: Sum the 75 layer contributions in float64, ignoring masked layers and retaining fully masked columns. Keep original field attributes. Remove unused vertical auxiliaries in one verified rewrite.
 
 - id: C052
   check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$

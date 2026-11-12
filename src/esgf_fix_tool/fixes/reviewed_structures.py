@@ -267,7 +267,51 @@ def fix_basin_sector(ds):
     return changed
 
 
-@fix("fix_msfty_coordinates", verify_data=True)
+def _approved_rlat(values):
+    """Use the reviewed transport endpoint, including on former one-ULP outputs."""
+    from .rectilinear import OLD_END, NEW_END
+
+    values = np.asarray(values).copy()
+    delta = np.diff(values)
+    if (
+        values.shape == (332,)
+        and np.isfinite(values).all()
+        and np.all(delta[:-1] > 0)
+        and abs(float(values[-2]) - OLD_END) <= 2.0e-7
+        and values[-1] in (
+            values[-2],
+            np.nextafter(values[-2], np.asarray(np.inf, dtype=values.dtype)),
+            np.asarray(NEW_END, dtype=values.dtype),
+        )
+    ):
+        # Replace both the original duplicate and the old nextafter repair.
+        # No earlier position is changed or recomputed.
+        values[-1] = NEW_END
+        if not np.all(np.diff(values) > 0):
+            raise ValueError("The approved endpoint does not give a monotonic axis")
+        return values
+    if np.all(delta > 0) or np.all(delta < 0):
+        return values
+    raise ValueError("Only a duplicated terminal msfty latitude is approved for repair")
+
+
+def _verify_msfty_coordinates(source, output):
+    with netCDF4.Dataset(source) as src, netCDF4.Dataset(output) as dst:
+        name = next(n for n in ("rlat", "nav_lat", "latitude") if n in src.variables)
+        expected = _approved_rlat(finite(src[name]).reshape(332))
+        lat = dst["rlat"]
+        if lat.dimensions != ("rlat",) or not np.array_equal(finite(lat), expected):
+            raise ValueError(
+                "msfty latitude changed beyond the approved terminal adjustment"
+            )
+
+
+@fix(
+    "fix_msfty_coordinates",
+    verify_data=True,
+    data_targets=lambda p: {"rlat", "nav_lat", "latitude"},
+    verify_final=_verify_msfty_coordinates,
+)
 def fix_msfty_coordinates(ds):
     """Expose the approved meridional grid coordinate; do not alter any data slice."""
 
@@ -288,7 +332,12 @@ def fix_msfty_coordinates(ds):
     lat = ds.variables.get(name)
     if lat is None or lat.dimensions != (dim,) or lat.shape != (332,):
         raise ValueError("Expected the existing 332 meridional positions")
-    finite(lat)
+    if lat.dtype.kind != "f" or any(
+        a in lat.ncattrs() for a in ("scale_factor", "add_offset")
+    ):
+        raise ValueError("Expected an unpacked floating msfty latitude")
+    original_lat = finite(lat)
+    wanted_lat = _approved_rlat(original_lat)
 
     # Only discard longitude auxiliaries whose values are all zero.
     lons = [n for n in ("nav_lon", "longitude") if n in ds.variables]
@@ -315,10 +364,20 @@ def fix_msfty_coordinates(ds):
     if dim != "rlat":
         ds.renameDimension(dim, "rlat")
         changed = True
+    if not np.array_equal(original_lat, wanted_lat):
+        # The shared 89.36999 endpoint replaces the old one-ULP convention.
+        ds["rlat"][:] = wanted_lat
+        changed = True
     changed = (
         set_attrs(
             ds["rlat"],
-            dict(name="rlat", standard_name="grid_latitude", units="degrees", axis="Y"),
+            dict(
+                name="rlat",
+                standard_name="grid_latitude",
+                units="degrees",
+                axis="Y",
+                long_name="Grid Latitude",
+            ),
         )
         or changed
     )

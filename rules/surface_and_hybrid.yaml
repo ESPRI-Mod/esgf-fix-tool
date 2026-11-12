@@ -1,3 +1,28 @@
+- id: C074b
+  check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
+  message: "'lev_bnds' formula_terms=.*selected model-level entry 'alternate_hybrid_sigma_half'.*"
+  dataset: CMIP7\.ATM\.
+  action: fix
+  fix: fix_hybrid_coefficients
+  params: {coordinate: auto}
+  note: Optional-bounds alh definition. Bind the reviewed active coefficients, detach lev:bounds and remove unreferenced lev/ap/b bounds. Preserve al layer bounds.
+
+- id: C074c
+  check: \[Consistency\] Coordinates \(Inter-Dataset\)$
+  message: 'The following coordinates differ between datasets: ap,.*'
+  dataset: CMIP7\.ATM\.(?!(?:edt|evu)\.)
+  action: fix
+  fix: fix_hybrid_coefficients
+  params: {coordinate: auto}
+  note: Canonicalize only the approved hybrid reference structure. Do not erase wavelength or equalize coordinates of different scientific products.
+
+- id: C107a
+  check: \[CF-Conventions\] §4\.3 Vertical Coordinate$
+  message: '\[Appendix A\] Attribute "formula_terms" should not be present in non-coordinate data \(D\) variable "lev_bnds"\. This attribute may only appear in coordinate data \(C\)\.$'
+  dataset: CMIP7\.ATM\.
+  action: waive
+  note: User-confirmed exception. Retain lev_bnds formula_terms for the hybrid pressure bounds; no attribute removal.
+
 - id: C074a
   check: \[CF-Conventions\] §7\.1 Cell Boundaries$
   message: (?:\[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "(?:ap|b)"\..*|'(?:ap_bnds|b_bnds)'
@@ -7,7 +32,7 @@
   action: fix
   fix: fix_hybrid_coefficients
   params:
-    coordinate: alevel
+    coordinate: auto
   note: C074 follow-up. Verify the supplied reference, preserve coefficients, and remove ap/b bounds attributes. CF bounds
     formula terms belong on existing lev bounds. Do not normalize or create lev values.
 
@@ -24,40 +49,43 @@
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
   message: Coordinate 'alevel' could not be verified\..*Variable 'lev' has no standard_name,.*
   dataset: CMIP7\.ATM\.(edt|evu)\.
-  action: review
-  note: These two al products contain 80 interface levels. Confirm the physical staggering before declaring them to be model
-    centers or changing their arrays.
+  action: fix
+  fix: center_hybrid_interfaces
+  params: {}
+  note: LMDZ method confirmed on 2026-11-12. Average adjacent interfaces for edt/evu, 80 to 79 levels, and use the supplied 79-center coefficients/bounds. Preserve science metadata and compression; mask a pair if either interface is missing. One atomic rewrite with numerical verification.
 
 - id: C107
   check: \[CMIP7\] \[COORD004a\] Additional permitted coordinate metadata$
   message: Coordinate 'lev' defines optional attribute computed_standard_name='air_pressure'\. No expected value is currently
     specified in the coordinate vocabulary, so this value cannot be verified\.$
-  action: waive
-  note: Valid CF computed_standard_name for the hybrid pressure formula. The CV has no prescribed value. Preserve useful metadata.
+  action: fix
+  fix: drop_var_attr
+  params: {var: lev, attr: computed_standard_name}
+  note: Latest user decision removes this optional attribute; shared hybrid recipes no longer recreate it.
 
 - id: C108
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
-  message: '''b'' has units=''1'', while its coordinate definition does not prescribe units; it is recommended to verify the
+  message: '''(?P<var>b|b_bnds)'' has units=''1'', while its coordinate definition does not prescribe units; it is recommended to verify the
     extra attribute\.$'
-  action: waive
-  note: The multiplicative coefficient b is dimensionless. CF permits units=1. An absent CV prescription does not forbid this
-    attribute.
+  action: fix
+  fix: drop_var_attr
+  params: {var: '{var}', attr: units}
+  note: User-approved omission of optional units=1 on b and b_bnds. Shared hybrid recipes accept dimensionless terms without units.
 
 - id: C073a
   check: \[CMIP7\] \[COORD003\] Coordinate metadata$
   message: '''seasurface'' axis=''''; the required value is ''Z''\.$'
-  action: waive
-  note: C073 follow-up. The user confirmed that the CMIP7 DR should remove axis=Z for osurf. Do not reintroduce the vertical-coordinate
-    error.
+  action: fix
+  fix: set_osurf_axis
+  params: {}
+  note: Latest user decision on 2026-11-10 overrides the former removal strategy. Add axis=Z only.
 # User decisions on 2026-11-05. Load before the generated seed's older osurf waivers.
 
 - id: C073
   check: '\[CF-Conventions\] §4\.3 Vertical Coordinate$'
   message: '(?:seasurface: vertical coordinates not defining pressure must include a positive attribute that is either ''up'' or ''down''|§4\.3\.1 seasurface''s units must be defined for vertical coordinates, there is no default)$'
-  action: fix
-  fix: drop_osurf_axis
-  params: {}
-  note: User received the DR decision to remove axis=Z from categorical osurf (NetCDF seasurface). Preserve the label, arrays and other attributes; accepts old/canonical label independently of C057.
+  action: review
+  note: The latest decision retains axis=Z. Removing it would undo C073a; units/positive interpretation of this categorical label remains unresolved.
 
 - id: C074
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$

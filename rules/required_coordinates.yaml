@@ -46,13 +46,13 @@
   note: Rename variable and dimension; units, values, standard_name and dimension order are separate fixes.
 
 - id: C025
-  check: \[CMIP7\] \[COORD(?:001|002)\] (?:Coordinate identity and structure|Data-variable coordinate order)$
+  check: (?:\[CMIP7\] \[COORD(?:001|002)\] (?:Coordinate identity and structure|Data-variable coordinate order)|\[CF-Conventions\] §1\.2 Terminology)$
   message: (?:The required one\-dimensional coordinate 'rlat' \(coordinate ID 'gridlatitude'\) is absent, so its configured
     dependent coordinate checks could not be evaluated\.|'msfty' dimensions in netCDF/C order are \['time', 'basin', 'lev',
     'y'\]; coordinate IDs \['gridlatitude', 'olevel', 'basin', 'time'\] require \['time', 'basin', 'lev', 'rlat'\] as their
-    required order\.)$
+    required order\.|Coordinate variable "rlat" must be strictly monotonic)$
   action: fix
-  note: Use the existing 332 meridional values for rlat; drop only zero nav_lon; complete lev metadata.
+  note: Keep rlat and its grid_latitude/degrees metadata. Use the shared transport endpoint 89.36999, replacing a duplicate or the former nextafter repair. Drop only zero nav_lon and complete lev metadata. Other non-monotonic cases are refused.
   fix: fix_msfty_coordinates
   params: {}
   dataset: CMIP7\.OCE\.msfty\.

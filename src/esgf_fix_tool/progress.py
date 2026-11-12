@@ -6,6 +6,11 @@ import time
 
 
 TITLES = {
+    'drop_variable_histories': 'Suppression de history sur toutes les variables, auxiliaires compris',
+    'reorder_climatology_cell_methods': 'Ordre de cell_methods prescrit par la DR',
+    'drop_basin_latitude_bounds': 'Bornes latitude conventionnelles (ancien plan)',
+    'clean_retired_metadata': 'Suppression des variables et dimensions techniques inutilisées',
+    'harmonize_main_description': 'Description commune des fichiers ta/zg à six heures',
     'rebuild_monthly_climatology': 'Reconstruction des douze moyennes climatologiques mensuelles',
     'normalize_hybrid_coordinate': 'Normalisation de lev et de ses bornes avec P_REF=101325 Pa',
     'fix_ice_passage_sector': 'Labels des quatre passages de glace',
@@ -54,7 +59,11 @@ TITLES = {
     'normalize_bounds_dimension': 'Normalisation de la dimension bnds',
     'drop_unrequested_horizontal_reference': 'Retrait de référence horizontale superflue',
     'rename_horizontal_coordinate': 'Renommage de coordonnée horizontale',
-    'drop_osurf_axis': 'Retrait de axis=Z sur seasurface',
+    'drop_osurf_axis': 'Ajout de axis=Z sur seasurface (ancien plan)',
+    'set_osurf_axis': 'Ajout de axis=Z sur seasurface',
+    'integrate_heat_transport': 'Somme verticale des transports hfx/hfy',
+    'center_hybrid_interfaces': 'Moyenne verticale edt/evu : 80 interfaces vers 79 centres',
+    'add_basin_latitude_bounds': 'Bornes conventionnelles lat/rlat des neuf profils NEMO',
     'fix_hybrid_coordinate_metadata': 'Noms et attributs hybrides uniquement',
     'fix_hybrid_coefficients': 'Métadonnées hybrides et coefficients de référence',
     'restore_hybrid_vertical_coefficients': 'Ancienne reconstruction hybride désactivée',

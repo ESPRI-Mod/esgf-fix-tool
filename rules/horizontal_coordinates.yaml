@@ -1,13 +1,11 @@
 - id: C098
-  check: \[CF-Conventions\] §7\.1 Cell Boundaries$
-  message: \[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "(?P<var>nav_lat|nav_lon)"\.
-    This attribute may only appear in coordinate data \(C\)\.$
+  check: \[CF-Conventions\] (?:§7\.1 Cell Boundaries|§3\.3 Standard Name)$
+  message: '(?:\[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "|Attribute long_name or/and standard_name is highly recommended for variable )(?P<var>nav_lat|nav_lon|bounds_nav_lat|bounds_nav_lon)(?:"\. This attribute may only appear in coordinate data \(C\)\.)?$'
   action: fix
   fix: drop_unused_horizontal_bounds
   params:
     var: '{var}'
-  note: Detach a bounds reference only after confirming the old auxiliary is no longer attached to any field. Preserve all
-    arrays.
+  note: For approved hm outputs, remove unused horizontal coordinates and vertex arrays after checking every retained reference. For hyb, only detach an orphan bounds attribute. Never delete a grid needed by retained data.
 # Reviewed COORD010/011 cases from the failed individual QA_results_v3 controls. Load before seed.
 
 - id: C069

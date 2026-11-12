@@ -63,7 +63,7 @@ def test_equal_year_means_auxiliary_masks_bounds_and_replay(tmp_path,calendar,fm
         np.testing.assert_array_equal(ds['ap'][:],[1.,2.,3.])
         np.testing.assert_array_equal(ds['climatology_bnds'][:],np.column_stack((edges[:12],edges[-12:])))
         np.testing.assert_array_equal(ds['time'][:],(edges[60:72]+edges[61:73])/2)
-        assert ds['ps'].cell_methods == 'area: time: mean within years time: mean over years'
+        assert ds['ps'].cell_methods == 'area: mean time: mean within years time: mean over years'
         assert 'history' not in ds['pfull'].ncattrs()
         assert 'bounds' not in ds['time'].ncattrs()
     assert json.loads((tmp_path/'log').read_text())['rewrite_count'] == 1

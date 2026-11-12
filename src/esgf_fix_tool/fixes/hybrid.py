@@ -13,6 +13,10 @@ from .coordinates import _main_variable, _restore_coordinate_values, rename_coor
 
 STANDARD_NAME = "atmosphere_hybrid_sigma_pressure_coordinate"
 FORMULA = "p = ap + b*ps"
+BOUND_LONG_NAMES = {
+    "ap_bnds": "vertical coordinate formula term: ap(k+1/2)",
+    "b_bnds": "vertical coordinate formula term: b(k+1/2)",
+}
 
 
 def _coordinate(ds):
@@ -30,6 +34,31 @@ def _coordinate(ds):
     if v.dimensions != (name,) or name not in main.dimensions or v.dtype.kind != "f":
         raise ValueError("The hybrid coordinate must identify one main-field dimension")
     return name
+
+
+def _label(ds):
+    label = getattr(ds, "vertical_label", "")
+    if not label:
+        brand = getattr(ds, "branded_variable", "")
+        parts = brand.rsplit("_", 1)[-1].split("-")
+        if len(parts) == 4:
+            label = parts[1]
+    return label
+
+
+def _without_bounds(ds):
+    """An explicit CMIP7 label takes precedence over the numeric reference length."""
+    label = _label(ds)
+    if label in ("al", "alh"):
+        return label == "alh"
+    # Retain the reviewed interface behavior for legacy, unlabelled files whose
+    # complete coordinate vector is independently checked against the reference.
+    return ds[_coordinate(ds)].size == 80
+
+
+def _term_long_name(ds, term):
+    suffix = "" if _label(ds) == "al" else "(k)"
+    return f"vertical coordinate formula term: {term}{suffix}"
 
 
 def _attributes(ds, coordinate):
@@ -56,7 +85,7 @@ def _attributes(ds, coordinate):
     if getattr(ds["ps"], "units", "") != "Pa":
         raise ValueError("ps must already use Pa; no pressure conversion is performed")
     for n, units in [("ap", "Pa"), ("b", "1"), ("ap_bnds", "Pa"), ("b_bnds", "1")]:
-        if n in ds.variables and getattr(ds[n], "units", None) not in [None, units]:
+        if n in ds.variables and getattr(ds[n], "units", None) not in [None, "", units]:
             raise ValueError(
                 f"Unexpected existing units on {n}; no numeric conversion is performed"
             )
@@ -68,18 +97,18 @@ def _attributes(ds, coordinate):
             positive="down",
             formula=FORMULA,
             formula_terms="ap: ap b: b ps: ps",
-            computed_standard_name="air_pressure",
         ),
-        "ap": {"units": "Pa", "long_name": "vertical coordinate formula term: ap"},
-        "b": {"units": "1", "long_name": "vertical coordinate formula term: b"},
+        "ap": {"units": "Pa", "long_name": _term_long_name(ds, "ap")},
+        "b": {"long_name": _term_long_name(ds, "b")},
     }
     attrs[name]["long_name"] = "hybrid sigma pressure coordinate"
     # Prepare bounds attributes only for variables that already exist.
     # No numeric values or dimension lengths are inferred or rebuilt here.
     for n, units in [("ap_bnds", "Pa"), ("b_bnds", "1")]:
         if n in ds.variables:
-            attrs[n] = {"units": units}
-    if coordinate == "alevel":
+            attrs[n] = {"units": units} if n == "ap_bnds" else {}
+            attrs[n]["long_name"] = BOUND_LONG_NAMES[n]
+    if coordinate == "alevel" and not _without_bounds(ds):
         bound = getattr(ds[name], "bounds", None)
         if bound is None and "lev_bnds" in ds.variables:
             bound = "lev_bnds"
@@ -96,6 +125,122 @@ def _attributes(ds, coordinate):
                 formula=FORMULA, formula_terms="ap: ap_bnds b: b_bnds ps: ps"
             )
     return name, attrs
+
+
+HYBRID_METHODS = {
+    "center_hybrid_interfaces",
+    "fix_hybrid_coordinate_metadata",
+    "fix_hybrid_coefficients",
+    "normalize_hybrid_coordinate",
+}
+HYBRID_BACKUPS = {ORIGINAL_PREFIX + n for n in ("ap", "b", "ap_bnds", "b_bnds")}
+
+
+def is_hybrid_step(step):
+    """Recognize shared recipes and the existing attribute/standard-name variants."""
+    return (
+        step.fix in HYBRID_METHODS
+        or step.fix == "set_var_attr_if_matches"
+        and step.params.get("var") in {"lev", "ap", "b", "ap_bnds", "b_bnds"}
+        or step.fix == "fix_invalid_standard_names"
+        and step.params.get("var") == "lev"
+        or step.fix == "drop_var_attr"
+        and (
+            step.params.get("var") == "lev"
+            and step.params.get("attr") == "computed_standard_name"
+            or step.params.get("var") in {"b", "b_bnds"}
+            and step.params.get("attr") == "units"
+        )
+    )
+
+
+def _is_hybrid(ds):
+    return (
+        getattr(ds, "source_id", "") == "IPSL-CM6-ESMCO2"
+        and getattr(ds, "realm", "") in ("atmos", "aerosol")
+        and {"lev", "ap", "b"} <= ds.variables.keys()
+        and getattr(ds["lev"], "standard_name", "") == STANDARD_NAME
+    )
+
+
+def clean_hybrid_metadata(ds):
+    """Harmonize reviewed names and remove temporary/empty hybrid metadata.
+
+    This is a selected hybrid recipe's final invariant, not a global maintenance
+    operation. Preserve global attributes, numeric arrays and other metadata.
+    """
+    if not _is_hybrid(ds):
+        return False
+    from .reviewed_structures import set_attrs
+
+    changed = set_attrs(ds["lev"], {"long_name": "hybrid sigma pressure coordinate"})
+    for term in ("ap", "b"):
+        changed = (
+            set_attrs(ds[term], {"long_name": _term_long_name(ds, term)}) or changed
+        )
+    # Coefficient bounds are ancillary formula terms. Describe their interface
+    # position explicitly, including arrays created by a later hybrid recipe.
+    for name, long_name in BOUND_LONG_NAMES.items():
+        if name in ds.variables:
+            changed = set_attrs(ds[name], {"long_name": long_name}) or changed
+    for name, attrs in {
+        "lev": ("computed_standard_name",),
+        "b": ("units",),
+        "b_bnds": ("units",),
+    }.items():
+        if name in ds.variables:
+            for attr in attrs:
+                if attr in ds[name].ncattrs():
+                    if attr == "units" and ds[name].getncattr(attr) not in ("", "1"):
+                        raise ValueError(f"Unreviewed units on {name}")
+                    ds[name].delncattr(attr)
+                    changed = True
+    if _without_bounds(ds):
+        # Detach only approved links, then ensure no retained variable refers to
+        # the retired bounds before deleting them in the grouped output.
+        if "bounds" in ds["lev"].ncattrs():
+            if ds["lev"].bounds != "lev_bnds":
+                raise ValueError("Unexpected hybrid bounds reference")
+            ds["lev"].delncattr("bounds")
+            changed = True
+        for n in ("ap", "b"):
+            if "bounds" in ds[n].ncattrs():
+                ds[n].delncattr("bounds")
+                changed = True
+        from .reviewed_structures import delete_variables
+
+        changed = delete_variables(ds, {"lev_bnds", "ap_bnds", "b_bnds"}) or changed
+    for v in ds.variables.values():
+        for attr in v.ncattrs():
+            value = v.getncattr(attr)
+            if attr != "_FillValue" and isinstance(value, str) and not value.strip():
+                v.delncattr(attr)
+                changed = True
+    from .reviewed_structures import delete_variables
+
+    return delete_variables(ds, HYBRID_BACKUPS) or changed
+
+
+def verify_hybrid_cleanup(output):
+    with netCDF4.Dataset(output) as ds:
+        if not _is_hybrid(ds):
+            return
+        for name, long_name in BOUND_LONG_NAMES.items():
+            if name in ds.variables and getattr(ds[name], "long_name", None) != long_name:
+                raise ValueError(
+                    f"Required hybrid coefficient-bounds long_name is missing: {name}"
+                )
+        if HYBRID_BACKUPS & ds.variables.keys():
+            raise ValueError(
+                "Temporary hybrid coefficients remain after the complete fix sequence"
+            )
+        if any(
+            isinstance(v.getncattr(a), str) and not v.getncattr(a).strip()
+            for v in ds.variables.values()
+            for a in v.ncattrs()
+            if a != "_FillValue"
+        ):
+            raise ValueError("Empty variable attributes remain after hybrid correction")
 
 
 def _finish_metadata(source, output, coordinate):
@@ -151,7 +296,7 @@ def fix_hybrid_coordinate_metadata(ds, coordinate) -> bool:
         if "bounds" in ds[n].ncattrs():
             ds[n].delncattr("bounds")
             changed = True
-    return changed
+    return clean_hybrid_metadata(ds) or changed
 
 
 @lru_cache(maxsize=1)
@@ -177,11 +322,18 @@ def _coefficient_reference():
 
 
 def _reference_values(ds, coordinate):
+    coordinate = _resolved_coordinate(ds, coordinate)
     name = _coordinate(ds)
     lev = ds[name]
     size = lev.size
     if size != 79 and not (size == 80 and coordinate == "alevhalf"):
         raise ValueError("Unreviewed lev length for this hybrid coordinate")
+    if size == 80 and _label(ds) == "al":
+        raise ValueError(
+            "The bundled 80-point reference describes interfaces, not 80 layer centers. "
+            "Select C103e/C104 first for the approved edt/evu 80-to-79 interpolation. "
+            "Other 80-center cases require approved ap_bnds/b_bnds and remain in review."
+        )
     reference = _coefficient_reference()
     terms = reference[size]
     # This reference pressure reproduces the original lev byte-for-byte in the
@@ -198,7 +350,7 @@ def _reference_values(ds, coordinate):
     ):
         raise ValueError("lev values/order do not match the reviewed hybrid reference")
     wanted = {n: (("lev",), data) for n, data in terms.items()}
-    if coordinate == "alevel":
+    if coordinate == "alevel" and not _without_bounds(ds):
         for n, interfaces in reference[80].items():
             wanted[n + "_bnds"] = (
                 ("lev", "bnds"),
@@ -208,6 +360,8 @@ def _reference_values(ds, coordinate):
 
 
 def _verify_coefficients(source, output, coordinate):
+    with netCDF4.Dataset(output) as ds:
+        coordinate = _resolved_coordinate(ds, coordinate)
     _verify_metadata(source, output, coordinate)
     with netCDF4.Dataset(output) as ds:
         for name, (dimensions, values) in _reference_values(ds, coordinate).items():
@@ -227,8 +381,22 @@ def _verify_coefficients(source, output, coordinate):
 )
 def fix_hybrid_coefficients(ds, coordinate):
     """Bind the supplied coefficients to lev and use exact interfaces for coefficient bounds."""
+    coordinate = _resolved_coordinate(ds, coordinate)
     _attributes(ds, coordinate)
     wanted = _reference_values(ds, coordinate)
+    if coordinate == "alevhalf":
+        # Interface coordinates are already physical interfaces. Only rebind their
+        # existing coefficients; do not replace a different staggering or values.
+        for name in ("ap", "b"):
+            v = ds.variables.get(name)
+            if (
+                v is None
+                or v.dtype != np.dtype("f8")
+                or not np.array_equal(v[:], wanted[name][1])
+            ):
+                raise ValueError(
+                    f"Interface {name} differs from the supplied 80-level reference; no value replacement is authorized"
+                )
     for name in wanted:
         v = ds.variables.get(name)
         if v is None:
@@ -248,7 +416,7 @@ def fix_hybrid_coefficients(ds, coordinate):
             )
 
     changed = fix_hybrid_coordinate_metadata(ds, coordinate)
-    if coordinate == "alevel":
+    if coordinate == "alevel" and not _without_bounds(ds):
         if "bnds" not in ds.dimensions:
             ds.createDimension("bnds", 2)
         dim = ds.dimensions["bnds"]
@@ -295,26 +463,57 @@ def restore_hybrid_vertical_coefficients(ds, **params):
 P_REF = 101325.0
 
 
+def _resolved_coordinate(ds, requested="auto"):
+    """Select a supplied reference family; full lev values are checked separately."""
+    if requested not in ("auto", "alevel", "alevhalf"):
+        raise ValueError("Unreviewed hybrid coordinate family")
+    size = ds[_coordinate(ds)].size
+    if size not in (79, 80):
+        raise ValueError(
+            "Only the supplied 79-center and 80-interface references are approved"
+        )
+    return "alevel" if size == 79 else "alevhalf"
+
+
+def prepare_normalization_inputs(ds):
+    """Reuse C074 reference binding before C102, even without a separate QA finding.
+
+    No synthetic interfaces: the complete lev vector must match the supplied
+    reference. The 80-interface path additionally requires ap/b values to remain
+    identical when their dimensions are rebound.
+    """
+    coordinate = _resolved_coordinate(ds)
+    changed = fix_hybrid_coefficients(ds, coordinate)
+    # An empty coordinates string on this ancillary conveys no association.
+    if "b_bnds" in ds.variables and getattr(ds["b_bnds"], "coordinates", None) == "":
+        ds["b_bnds"].delncattr("coordinates")
+        changed = True
+    return changed
+
+
 def _normalization_values(ds):
     """Read current coefficients without replacing them or synthesizing interfaces."""
 
     # Require the existing coefficients and surface pressure; never synthesize them.
     name = _coordinate(ds)
     lev = ds[name]
+    interfaces = lev.size == 80
+    without_bounds = _without_bounds(ds)
+    terms = ("ap", "b") if without_bounds else ("ap", "b", "ap_bnds", "b_bnds")
     if (
         name != "lev"
         or lev.dtype != np.dtype("f8")
         or any(a in lev.ncattrs() for a in ("scale_factor", "add_offset"))
         or getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
         or getattr(ds, "realm", "") not in ("atmos", "aerosol")
-        or not {"ap", "b", "ap_bnds", "b_bnds", "ps"} <= ds.variables.keys()
+        or not {*terms, "ps"} <= ds.variables.keys()
         or getattr(ds["ps"], "units", "") != "Pa"
     ):
         raise ValueError(
             "Hybrid normalization requires the existing reviewed coefficients and bounds"
         )
     arrays = {}
-    for n in ("ap", "b", "ap_bnds", "b_bnds"):
+    for n in terms:
         v = ds[n]
         if v.dtype != np.dtype("f8") or any(
             a in v.ncattrs() for a in ("scale_factor", "add_offset")
@@ -337,19 +536,28 @@ def _normalization_values(ds):
                     f"{n} must already be aligned with lev; apply C074/C074a with the approved reference before C102/C103b"
                 )
             arrays[n] = a
-    if getattr(ds["ap"], "units", "") != "Pa" or getattr(ds["b"], "units", "") != "1":
+    if getattr(ds["ap"], "units", "") != "Pa" or getattr(ds["b"], "units", "") not in (
+        "",
+        "1",
+    ):
         raise ValueError(
             "Expected ap in Pa and dimensionless b; no coefficient conversion is allowed"
         )
-    if (
+    if not without_bounds and (
         getattr(ds["ap_bnds"], "units", "Pa") != "Pa"
-        or getattr(ds["b_bnds"], "units", "1") != "1"
+        or getattr(ds["b_bnds"], "units", "1") not in ("", "1")
     ):
         raise ValueError("Coefficient bounds must retain Pa/1 units")
 
     # Compute dimensionless levels and bounds from the approved reference pressure.
     values = arrays["ap"] / P_REF + arrays["b"]
-    bounds = arrays["ap_bnds"] / P_REF + arrays["b_bnds"]
+    bounds = None if without_bounds else arrays["ap_bnds"] / P_REF + arrays["b_bnds"]
+    if interfaces:
+        reference = _coefficient_reference()[80]
+        if any(not np.array_equal(arrays[n], reference[n]) for n in ("ap", "b")):
+            raise ValueError(
+                "The 80 interfaces must match the complete supplied coefficients"
+            )
 
     # Accept the original pressure-valued axis or an already normalized axis on replay.
     current = np.ma.asarray(lev[:])
@@ -365,11 +573,11 @@ def _normalization_values(ds):
     # Reject non-finite values and any level outside its physical bounds.
     if (
         not np.isfinite(values).all()
-        or not np.isfinite(bounds).all()
+        or (bounds is not None and not np.isfinite(bounds).all())
         or np.any(values < 0)
         or np.any(values > 1)
-        or np.any(values < bounds.min(axis=1))
-        or np.any(values > bounds.max(axis=1))
+        or (bounds is not None and np.any(values < bounds.min(axis=1)))
+        or (bounds is not None and np.any(values > bounds.max(axis=1)))
     ):
         raise ValueError(
             "Normalized lev must lie in [0,1] and within its coefficient-derived bounds"
@@ -382,6 +590,7 @@ def coefficient_snapshot(ds):
     return {
         name: (ds[name].dtype, ds[name].dimensions, np.asarray(ds[name][:]).copy())
         for name in ("ap", "b", "ap_bnds", "b_bnds")
+        if name in ds.variables
     }
 
 
@@ -396,15 +605,20 @@ def _verify_normalization(source, output, coefficient_baseline=None):
             else coefficient_snapshot(src)
         )
         values, bounds = _normalization_values(dst)
-        if (
-            not np.array_equal(dst["lev"][:], values)
-            or dst["lev_bnds"].dimensions != ("lev", "bnds")
+        if not np.array_equal(dst["lev"][:], values):
+            raise ValueError("Hybrid normalized values were not retained")
+        if bounds is None and "bounds" in dst["lev"].ncattrs():
+            raise ValueError(
+                "Layer-interface lev must not acquire invented cell bounds"
+            )
+        if bounds is not None and (
+            dst["lev_bnds"].dimensions != ("lev", "bnds")
             or not np.array_equal(dst["lev_bnds"][:], bounds)
             or dst["lev"].bounds != "lev_bnds"
             or dst["lev_bnds"].formula_terms != "ap: ap_bnds b: b_bnds ps: ps"
         ):
             raise ValueError("Hybrid normalized values/bounds were not retained")
-        for n in ("ap", "b", "ap_bnds", "b_bnds"):
+        for n in baseline:
             dtype, dimensions, values_before = baseline[n]
             if (
                 dtype != dst[n].dtype
@@ -425,13 +639,39 @@ def _verify_normalization(source, output, coefficient_baseline=None):
 @fix(
     "normalize_hybrid_coordinate",
     verify_data=True,
-    data_targets=lambda p: {"lev", "lev_bnds"},
+    data_targets=lambda p: {"lev", "lev_bnds", "ap", "b", "ap_bnds", "b_bnds"},
     verify_final=_verify_normalization,
 )
 def normalize_hybrid_coordinate(ds):
     """Apply the approved ap/101325+b definition, preserving all coefficient arrays."""
+    prepared = prepare_normalization_inputs(ds)
     values, pairs = _normalization_values(ds)
     lev = ds["lev"]
+    if pairs is None:
+        from .reviewed_structures import set_attrs
+
+        changed = prepared
+        if not np.array_equal(lev[:], values):
+            lev[:] = values
+            changed = True
+        if "bounds" in lev.ncattrs():
+            lev.delncattr("bounds")
+            changed = True
+        return (
+            set_attrs(
+                lev,
+                dict(
+                    standard_name=STANDARD_NAME,
+                    units="1",
+                    axis="Z",
+                    positive="down",
+                    long_name="hybrid sigma pressure coordinate",
+                    formula=FORMULA,
+                    formula_terms="ap: ap b: b ps: ps",
+                ),
+            )
+            or changed
+        )
     if getattr(lev, "bounds", "") not in ("", "lev_bnds"):
         raise ValueError("Unexpected lev bounds name")
     if "bnds" in ds.dimensions and (
@@ -448,7 +688,7 @@ def normalize_hybrid_coordinate(ds):
             raise ValueError("Unexpected lev_bnds representation")
 
     # All calculations and containment checks above complete before any edit.
-    changed = False
+    changed = prepared
     if not np.array_equal(lev[:], values):
         lev[:] = values
         changed = True
@@ -460,7 +700,6 @@ def normalize_hybrid_coordinate(ds):
         bounds="lev_bnds",
         formula=FORMULA,
         formula_terms="ap: ap b: b ps: ps",
-        computed_standard_name="air_pressure",
     )
     from .reviewed_structures import set_attrs, delete_variables
 

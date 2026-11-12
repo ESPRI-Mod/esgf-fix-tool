@@ -8,9 +8,36 @@
 
 - id: C103
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
-  message: It is required for 'lat' to have a 'bounds' attribute according to its coordinate definition\.$
+  message: It is required for '(?:lat|rlat)' to have a 'bounds' attribute according to its coordinate definition\.$
+  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\.
+  action: fix
+  fix: add_basin_latitude_bounds
+  params: {}
+  note: Latest user decision replaces the former exception. Add common conventional midpoint bounds on the nine reviewed NEMO products, with half-step outer extrapolation and the last non-degenerate north spacing. Keep lat or rlat and its metadata; harmonize the terminal value to 89.36999. No science-field edits.
+
+- id: C103d
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds$
+  message: (?:Adjacent cells in 'lat_bnds' have overlapping bounds\.|Bounds variable 'lat_bnds' (?:contains bounds pairs that are not strictly increasing|is not strictly increasing between successive cells), consistently with the prescribed stored_direction\.)$
+  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|sltbasin|sltovgyre|sltovovrt)\.
+  action: fix
+  fix: add_basin_latitude_bounds
+  params: {}
+  note: Replace overlapping or inverted native lat_bnds with the same conventional bounds as C103. Clean only unused grid aliases; retain numeric basin, sector and all science values.
+
+- id: C103e
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds$
+  message: It is required for 'lev' to have a 'bounds' attribute according to its coordinate definition\.$
+  dataset: CMIP7\.ATM\.(edt|evu)\.
+  action: fix
+  fix: center_hybrid_interfaces
+  params: {}
+  note: Same approved 80-interface to 79-center transformation as C104. Reuse the supplied reference and C074/C102 normalization, including lev_bnds and coefficient formula_terms. Replays on 79 levels never average again.
+
+- id: C103r
+  check: \[CMIP7\] \[COORD008\] Coordinate bounds$
+  message: It is required for '(?:lat|rlat)' to have a 'bounds' attribute according to its coordinate definition\.$
   action: review
-  note: Eight latitude profiles remain review pending the real horizontal bounds geometry.
+  note: The nine approved NEMO latitude/grid_latitude profiles are handled by C103 above. Other grids require a separately approved bounds definition.
 
 - id: C103a
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
@@ -106,7 +133,7 @@
 
 - id: C059
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
-  message: Adjacent cells in 'bounds_lon' have overlapping bounds\.$
+  message: Adjacent cells in '(?:bounds_lon|lon_bnds)' have overlapping bounds\.$
   action: fix
   fix: normalize_regular_longitude
   params: {}

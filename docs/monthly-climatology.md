@@ -1,5 +1,7 @@
 # Reconstruction des climatologies mensuelles
 
+Note historique : les dernières décisions sont dans [QA v5 — nettoyage final](final-cleanup-20261110.md), qui prévaut sur les stratégies remplacées ci-dessous.
+
 La décision de la [discussion partagée](https://chatgpt.com/share/6af1cb14-ecec-83eb-8105-83d77b31854b)
 est appliquée par fichier, sans concaténation et sans traitement des produits décennaux.
 Chaque fichier mensuel tclm donne douze moyennes, quelle que soit sa période complète
@@ -10,9 +12,9 @@ en années. Les 120 moyennes de 1850–1859 donnent ainsi douze valeurs climatol
 C106, dans qa_metadata.yaml, appelle `rebuild_monthly_climatology` de
 [climatology.py](../src/esgf_fix_tool/fixes/climatology.py). Le déclencheur est limité
 aux datasets tclm mensuels ; la méthode vérifie également temporal_label=tclm et
-frequency=mon dans le fichier. Les autres variantes du même message utilisent
-C106r et restent en review : les statistiques tmaxavg/tminavg ne sont pas des
-moyennes mensuelles ordinaires.
+frequency=mon dans le fichier. Les variantes tmaxavg/tminavg utilisent C106r pour un réordonnancement d'attributs
+uniquement : leurs statistiques maximum/minimum et toutes leurs valeurs sont
+conservées. Elles ne passent pas par l'agrégation numérique mensuelle.
 
 Les rapports individuels et leurs en-têtes recensent pfull et phalf, avec ps dans
 chaque fichier. Le même message vise les variables principales et ps. La méthode
@@ -64,9 +66,10 @@ la sortie temporaire. Les tests numériques couvrent notamment années bissextil
 calendriers noleap/360_day, masques, ps avec time à une autre position, formats classiques,
 dimension fixe, refus sans écriture et rejeu.
 
-Le diagnostic de syntaxe CF peut encore persister après reconstruction, notamment
-avec un préfixe spatial area: mean. La recette ne supprime pas ce préfixe pour contourner
-le checker. Le QA réel suivant permettra de distinguer ce résidu du défaut numérique.
+La dernière décision utilisateur impose les clauses time: en premier et area: mean
+à la fin, y compris sur ps. La forme partagée area: time: mean est développée en
+une clause area: mean complète. Cela ne change pas les statistiques ni les valeurs.
+Le prochain QA réel vérifiera la disparition du diagnostic de syntaxe.
 
 ## Essai au TGCC
 

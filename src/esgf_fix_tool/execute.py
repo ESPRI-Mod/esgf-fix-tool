@@ -11,7 +11,7 @@ import numpy as np
 
 from . import fixes
 from .batch_write import Batch, raw_equal
-from .fixes import layouts, rectilinear, hybrid
+from .fixes import layouts, rectilinear, hybrid, cleanup, bounds
 from .preview import Preview
 from .progress import activity, notify, step_scope
 
@@ -46,6 +46,14 @@ def check_numeric_edits(preview, before, allowed):
 
 
 def final_checks(path, output, steps, entries, coefficient_baseline=None):
+    cleanup.verify_retired_metadata(output)
+    with netCDF4.Dataset(output) as result:
+        if "axis_nbounds" in result.dimensions:
+            raise ValueError(
+                "axis_nbounds survived the shared bounds-dimension normalization"
+            )
+    if any(hybrid.is_hybrid_step(s) for s in steps):
+        hybrid.verify_hybrid_cleanup(output)
     for s, entry in zip(steps, entries):
         method = fixes.REGISTRY[s.fix]
         # Unified verification covers composed dimension mappings, which the old
@@ -88,12 +96,14 @@ def execute(path, steps, *, dry_run=False):
                     started = time.monotonic()
                     before = data_state(preview)
                     with activity("Préparation du correctif sans écriture"):
+                        prepared = False
                         if s.fix == "normalize_hybrid_coordinate":
-                            # Read-only validation catches incompatible dimensions before
-                            # writing; the snapshot follows all selected coefficient fixes.
-                            hybrid._normalization_values(preview)
+                            # Bind approved reference coefficients in the metadata preview
+                            # before capturing the normalization preservation baseline.
+                            # This shared prerequisite also covers a C102-only QA finding.
+                            prepared = hybrid.prepare_normalization_inputs(preview)
                             coefficient_baseline = hybrid.coefficient_snapshot(preview)
-                        changed = bool(method.func(preview, **s.params))
+                        changed = bool(method.func(preview, **s.params)) or prepared
                         allowed = (
                             method.data_targets(s.params)
                             if method.data_targets is not None
@@ -110,6 +120,60 @@ def execute(path, steps, *, dry_run=False):
                         )
                     )
                     notify("fix", "prepared", changed=changed)
+            # C001 is a file-wide invariant, including variables created by later
+            # recipes. Recognize legacy per-variable plans without changing their
+            # generic drop_var_attr API or applying unselected corrections.
+            history_index = next(
+                (
+                    i
+                    for i, s in enumerate(steps)
+                    if s.fix == "drop_variable_histories"
+                    or s.fix == "drop_var_attr"
+                    and s.params.get("attr") == "history"
+                ),
+                None,
+            )
+            if history_index is not None:
+                with (
+                    step_scope(steps[history_index]),
+                    activity("Contrôle final de history sur toutes les variables"),
+                ):
+                    remaining = fixes.attributes._history_variables(preview)
+                    cleaned = fixes.attributes.drop_variable_histories(preview)
+                    entries[history_index]["changed"] |= cleaned
+                    entries[history_index]["history_final_sweep"] = remaining
+            # Clean after every selected recipe so later auxiliary creation cannot
+            # reintroduce empty attributes or legacy coefficient backups.
+            hybrid_index = next(
+                (i for i, s in enumerate(steps) if hybrid.is_hybrid_step(s)), None
+            )
+            if hybrid_index is not None:
+                with (
+                    step_scope(steps[hybrid_index]),
+                    activity("Nettoyage final des métadonnées hybrides"),
+                ):
+                    cleaned = hybrid.clean_hybrid_metadata(preview)
+                    entries[hybrid_index]["changed"] |= cleaned
+                    entries[hybrid_index]["hybrid_final_cleanup"] = cleaned
+            # axis_nbounds is a two-endpoint index, never an independent grid.
+            # Run the shared normalization even if another rule selected the file.
+            if entries and "axis_nbounds" in preview.dimensions:
+                dimension = preview.dimensions["axis_nbounds"]
+                if len(dimension) != 2 or dimension.isunlimited():
+                    raise ValueError(
+                        "axis_nbounds must be a fixed size-two endpoint dimension"
+                    )
+                with activity("Normalisation commune axis_nbounds vers bnds"):
+                    normalized = bounds.normalize_bounds_dimension(preview)
+                    entries[0]["changed"] |= normalized
+                    entries[0]["axis_nbounds_normalized"] = normalized
+            # Shared cleanup is explicitly approved for every selected file. It
+            # runs last so auxiliary replacements cannot leave fresh backup arrays.
+            with activity("Nettoyage final des variables et dimensions techniques"):
+                cleaned = cleanup.clean_retired_metadata(preview)
+                if entries:
+                    entries[0]["changed"] |= cleaned
+                    entries[0]["retired_metadata_cleanup"] = cleaned
             with activity("Regroupement de toutes les transformations du fichier"):
                 batch = Batch(preview, steps, fixes.REGISTRY)
                 rewrite = batch.rewrite

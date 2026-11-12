@@ -22,7 +22,14 @@ def order_steps(steps: list[Step]) -> list[Step]:
     Do not silently add an excluded rule: an absent prerequisite must either be
     satisfied by the file already or fail during read-only preflight.
     """
-    dependencies = {"normalize_hybrid_coordinate": {"fix_hybrid_coefficients"}}
+    dependencies = {
+        "fix_hybrid_coefficients": {"center_hybrid_interfaces"},
+        "fix_hybrid_coordinate_metadata": {"center_hybrid_interfaces"},
+        "normalize_hybrid_coordinate": {"fix_hybrid_coefficients", "center_hybrid_interfaces"},
+        "drop_unused_horizontal_bounds": {"reduce_replicated_zostoga"},
+        "add_basin_latitude_bounds": {"fix_msfty_coordinates"},
+        "drop_basin_latitude_bounds": {"fix_msfty_coordinates"},
+    }
     pending, ordered = list(steps), []
     while pending:
         for index, step in enumerate(pending):
@@ -58,6 +65,29 @@ class FixPlan:
                 step not in steps
             ):  # the same message can be reported for several datasets
                 steps.append(step)
+        # An intra-dataset consistency finding can list only the comparison file,
+        # although the missing attribute is in its peer. Harmonize all reported
+        # time chunks of that exact dataset, never unrelated products.
+        for item in c.items:
+            if (
+                item.outcome is Outcome.FIX
+                and (
+                    item.match.rule.fix == "harmonize_main_description"
+                    or item.match.rule.fix == "normalize_bounds_dimension"
+                    and item.finding.check == "[Consistency] Dimensions"
+                )
+                and (not only_rules or item.match.rule.id in only_rules)
+            ):
+                step = Step(
+                    item.match.rule.id,
+                    item.match.rule.fix,
+                    item.match.rule.resolve_params(item.match.groups),
+                )
+                for finding in c.report.findings:
+                    if finding.dataset == item.finding.dataset:
+                        steps = plan.files.setdefault(finding.path, [])
+                        if step not in steps:
+                            steps.append(step)
         plan.files = {path: order_steps(steps) for path, steps in plan.files.items()}
         return plan
 

@@ -60,7 +60,7 @@ def test_mask_conversion_preserves_codes_missing_points_and_other_arrays(tmp_pat
         assert v.flag_values.dtype==np.dtype('i4')
         np.testing.assert_array_equal(v.flag_values,np.arange(11,dtype='i4'))
         assert v.flag_meanings==BASIN_MASK_MEANINGS
-        assert 'units' not in v.ncattrs() and 'history' not in v.ncattrs()
+        assert v.units == '1' and 'history' not in v.ncattrs()
         assert np.asarray(v._FillValue).dtype==np.dtype('i4')
         assert np.asarray(v.missing_value).dtype==np.dtype('i4')
         np.testing.assert_array_equal(np.ma.getmaskarray(actual),mask)

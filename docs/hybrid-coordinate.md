@@ -1,5 +1,20 @@
 # Axe hybride IPSL et coefficients de référence
 
+Les recettes hybrides renseignent aussi les attributs suivants sur les bornes
+des coefficients, lorsqu'elles existent ou sont créées :
+
+```text
+ap_bnds:long_name = "vertical coordinate formula term: ap(k+1/2)"
+b_bnds:long_name = "vertical coordinate formula term: b(k+1/2)"
+```
+
+Le diagnostic CF signalant leur nom manquant est pris en charge par C084b,
+qui réutilise le setter d'attributs de C084. Les identifiants historiques ATM et
+les identifiants DRS publiés, y compris files.d20261112 et v20261112, sont reconnus.
+La correction se fait directement sur les attributs, sans normaliser à nouveau
+les valeurs ni interpoler le champ. Régénérer le plan depuis le nouveau rapport
+complet pour traiter les fichiers déjà corrigés.
+
 Depuis le QA du 6 novembre, C074 reconnaît aussi les 17 axes alh à 80 interfaces
 sans standard_name. Leur empreinte correspond exactement à la pression de référence
 du groupe à 80 niveaux. C074a reprend la même méthode pour retirer les attributs

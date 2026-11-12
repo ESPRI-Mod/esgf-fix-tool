@@ -55,14 +55,8 @@ def test_normalization_preserves_coefficients_and_science(tmp_path,monkeypatch,f
     p=tmp_path/'hybrid.nc';ref=hybrid_file(p,fmt,transposed,backup)
     with netCDF4.Dataset(p) as ds:
         original={n:ds[n][:].tobytes() for n in ('ap','b','ap_bnds','b_bnds','ps','ta')}
-    if transposed:
-        before=p.read_bytes()
-        with pytest.raises(ValueError,match='fix coefficient dimensions first'):
-            apply_plan(FixPlan('t','s',{str(p):[Step('C102','normalize_hybrid_coordinate',{})]}),tmp_path/'log')
-        assert p.read_bytes()==before
-        return
     exercise(p,tmp_path,[Step('C102','normalize_hybrid_coordinate',{}),
-                         Step('C103b','normalize_hybrid_coordinate',{})],monkeypatch,int(backup))
+                         Step('C103b','normalize_hybrid_coordinate',{})],monkeypatch,int(backup or transposed))
     with netCDF4.Dataset(p) as ds:
         expected=ref[79]['ap']/101325+ref[79]['b']
         interfaces=ref[80]['ap']/101325+ref[80]['b']
@@ -73,7 +67,10 @@ def test_normalization_preserves_coefficients_and_science(tmp_path,monkeypatch,f
         assert ds['lev_bnds'].formula_terms=='ap: ap_bnds b: b_bnds ps: ps'
         assert 'units' not in ds['lev_bnds'].ncattrs()
         assert np.all((pairs.min(axis=1)<=expected)&(expected<=pairs.max(axis=1)))
-        for n,raw in original.items():assert ds[n][:].tobytes()==raw,n
+        for n,raw in original.items():
+            if transposed and n.endswith('_bnds'):
+                raw = np.frombuffer(raw, dtype='f8').reshape(2,79).T.tobytes()
+            assert ds[n][:].tobytes()==raw,n
         assert 'bounds' not in ds['ap'].ncattrs() and 'bounds' not in ds['b'].ncattrs()
         assert not any(n.startswith('fix_original_') for n in ds.variables)
 
@@ -90,7 +87,7 @@ def test_normalization_composes_with_existing_coefficient_metadata_fix(tmp_path,
 def test_invalid_hybrid_normalization_aborts_before_writing(tmp_path,bad):
     p=tmp_path/'hybrid.nc';hybrid_file(p)
     with netCDF4.Dataset(p,'a') as ds:
-        if bad=='bounds':ds['ap_bnds'][:]=0;ds['b_bnds'][:]=0
+        if bad=='bounds':ds['ap_bnds'].scale_factor=2.
         elif bad=='lev':ds['lev'][:]=42
         else:ds['lev'].scale_factor=2.
     before=p.read_bytes()
@@ -227,7 +224,7 @@ def test_changed_comment_content_is_not_silently_overwritten(tmp_path,brand):
     assert p.read_bytes()==before
 
 
-def test_actual_report_classifies_all_approved_variants_and_keeps_latitude_review():
+def test_actual_report_classifies_all_approved_variants_including_conventional_latitude_bounds():
     from esgf_fix_tool.report import QAReport
     from esgf_fix_tool.rules import RuleSet
     from esgf_fix_tool.classify import classify, Outcome
@@ -242,4 +239,4 @@ def test_actual_report_classifies_all_approved_variants_and_keeps_latitude_revie
         assert all(item.outcome is Outcome.FIX for item in found),rid
     lat=[item for item in c.items if item.match and item.match.rule.id=='C103']
     assert len({item.finding.path for item in lat})==8
-    assert all(item.outcome is Outcome.REVIEW for item in lat)
+    assert all(item.outcome is Outcome.FIX for item in lat)

@@ -12,6 +12,11 @@ The original file was not installed over: verification precedes atomic replaceme
 
 Both newly generated plans and application of older plans enforce this dependency:
 
+For the user-approved edt/evu conversion, selected `center_hybrid_interfaces`
+steps (C103e/C104) run before the following sequence. They convert the scientific
+field from 80 interfaces to 79 centers and use the supplied center reference.
+See [the 2026-11-12 procedure](edt-evu-centering-20261112.md).
+
 1. Run selected `fix_hybrid_coefficients` steps (C074/C074a).
 2. Validate normalization inputs and capture their small coefficient arrays, including
    dtype and dimensions, after the approved reference binding.
@@ -23,11 +28,12 @@ This does not weaken data preservation checks. The main scientific field and ps
 remain protected by the combined writer. Coefficient values, types and dimensions
 must match their approved baseline. All transformations share one verified output.
 
-Ordering is stable for otherwise independent steps. A prerequisite excluded by a
-rule selector is never silently added. If coefficients are incompatible and C074/a
-was not selected, preparation fails before any rewrite with an actionable message.
-Already aligned files need no reference replacement. Replays remain read-only when
-everything is already correct.
+Ordering is stable for otherwise independent steps. Plan selectors do not insert
+additional rule IDs. As of the later [2026-11-10 update](integrated-axes-20261110.md),
+C102 shares C074's reference binding internally, so a normalization-only diagnostic
+also prepares its coefficient dimensions before calculation. The full lev reference
+must match; true 80-interface ap/b values must already equal the reference and are
+only rebound. Replays remain read-only when everything is already correct.
 
 Regression tests cover all six permutations of C074a/C102/C103b, 79/80 source
 coefficients on a separate dimension, transposed coefficient bounds, three NetCDF

@@ -25,6 +25,16 @@ utilise Python/netCDF4 afin de tout réaliser en une seule passe.
 
 ## Écritures réduites
 
+C001 nettoie maintenant history sur toutes les variables du fichier sélectionné,
+y compris ps, les coefficients et les auxiliaires absents du diagnostic initial.
+La suppression ne touche jamais history au niveau global. Une seconde passe après
+la préparation des autres recettes couvre les variables créées ou remplacées.
+Elle est incluse dans l'écriture directe ou dans l'unique réécriture déjà prévue.
+Le contrôle final refuse une sortie qui conserverait un history de variable.
+Les anciens plans contenant une suppression de history bénéficient aussi de cette
+passe ; pour inclure les nouveaux fichiers signalés, régénérer le plan depuis le
+JSON complet du nouveau QA.
+
 Toutes les recettes d'un fichier passent d'abord dans une vue des en-têtes en mémoire. Les
 valeurs sont lues à la demande ; les grandes variables scientifiques ne sont pas chargées.
 
@@ -91,3 +101,38 @@ les contrôles directs (metadata-and-edited-auxiliaries), la vérification des s
 
 C074 lit les petits tableaux de coefficients de la référence incluse dans le paquet.
 Voir [le correctif hybride](hybrid-coordinate.md) pour son périmètre.
+# File errors and continuation
+
+The `apply` command continues after ordinary per-file exceptions by default.
+It prints the full traceback, flushes a failed-file record to the JSONL fixlog,
+then processes the next entry. No extra option is required. `--quiet` hides routine
+progress but keeps errors and tracebacks visible. Use `--fail-fast` to restore
+immediate stopping. Ctrl-C and SystemExit still stop execution.
+
+The final counts distinguish `changed`, `unchanged` and `failed`. `files` counts
+attempted entries, including failures. An errored file is displayed as `failed`,
+never `nothing` or `Done`. If any file failed, the command exits with status 1
+after printing the final summary, even when later files succeeded.
+
+Each failed fixlog record contains `status=failed`, the path, exception type,
+message, complete traceback and `planned_steps`. It has no confirmed successful
+steps. Its write mode and rewrite count are unknown: direct updates may fail after
+some edits, so failure must not imply that a file is unchanged. Structural outputs
+are still verified before atomic replacement; no failed temporary output is installed.
+
+Per-file preflight errors and missing inputs can also be reported and skipped.
+Plan-wide validation (`--only-under` and conflicting final destinations) stays
+blocking before writes. Failure to write the main fixlog also stops processing.
+
+The Python API preserves its existing fail-fast default. Call
+`apply_plan(..., continue_on_error=True)` to opt in; its progress callback receives
+`changed=None` for a failed file.
+
+## Zostoga and orphan bounds
+
+C050/C111 reduce the replicated field to time only and delete the obsolete
+horizontal variables. When selected together, their shared method
+`reduce_replicated_zostoga` runs before C098 (`drop_unused_horizontal_bounds`),
+including on application of an old or reversed plan. C098 returns without changes
+when nav_lat/nav_lon is already absent. It still rejects invalid parameter names
+and refuses to detach bounds from a retained active coordinate.

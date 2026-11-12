@@ -49,8 +49,13 @@ def test_curvilinear_names_compose_with_previous_bounds_plans_and_keep_every_arr
     steps=names+bounds if sequence!='bounds_first' else bounds+names
     plans=[plan(target,*steps)] if sequence=='same_plan' else [plan(target,*[s]) for s in steps]
     for p in plans:
-        assert apply_plan(p,tmp_path/'log',dry_run=True)['changed']==1
-        assert apply_plan(p,tmp_path/'log')['changed']==1
+        selected = p.files[str(target)]
+        # Earlier name fixes now run the common axis_nbounds normalization too.
+        expected = 0 if len(selected)==1 and selected[0].fix=='normalize_bounds_dimension' else 1
+        before = target.read_bytes()
+        assert apply_plan(p,tmp_path/'log',dry_run=True)['changed']==expected
+        assert target.read_bytes()==before
+        assert apply_plan(p,tmp_path/'log')['changed']==expected
     assert source.read_bytes()==original
     mapping={'nav_lat':'latitude','nav_lon':'longitude','bounds_nav_lat':'vertices_latitude','bounds_nav_lon':'vertices_longitude'}
     with netCDF4.Dataset(source) as a,netCDF4.Dataset(target) as b:

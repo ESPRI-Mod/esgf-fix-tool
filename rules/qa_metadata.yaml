@@ -1,3 +1,12 @@
+- id: C106a
+  check: \[CMIP7\] \[ATTR004\] Variable '[^']+' attribute 'cell_methods' registry expected-term check$
+  message: "Expected 'time: (?:mean within years time: mean over years|maximum within days time: mean over days|minimum within days time: mean over days) area: mean' to equal 'area: mean time: .*' from registry key 'cell_methods'\\.$"
+  dataset: CMIP7\.ATM\.[^.]+\.(?:tclm|tmaxavg|tminavg)-[^.]+\.mon\.
+  action: fix
+  fix: reorder_climatology_cell_methods
+  params: {}
+  note: Roll back the earlier time-first workaround. Restore the complete area:mean clause before temporal clauses as required by the DR; preserve all numerical statistics and auxiliary ps.
+
 - id: C099
   check: \[CF-Conventions\] §5 Coordinate Systems$
   message: (?P<var>line|type) shares the same name as one of its dimensions$
@@ -37,8 +46,9 @@
 - id: C106r
   check: \[CF-Conventions\] §7\.4 Climatological Statistics$
   message: 'The "time: method within years/days over years/days" format is not correct in variable .*'
-  action: review
-  note: Non-tclm products (including tmaxavg/tminavg) need their own approved statistic. No monthly-climatology averaging is applied.
+  dataset: CMIP7\.ATM\.[^.]+\.(?:tmaxavg|tminavg)-[^.]+\.mon\.
+  action: waive
+  note: User confirmed the CF warning is a checker false positive for DR-compliant area-first syntax. Keep the DR order; do not rearrange or average daily statistics.
 
 - id: C108a
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
@@ -138,7 +148,7 @@
 
 - id: C084
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
-  message: '''(?P<var>dbze|scatratio|deltasigt|effectRadIc|lev|plev|wavelength|depth|height|ap|b)'' long_name=''(?P<expected>[^'']*)'';
+  message: '''(?P<var>dbze|scatratio|deltasigt|effectRadIc|lev|plev|wavelength|depth|height|ap|b|ap_bnds|b_bnds)'' long_name=''(?P<expected>[^'']*)'';
     the recommended value is ''(?P<value>[^'']*)''\.$'
   action: fix
   fix: set_var_attr_if_matches
@@ -149,6 +159,23 @@
     value: '{value}'
   note: Copy only the explicit long_name recommendation while the observed old value still matches. All numeric arrays are
     preserved.
+
+- id: C084b
+  check: \[CF-Conventions\] §3\.3 Standard Name$
+  message: 'Attribute long_name or/and standard_name is highly recommended for variable (?P<term>ap|b)_bnds\.?$'
+  dataset: CMIP7\..*IPSL-CM6-ESMCO2\.
+  action: fix
+  fix: set_var_attr_if_matches
+  params:
+    var: '{term}_bnds'
+    attr: long_name
+    expected: ''
+    value: 'vertical coordinate formula term: {term}(k+1/2)'
+  note: >-
+    Reuse C084's guarded attribute setter, including legacy ATM and published DRS dataset identifiers.
+    Set ap_bnds long_name="vertical coordinate formula term: ap(k+1/2)" and
+    b_bnds long_name="vertical coordinate formula term: b(k+1/2)".
+    No coefficient reconstruction or scientific-array writes.
 
 - id: C085
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
@@ -161,7 +188,7 @@
 
 - id: C086
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
-  message: '''(?P<coordinate>lat|nav_lat|nav_lon)'' long_name=''(?:|Latitude|Longitude)''; the recommended value is ''(?P<value>Latitude|latitude|longitude)''\.$'
+  message: '''(?P<coordinate>lat|nav_lat|nav_lon|rlat)'' long_name=''(?:|Latitude|Longitude)''; the recommended value is ''(?P<value>Latitude|latitude|longitude|Grid Latitude)''\.$'
   action: fix
   fix: set_reviewed_coordinate_long_name
   params:

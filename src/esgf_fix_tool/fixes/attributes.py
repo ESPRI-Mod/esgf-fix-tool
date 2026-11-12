@@ -3,6 +3,39 @@
 from . import fix
 
 
+def _history_variables(ds):
+    """List variable attributes only; group/global history is deliberately excluded."""
+    names = [v.name for v in ds.variables.values() if "history" in v.ncattrs()]
+    for group in ds.groups.values():
+        names.extend(f"{group.path}/{name}" for name in _history_variables(group))
+    return names
+
+
+def _verify_variable_histories(source, output):
+    import netCDF4
+
+    with netCDF4.Dataset(output) as ds:
+        if names := _history_variables(ds):
+            raise ValueError(f"Variable history attributes remain after fixes: {names}")
+
+
+@fix("drop_variable_histories", verify_final=_verify_variable_histories)
+def drop_variable_histories(ds):
+    """Remove history from every variable, including unreported auxiliaries.
+
+    Touch attributes only. Preserve global/group history, variable values and
+    all storage settings. Repeating the sweep on a conforming file is a no-op.
+    """
+    changed = False
+    for variable in ds.variables.values():
+        if "history" in variable.ncattrs():
+            variable.delncattr("history")
+            changed = True
+    for group in ds.groups.values():
+        changed = drop_variable_histories(group) or changed
+    return changed
+
+
 @fix("drop_var_attr")
 def drop_var_attr(ds, var: str, attr: str) -> bool:
     """Remove ``attr`` from variable ``var`` (e.g. CF appendix A: no 'history' on data variables)."""
@@ -69,6 +102,13 @@ def drop_region_units(ds, var: str, expected: str = "1") -> bool:
     """Remove only the observed dimensionless units on a region variable; leave codes and flags alone."""
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     v = ds.variables.get(var)
+    if (
+        var == "basin"
+        and v is not None
+        and v.dimensions == ("y", "x")
+        and getattr(ds, "branded_variable", "") == "basin_ti-u-hxy-u"
+    ):
+        return False  # The reviewed 2-D mask explicitly retains units=1.
     if v is None or "units" not in v.ncattrs():
         return False
     if (

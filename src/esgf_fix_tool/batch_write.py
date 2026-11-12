@@ -7,7 +7,7 @@ import netCDF4
 import numpy as np
 
 from .data_integrity import data_blocks
-from .fixes import bounds, coordinates, horizontal, hybrid, layouts, rectilinear, climatology
+from .fixes import bounds, coordinates, horizontal, hybrid, layouts, rectilinear, climatology, heat_transport, hybrid_centering
 from .preview import MAX_AUX_BYTES
 
 
@@ -110,17 +110,18 @@ class Batch:
                 spec.dimensions = tuple(spec.dimensions[i] for i in kept)
 
         for s in steps:
-            if s.fix=='normalize_bounds_dimension':
-                mapping=bounds._dimension_map(preview)
-                # A completed local replacement leaves only unreferenced original arrays.
-                if mapping and bounds._local_bound_replacements(preview, mapping) != []:
-                    self.dimensions.setdefault('bnds',(None,2,False))
-                    for old in mapping:
-                        self.dimensions.pop(old,None)
-                    for v in self.variables.values():
-                        v.dimensions=tuple(mapping.get(d,d) for d in v.dimensions)
-            elif s.fix=='fix_basin_profile_latitude':
+            if s.fix=='fix_basin_profile_latitude':
                 self._profile(preview,s.params['var'])
+
+        # Merge plans come from the shared bounds recipe, including its automatic
+        # axis_nbounds pass. Keep all arrays in the one final output schema.
+        mapping = getattr(preview, '_bounds_dimension_mapping', {})
+        if mapping:
+            self.dimensions.setdefault('bnds', (None, 2, False))
+            for old in mapping:
+                self.dimensions.pop(old, None)
+            for spec in self.variables.values():
+                spec.dimensions = tuple(mapping.get(d, d) for d in spec.dimensions)
 
         # Drop buffered arrays which did not actually change; this is crucial on replay.
         for v in self.variables.values():
@@ -130,6 +131,8 @@ class Batch:
                 if raw_equal(source[:],v.data):
                     v.data=None
         climatology.configure(self, preview)
+        heat_transport.configure(self, preview)
+        hybrid_centering.configure(self, preview)
 
     def _profile(self,preview,var):
         name,values=rectilinear._profile(preview,var)
@@ -167,7 +170,7 @@ class Batch:
 
     @property
     def rewrite(self):
-        if self.climatology is not None:
+        if self.climatology is not None or self.heat_fields or self.hybrid_center_fields:
             return True
         if self.custom_hooks:
             return True
@@ -214,6 +217,8 @@ class Batch:
             options=layouts._creation_options(source,kept)
             if self.climatology is not None and isinstance(spec.chunks,list):
                 options['chunksizes'] = tuple(spec.chunks[i] for i in spec.order)
+            if spec.name in self.hybrid_center_fields and isinstance(spec.chunks, list):
+                options['chunksizes'] = tuple(spec.chunks)
             dtype=source.datatype
         else:
             options=spec.creation_options or {'fill_value':spec.fill}
@@ -230,7 +235,13 @@ class Batch:
             for spec in self.variables.values():
                 out=self._create(dst,spec)
                 layouts._raw(out)
-                if spec.name in self.climate_fields:
+                if spec.name in self.hybrid_center_fields:
+                    for slab, values in hybrid_centering.averages(self.source[spec.origin], spec):
+                        write_array(out, slab, values)
+                elif spec.name in self.heat_fields:
+                    for slab, values in heat_transport.sums(self.source[spec.origin], spec):
+                        write_array(out, slab, values)
+                elif spec.name in self.climate_fields:
                     for slab, values in climatology.averages(self.source[spec.origin],spec):
                         write_array(out,slab,values)
                 elif spec.data is not None:
@@ -262,7 +273,15 @@ class Batch:
             for spec in self.variables.values():
                 out=dst[spec.name]
                 layouts._raw(out)
-                if spec.name in self.climate_fields:
+                if spec.name in self.hybrid_center_fields:
+                    for slab, expected in hybrid_centering.averages(self.source[spec.origin], spec):
+                        if not raw_equal(out[slab], expected):
+                            raise ValueError(f'Adjacent-interface mean differs for {spec.name}')
+                elif spec.name in self.heat_fields:
+                    for slab, expected in heat_transport.sums(self.source[spec.origin], spec):
+                        if not raw_equal(out[slab], expected):
+                            raise ValueError(f'Vertical sum differs for {spec.name}')
+                elif spec.name in self.climate_fields:
                     for slab, expected in climatology.averages(self.source[spec.origin],spec):
                         if not raw_equal(out[slab],expected):
                             raise ValueError(f'Climatological mean differs for {spec.name}')
@@ -378,7 +397,7 @@ class Batch:
     def nco(self):
         """Retain NCO for a standalone permutation; compound transforms use one Python pass."""
         explicit=[s for s in self.layouts if s.params.get('backend')=='nco']
-        eligible=(len(self.layouts)==1 and not self.custom_hooks and self.climatology is None)
+        eligible=(len(self.layouts)==1 and not self.custom_hooks and self.climatology is None and not self.heat_fields and not self.hybrid_center_fields)
         if {v.origin for v in self.variables.values() if v.origin is not None} != set(self.source.variables):
             eligible=False
         if eligible:

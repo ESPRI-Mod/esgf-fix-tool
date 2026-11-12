@@ -581,6 +581,9 @@ def fix_climatology_reference(ds, _metadata_only=False) -> bool:
     if "bounds" in time.ncattrs():
         time.delncattr("bounds")
         changed = True
+    if label in ("tmaxavg", "tminavg"):
+        from .climatology import reorder_climatology_cell_methods
+        changed = reorder_climatology_cell_methods(ds) or changed
     return changed
 
 
@@ -660,7 +663,7 @@ def _dimension_map(ds):
         raise ValueError("bnds must be a fixed dimension of size 2")
     result = {
         d: "bnds"
-        for d in ["nvertex", "axis_nbounds"]
+        for d in ["nvertex", "axis_nbounds", "axis_bounds"]
         if d in ds.dimensions
         and len(ds.dimensions[d]) == 2
         and not ds.dimensions[d].isunlimited()
@@ -773,4 +776,10 @@ def normalize_bounds_dimension(ds) -> bool:
         _replace_references(ds, source, target)
     if len(mapping) == 1 and "bnds" not in ds.dimensions:
         ds.renameDimension(next(iter(mapping)), "bnds")
+    elif mapping:
+        # The common end-of-file pass may call this without a planned C068 step.
+        # Record the same approved merge for the single structural writer.
+        pending = dict(getattr(ds, '_bounds_dimension_mapping', {}))
+        pending.update(mapping)
+        object.__setattr__(ds, '_bounds_dimension_mapping', pending)
     return bool(mapping)

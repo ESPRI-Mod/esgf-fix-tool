@@ -27,6 +27,13 @@
   params: {}
   dataset: CMIP7\.OCE\.(?:hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\.
 
+- id: C101w
+  check: \[CF-Conventions\] §3\.1 Units$
+  message: 'Units "1" for variable basin must be convertible to canonical units "None"$'
+  dataset: CMIP7\.OCE\.basin\.ti-u-hxy-u\.
+  action: waive
+  note: The user explicitly requires units=1 on the integer 2-D region mask; retain it despite the known CF checker interpretation.
+
 - id: C101
   check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[ATTR001\] Variable 'basin' attribute 'units' existence$
   message: (?:units attribute is required for basin when variable is not a dimensionless quantity|Required variable 'basin'
@@ -35,7 +42,7 @@
   action: fix
   fix: convert_basin_region_mask
   note: User-approved int32 mask on y,x with unchanged codes 0..10 and typed flag_values/flag_meanings. Missing points are
-    preserved with an int32 fill value. No units are added. The units/region checker message may persist.
+    preserved with an int32 fill value. Set units=1 as explicitly requested. The region checker message may persist.
 
 - id: C101a
   check: \[CF-Conventions\] §3\.1 Units$

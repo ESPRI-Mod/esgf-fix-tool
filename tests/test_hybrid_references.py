@@ -53,7 +53,8 @@ def test_only_names_and_attributes_change_even_with_swapped_coefficients(tmp_pat
         assert dst['lev'].standard_name==STANDARD_NAME and dst['lev'].units=='1'
         assert dst['lev'].formula=='p = ap + b*ps' and dst['lev'].formula_terms=='ap: ap b: b ps: ps'
         assert dst['lev'][0]==100000.  # No silent normalization of lev.
-        assert dst['ap'].units=='Pa' and dst['b'].units=='1'
+        assert dst['ap'].units=='Pa' and 'units' not in dst['b'].ncattrs()
+        assert 'computed_standard_name' not in dst['lev'].ncattrs()
         assert dst.ncattrs()==src.ncattrs() and all(dst.getncattr(a)==src.getncattr(a) for a in src.ncattrs())
         if bounds and coordinate=='alevel':assert dst['lev_bnds'].formula_terms=='ap: ap_bnds b: b_bnds ps: ps'
         if not bounds:assert 'lev_bnds' not in dst.variables and 'bounds' not in dst['lev'].ncattrs()

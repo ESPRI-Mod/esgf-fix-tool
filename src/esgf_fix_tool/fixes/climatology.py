@@ -11,6 +11,73 @@ from ..data_integrity import _slices
 from ..progress import io_progress
 
 
+TEMPORAL_STATISTICS = {
+    "tclm": ("mean", "years"),
+    "tmaxavg": ("maximum", "days"),
+    "tminavg": ("minimum", "days"),
+}
+
+
+def _ordered_methods(text, label):
+    """Split only the observed area/time syntax; retain both temporal operations.
+
+    CF allows `area: time: mean` to share a method. When moving area, expand it
+    to a complete `area: mean` clause rather than leaving a dangling `area:`.
+    Refuse unreviewed qualifiers instead of guessing how to attach them.
+    """
+    pattern = (
+        r"(?P<prefix>area:\s*(?:mean\s+)?)?"
+        r"(?P<time>time:\s*(?P<stat>mean|maximum|minimum)\s+within\s+"
+        r"(?P<period>years|days)\s+time:\s*mean\s+over\s+(?P=period))"
+        r"(?P<suffix>\s+area:\s*mean)?"
+    )
+    match = re.fullmatch(pattern, text.strip())
+    if (
+        match is None
+        or label not in TEMPORAL_STATISTICS
+        or (match["stat"], match["period"]) != TEMPORAL_STATISTICS[label]
+        or match["prefix"]
+        and match["suffix"]
+    ):
+        raise ValueError(
+            f"Unreviewed climatological cell_methods syntax for {label}: {text!r}"
+        )
+    has_area = bool(match["prefix"] or match["suffix"])
+    return ("area: mean " if has_area else "") + match["time"]
+
+
+def _verify_method_order(source, output):
+    with netCDF4.Dataset(output) as ds:
+        label = getattr(ds, "temporal_label", "")
+        for name, v in ds.variables.items():
+            text = getattr(v, "cell_methods", "")
+            if "within " in text or "over " in text:
+                if text != _ordered_methods(text, label):
+                    raise ValueError(
+                        f"Cell-method order differs from the DR in {name}:cell_methods"
+                    )
+
+
+@fix("reorder_climatology_cell_methods", verify_final=_verify_method_order)
+def reorder_climatology_cell_methods(ds):
+    """Restore DR clause order only; never aggregate daily statistics."""
+    label = getattr(ds, "temporal_label", "")
+    if label not in TEMPORAL_STATISTICS:
+        raise ValueError(
+            "Only the reviewed tclm/tmaxavg/tminavg statistics are approved"
+        )
+    edits = []
+    for name, v in ds.variables.items():
+        text = getattr(v, "cell_methods", "")
+        if "within " in text or "over " in text:
+            wanted = _ordered_methods(text, label)
+            if text != wanted:
+                edits.append((v, wanted))
+    for v, wanted in edits:
+        v.setncattr("cell_methods", wanted)
+    return bool(edits)
+
+
 def axis(ds):
 
     # Read the existing time coordinate and its explicit interval reference.
@@ -152,6 +219,9 @@ def rebuild_monthly_climatology(ds):
             )
             v.setncattr("cell_methods", methods)
             changed = True
+
+    # Restore the DR order of complete spatial and temporal clauses, also on ps and already reduced files.
+    changed = reorder_climatology_cell_methods(ds) or changed
 
     # Schedule the reduction for the shared writer instead of loading science arrays.
     if state is not None:

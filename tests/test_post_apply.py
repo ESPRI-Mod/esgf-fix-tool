@@ -151,17 +151,26 @@ def test_ocean_depth_identity_keeps_values_and_science_in_place(tmp_path,name):
     assert apply_plan(plan,tmp_path/'replay.jsonl')['changed']==0
 
 
-def test_eighty_interface_coefficients_use_reference_without_normalizing_lev(tmp_path):
+@pytest.mark.parametrize('count', [79, 80])
+def test_eighty_interface_coefficients_only_rebind_matching_interfaces_without_normalizing_lev(tmp_path, count):
     p=tmp_path/'interfaces.nc';ref=_coefficient_reference();pressure=ref[80]['ap']+101325*ref[80]['b']
     with netCDF4.Dataset(p,'w') as ds:
         ds.source_id='IPSL-CM6-ESMCO2';ds.realm='atmos';ds.variable_id='rld'
-        ds.createDimension('lev',80);ds.createDimension('klev',79);ds.createDimension('time',2)
+        ds.createDimension('lev',80);ds.createDimension('klev',count);ds.createDimension('time',2)
         v=ds.createVariable('lev','f8',('lev',));v[:]=pressure;v.units='Pa'
-        for n in ('ap','b'):ds.createVariable(n,'f8',('klev',))[:]=ref[79][n]
+        for n in ('ap','b'):ds.createVariable(n,'f8',('klev',))[:]=ref[count][n]
         ps=ds.createVariable('ps','f4',('time',));ps[:]=[1e5,9e4];ps.units='Pa'
         ds.createVariable('rld','i2',('time','lev'))[:]=np.arange(160).reshape(2,80)
     inode=p.stat().st_ino
-    plan=run(p,tmp_path,[Step('C074','fix_hybrid_coefficients',dict(coordinate='alevhalf'))])
+    steps = [Step('C074','fix_hybrid_coefficients',dict(coordinate='alevhalf'))]
+    if count == 79:
+        # The latest interface contract forbids replacing center values by interfaces.
+        before = p.read_bytes()
+        with pytest.raises(ValueError, match='no value replacement'):
+            apply_plan(FixPlan('t', 's', {str(p): steps}), tmp_path/'log')
+        assert p.read_bytes() == before
+        return
+    plan=run(p,tmp_path,steps)
     assert p.stat().st_ino!=inode
     with netCDF4.Dataset(p) as ds:
         np.testing.assert_array_equal(ds['lev'][:],pressure)

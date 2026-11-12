@@ -25,14 +25,14 @@ def make(path, fmt='NETCDF4', label='osurf'):
         v = ds.createVariable('seasurface', 'S1', ('str_len',))
         data = label.encode() + b'\0' + b' '*(254-len(label))
         v[:] = np.frombuffer(data, dtype='S1')
-        v.axis, v.long_name = 'Z', 'Ocean surface coordinate'
+        v.long_name = 'Ocean surface coordinate'
         ds['chl'].coordinates = 'seasurface nav_lat nav_lon'
 
 
 @pytest.mark.parametrize('fmt', ['NETCDF4','NETCDF4_CLASSIC','NETCDF3_64BIT_OFFSET'])
 @pytest.mark.parametrize('label', ['osurf','ocean_surface_layer'])
 @pytest.mark.parametrize('sequence', ['axis_first','names_first','same_plan'])
-def test_surface_axis_removal_preserves_values_and_composes_with_horizontal_renames(tmp_path, fmt, label, sequence):
+def test_surface_axis_addition_preserves_values_and_composes_with_horizontal_renames(tmp_path, fmt, label, sequence):
     original, target = tmp_path/'source.nc', tmp_path/'copy.nc'
     make(original, fmt, label); source_bytes = original.read_bytes(); shutil.copyfile(original,target)
     axis = Step('C073','drop_osurf_axis',{})
@@ -46,7 +46,7 @@ def test_surface_axis_removal_preserves_values_and_composes_with_horizontal_rena
     with netCDF4.Dataset(original) as src,netCDF4.Dataset(target) as dst:
         src.set_auto_maskandscale(False);dst.set_auto_maskandscale(False)
         src.set_auto_chartostring(False);dst.set_auto_chartostring(False)
-        assert 'axis' not in dst['seasurface'].ncattrs()
+        assert dst['seasurface'].axis == 'Z'
         assert 'units' not in dst['seasurface'].ncattrs() and 'positive' not in dst['seasurface'].ncattrs()
         assert dst['seasurface'].long_name==src['seasurface'].long_name
         for name,v in src.variables.items():
@@ -68,18 +68,20 @@ def test_surface_axis_and_label_corrections_are_independent(tmp_path,order):
     plans=[FixPlan('test','report',{str(path):steps})] if order=='same_plan' else [FixPlan('test','report',{str(path):[s]}) for s in steps]
     for p in plans:assert apply_plan(p,tmp_path/'log')['changed']==1
     with netCDF4.Dataset(path) as ds:
-        assert 'axis' not in ds['seasurface'].ncattrs()
+        assert ds['seasurface'].axis == 'Z'
         assert ds['seasurface'][:].tobytes().rstrip(b' ') == b'ocean_surface_layer'
     for p in plans:assert apply_plan(p,tmp_path/'log')['changed']==0
 
 
-def test_two_surface_diagnostics_deduplicate_and_override_old_seed_waivers():
+def test_latest_surface_decision_adds_axis_and_keeps_cf_interpretation_in_review():
     findings=[Finding(3,'[CF-Conventions] §4.3 Vertical Coordinate',m,'dataset','file.nc') for m in MESSAGES]
+    findings.append(Finding(3, '[CMIP7] [COORD003] Coordinate metadata',
+                            "'seasurface' axis=''; the required value is 'Z'.", 'dataset', 'file.nc'))
     rules=RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml',ROOT/'rules/catalogue_fallbacks.yaml')
     c=classify(QAReport(Path('report'),{},findings),rules)
-    assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX]
+    assert [i.outcome for i in c.items]==[Outcome.REVIEW,Outcome.REVIEW,Outcome.FIX]
     p=FixPlan.from_classification(c)
-    assert len(p.files['file.nc'])==1 and p.files['file.nc'][0].rule=='C073'
+    assert len(p.files['file.nc'])==1 and p.files['file.nc'][0].fix=='set_osurf_axis'
 
 
 @pytest.mark.parametrize('coordinate', ['alevel', 'alevhalf'])

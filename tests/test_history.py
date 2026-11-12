@@ -31,7 +31,7 @@ def report(path, variables):
 
 
 @pytest.mark.parametrize("global_history", [None, "", "global history\nkeep the complete value"])
-def test_history_only_preserves_globals_and_untargeted_variables(tmp_path, global_history):
+def test_history_sweep_preserves_globals_and_cleans_unreported_variables(tmp_path, global_history):
     source = tmp_path / "source.nc"
     with netCDF4.Dataset(source, "w") as ds:
         ds.createDimension("n", 3)
@@ -54,9 +54,10 @@ def test_history_only_preserves_globals_and_untargeted_variables(tmp_path, globa
                                      "--only-rule", "C001", "-o", str(plan_path)])
     assert result.exit_code == 0, result.output
     plan = FixPlan.read(plan_path)
-    assert [s.params for s in plan.files[str(staged)]] == [
-        {"var": "tas", "attr": "history"}, {"var": "ps", "attr": "history"}]
-    assert all(s.rule == "C001" and s.fix == "drop_var_attr" for s in plan.files[str(staged)])
+    assert len(plan.files[str(staged)]) == 1
+    assert plan.files[str(staged)][0].params == {}
+    assert plan.files[str(staged)][0].rule == 'C001'
+    assert plan.files[str(staged)][0].fix == 'drop_variable_histories'
 
     assert apply_plan(plan, tmp_path / "log.jsonl", dry_run=True)["changed"] == 1
     assert staged.read_bytes() == original_bytes
@@ -75,7 +76,7 @@ def test_history_only_preserves_globals_and_untargeted_variables(tmp_path, globa
             assert dst[name].description == src[name].description
         assert "history" not in dst["tas"].ncattrs()
         assert "history" not in dst["ps"].ncattrs()
-        assert dst["untargeted"].history == "history on untargeted"
+        assert 'history' not in dst['untargeted'].ncattrs()
     corrected_bytes = staged.read_bytes()
     assert apply_plan(plan, tmp_path / "log.jsonl")["changed"] == 0
     assert staged.read_bytes() == corrected_bytes

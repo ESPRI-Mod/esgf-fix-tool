@@ -1,5 +1,35 @@
 # esgf-fix-tool
 
+For the approved ATM/SRF overlaps, use the independent
+[component deduplication command](docs/component-deduplication.md), without a QA report or rule.
+
+Latest latitude decision: [conventional lat/rlat bounds on nine NEMO diagnostics](docs/conventional-latitude-bounds-20261112.md).
+C103 now fixes the eight transport profiles and msfty; its rlat endpoint is 89.36999.
+This replaces the former bounds-removal exception and nextafter strategy.
+
+Latest QA update: [approved edt/evu interpolation from 80 interfaces to 79 centers](docs/edt-evu-centering-20261112.md).
+The [ta/zg lev normalization and universal axis_nbounds rename](docs/lev-and-axis-bounds-20261112.md) remain unchanged.
+
+Latest decisions after QA v5: [retired variables, scoped basin/alh bounds removal and DR metadata order](docs/final-cleanup-20261110.md).
+These decisions supersede the earlier time-first and native basin-bounds strategies.
+
+Latest metadata update: [severity 2 recommendations, temporal clause ordering and hybrid cleanup](docs/severity2-20261110.md).
+
+Latest reviewed batch: [vertical hfx/hfy sums, 79/80-level normalization, native basin latitude bounds and seasurface axis](docs/integrated-axes-20261110.md).
+Regenerate plans to include the latest approved decisions.
+
+Latest approved QA v4 updates: [msfty terminal latitude, orphan horizontal arrays,
+technical standard names, lev_bnds exception and basin units](docs/qa-v4-approved.md).
+The 2-D basin mask now explicitly retains units="1"; the older C007 cannot remove it.
+
+C001 now removes `history` from every variable in a selected file, including
+unreported auxiliaries. A final sweep after all recipes also covers newly created
+or replaced variables. Global history and all numeric values are preserved.
+
+`apply` now reports each file error with its traceback, records it in the fixlog,
+and continues by default. The final summary includes `failed`; exit status is 1
+if any file failed. Use `--fail-fast` to stop at the first file error.
+
 Latest maintenance: [hybrid dependencies and catalogue cleanup](docs/hybrid-dependencies-and-catalogues.md).
 
 Monthly tclm series now use [the per-file numerical climatology reconstruction](docs/monthly-climatology.md)
@@ -11,7 +41,7 @@ the thematic YAML files; IDs and the `plan`/`apply` commands are preserved.
 
 Latest approved corrections: [normalized lev/bounds, four ice passages, micron radii,
 thermal/plev7c bounds and registry comments](docs/normalized-coordinates-20261109.md).
-Regenerate plans. Latitude profile bounds remain in review.
+Regenerate plans. The later native basin latitude bounds decision is documented above.
 
 C101 converts only the 2-D `basin_ti-u-hxy-u` mask to int32 with the approved
 0..10 flags. The nine 1-D basin axes retain their numeric indices, with the
@@ -64,7 +94,7 @@ Rules:
 - `rules/required_coordinates.yaml`: C021–C035, missing coordinates with explicit fix/review decisions.
 - `rules/coordinate_metadata.yaml`: C036–C039, the four reviewed COORD003 attribute messages.
 - `rules/dimension_order.yaml`: C040–C054, reviewed COORD002 permutations, renames and singleton removal;
-  C051 remains in review. C050/C052/C053 use the newly approved definitions; C054 removes singleton x from msfty.
+  C051 now performs the approved hfx/hfy vertical sums. C050/C052/C053 use the newly approved definitions; C054 removes singleton x from msfty.
 - `rules/coordinate_values_bounds.yaml`: C055–C068, reviewed COORD007/008/009 values and bounds;
   DR histogram centers/edges and the five IPSL ice thickness classes are approved fixes.
 - `rules/horizontal_coordinates.yaml`: C069–C072, unnecessary horizontal references and curvilinear
@@ -170,7 +200,8 @@ add `-r rules/standard_name_modifiers.yaml` before `-r rules/catalogue_fallbacks
 ## Test only variable history removal
 
 This fix is already implemented by **C001** in `rules/variable_attributes.yaml`, calling
-`drop_var_attr(ds, var, attr="history")`. It only addresses `ds.variables[var]`, never global attributes.
+`drop_variable_histories(ds)`. It sweeps all variables in the file, including ps,
+coefficients, bounds and coordinates, while retaining global history unchanged.
 In the full 2026-11-03 report, the 351 distinct messages differ only in variable name: they represent
 665 findings in 584 files and all need the same correction. Each finding also occurs in a failed
 `cf / appendix_a` control in its individual file report.
@@ -194,7 +225,11 @@ shown above instead of `uv run esgf-fix-tool`.
 
 QA consistency snapshots in this scan do not export `history`, so they cannot establish whether a
 global history exists. Tests explicitly preserve it when present (including empty and NC_STRING
-values), leave other variables' history alone, and check raw data, compression and hardlink rejection.
+values), remove history from unreported auxiliaries too, and check raw data,
+compression and hardlink rejection. A final sweep before writing prevents other
+recipes from reintroducing the attribute. Legacy per-variable history plans receive
+the same final sweep. C001 must be selected for that file; other isolated rule tests
+do not silently enable this cleanup.
 
 ## Test units and invalid standard names
 
@@ -205,7 +240,7 @@ following the user confirmation of 2026-11-05. Suggestions printed by the checke
 
 | Rule | Observed case | Metadata correction | Findings |
 | --- | --- | --- | ---: |
-| C007 | basin, units=1, standard_name=region | remove units; keep codes and flags | 10 |
+| C007 | basin, units=1, standard_name=region | historical units cleanup; now excludes the explicitly dimensionless 2-D mask | 10 |
 | C008 | solth, units=m, standard_name=model_level_number | set depth, axis=Z, positive=down; keep meters | 2 |
 | C009–C010 | ReffIce / ReffLiq | remove exact invalid standard_name; preserve long_name | 1 + 1 |
 | C011 | bounds | remove exact invalid standard_name | 81 |

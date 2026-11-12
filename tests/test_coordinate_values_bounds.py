@@ -136,7 +136,12 @@ def test_longitude_and_bound_names_and_shared_dimension_are_independent(tmp_path
     merge=('normalize_bounds_dimension',{})
     if sequence=='same_plan':apply(path,tmp_path,normalization,rename,merge)
     else:
-        for step in ([normalization,rename,merge] if sequence=='normalize_first' else [rename,merge,normalization]):apply(path,tmp_path,step)
+        for step in ([normalization,rename,merge] if sequence=='normalize_first' else [rename,merge,normalization]):
+            if step == merge:
+                # The common axis_nbounds pass already normalized this dimension.
+                assert apply_plan(plan(path,step),tmp_path/'log')['changed'] == 0
+            else:
+                apply(path,tmp_path,step)
     with netCDF4.Dataset(path) as ds:
         np.testing.assert_array_equal(ds['lon'][:],np.arange(144)*2.5)
         np.testing.assert_array_equal(ds['lon_bnds'][:,0],np.arange(144)*2.5-1.25)
@@ -175,7 +180,7 @@ def test_point_bounds_are_physically_removed_and_time_preserved(tmp_path):
 def test_climatology_switch_reuses_values_and_survives_old_naming_plan(tmp_path,label,rename_first):
     path=tmp_path/'file.nc';make(path,label=label)
     with netCDF4.Dataset(path,'a') as ds:
-        ds['science'].cell_methods='time: mean within years time: mean over years' if label=='tclm' else 'time: maximum within days time: mean over days'
+        ds['science'].cell_methods='time: mean within years time: mean over years' if label=='tclm' else ('time: minimum within days time: mean over days' if label == 'tminavg' else 'time: maximum within days time: mean over days')
     rename=('rename_bounds_variable',dict(coordinate='time',source='time_bounds',target='time_bnds'))
     if rename_first:apply(path,tmp_path,rename)
     apply(path,tmp_path,('fix_climatology_reference',{}),rename,('normalize_bounds_dimension',{}))
