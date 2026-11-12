@@ -179,6 +179,7 @@ def apply_plan(
                 "file": path,
                 "tool_version": __version__,
                 "rules_version": plan.rules_version,
+                "rules_digest": plan.rules_digest,
                 "dry_run": dry_run,
                 "steps": entries,
                 "write_mode": entries[0]["write_mode"] if entries else "none",
