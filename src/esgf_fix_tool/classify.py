@@ -73,6 +73,10 @@ class Classification:
     def rules_version(self) -> str:
         return self.rules.version
 
+    @property
+    def rules_digest(self) -> str:
+        return self.rules.digest
+
     def blocking(self) -> list[Classified]:
         accepted = {Outcome.WAIVED} if self.final else {Outcome.WAIVED, Outcome.DEFERRED, Outcome.OTHER_STEP}
         return [c for c in self.items if c.finding.severity >= BLOCKING_SEVERITY and c.outcome not in accepted]

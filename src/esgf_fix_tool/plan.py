@@ -39,13 +39,14 @@ class FixPlan:
     rules_version: str
     report: str
     files: dict[str, list[Step]] = field(default_factory=dict)
+    rules_digest: str = ""  # absent from plans written before 0.1.0
 
     @classmethod
     def from_classification(
         cls, c: Classification, only_rules: set[str] | None = None
     ) -> FixPlan:
         """Fixes of every finding classified FIX; ``only_rules`` keeps the fixes of these rule ids only."""
-        plan = cls(c.rules_version, str(c.report.source))
+        plan = cls(c.rules_version, str(c.report.source), rules_digest=c.rules_digest)
         for item in c.items:
             if item.outcome is not Outcome.FIX:
                 continue

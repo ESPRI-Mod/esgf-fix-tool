@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -66,9 +67,11 @@ KNOWN_KEYS = {"id", "check", "message", "action", "fix", "params", "note", "data
 
 
 class RuleSet:
-    def __init__(self, rules: list[Rule], version: str = "unversioned"):
+    def __init__(self, rules: list[Rule], version: str = "unversioned", digest: str = ""):
         self.rules = rules
         self.version = version
+        # sha256 of every loaded catalogue's content, in load order: identifies the exact rules used.
+        self.digest = digest
         ids = [r.id for r in rules]
         if dupes := {i for i in ids if ids.count(i) > 1}:
             raise ValueError(f"duplicate rule ids: {sorted(dupes)}")
@@ -77,6 +80,7 @@ class RuleSet:
     def load(cls, *paths: str | Path, version: str | None = None) -> RuleSet:
         rules = []
         loaded, active = set(), set()
+        digest = hashlib.sha256()
 
         def load_file(path):
             path = Path(path).resolve()
@@ -85,7 +89,9 @@ class RuleSet:
             if path in loaded:
                 return
             active.add(path)
-            data = yaml.safe_load(path.read_text()) or []
+            text = path.read_text()
+            digest.update(text.encode())
+            data = yaml.safe_load(text) or []
             if isinstance(data, dict):
                 if set(data) - {'include', 'rules'}:
                     raise ValueError(f'Unknown catalogue manifest keys in {path}')
@@ -106,7 +112,7 @@ class RuleSet:
 
         for p in paths:
             load_file(p)
-        return cls(rules, version or ",".join(Path(p).name for p in paths))
+        return cls(rules, version or ",".join(Path(p).name for p in paths), digest.hexdigest())
 
     def match(self, finding: Finding) -> RuleMatch | None:
         for rule in self.rules:
