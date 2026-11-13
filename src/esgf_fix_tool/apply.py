@@ -51,6 +51,7 @@ def apply_file(
     events: Callable[[ProgressEvent], None] | None = None,
     file_index: int = 1,
     file_total: int = 1,
+    break_hardlinks: bool = False,
 ) -> list[dict]:
     """Report the current file before any potentially long I/O, including cancellation."""
     steps = order_steps(steps)
@@ -58,7 +59,7 @@ def apply_file(
         notify("file", "start", index=file_index, total=file_total, dry_run=dry_run)
         try:
             actual, target, rename_index = _rename_request(path, steps)
-            entries = _apply_file(actual, steps, dry_run=dry_run)
+            entries = _apply_file(actual, steps, dry_run=dry_run, break_hardlinks=break_hardlinks)
             if target is not None:
                 # Reserve the destination without ever overwriting an existing file.
                 # Both paths have the same parent, and all NetCDF handles are closed.
@@ -104,14 +105,14 @@ def apply_file(
 
 
 def _apply_file(
-    path: str | Path, steps: list[Step], *, dry_run: bool = False
+    path: str | Path, steps: list[Step], *, dry_run: bool = False, break_hardlinks: bool = False
 ) -> list[dict]:
     unknown = [s.fix for s in steps if s.fix not in fixes.REGISTRY]
     if unknown:
         raise KeyError(f"{Path(path).name}: fixes not implemented: {unknown}")
     from .execute import execute
 
-    return execute(path, steps, dry_run=dry_run)
+    return execute(path, steps, dry_run=dry_run, break_hardlinks=break_hardlinks)
 
 
 def check_under(plan: FixPlan, root: str | Path) -> None:
@@ -133,6 +134,7 @@ def apply_plan(
     progress: Callable[[int, int, str, bool | None, float], None] | None = None,
     events: Callable[[ProgressEvent], None] | None = None,
     continue_on_error: bool = False,
+    break_hardlinks: bool = False,
 ) -> dict[str, int]:
     """Apply every file of the plan. ``progress(done, total, path, changed, elapsed_s)`` is called after each file;
     each fixlog line is flushed at once, so the log can be followed while a long run goes on.
@@ -208,6 +210,7 @@ def apply_plan(
                     events=events,
                     file_index=stats["files"] + 1,
                     file_total=total,
+                    break_hardlinks=break_hardlinks,
                 )
             except Exception as exc:
                 if not continue_on_error:

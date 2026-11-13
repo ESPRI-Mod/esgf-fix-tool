@@ -104,7 +104,10 @@ Direct updates validate final headers and affected auxiliary arrays, without rea
 science arrays. Coordinate snapshots protect against the reproduced NetCDF-4 rename data-loss
 bug; only differing arrays are restored. These updates are not atomic, and a failed/interrupted
 operation can already have changed the target. Hardlinked targets are refused before direct writes
-because they could alias a simulator file. Structural replacement safely leaves other links alone.
+because they could alias a simulator file, unless `--break-hardlinks` is given: the file is then copied
+next to itself and renamed onto its path just before the first write (after preflight, so an unchanged
+file is never copied), and its other links keep the previous content. Structural replacement safely leaves
+other links alone. Both record `hardlinks_broken` (the number of other links) in the fixlog.
 Classic-format header growth can cause internal data movement within the NetCDF library.
 
 Built-in `after_close` operations are compiled into the batch instead of executing their separate
