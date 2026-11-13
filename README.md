@@ -145,8 +145,12 @@ of each approved overlap and **deletes the other file**. It does not use a QA re
 
 ```bash
 esgf-fix-tool deduplicate "$simulation_dir" --dry-run --fixlog deduplicate.preview.jsonl   # what would be deleted
-esgf-fix-tool deduplicate "$simulation_dir" --fixlog deduplicate.jsonl
+esgf-fix-tool deduplicate "$simulation_dir" --only-under "$simulation_dir" --fixlog deduplicate.jsonl
 ```
+
+**Deleting requires `--only-under DIR`**, naming the directory deletions are allowed in (the simulation directory or
+a parent). Without it, or if the simulation directory is not inside `DIR`, nothing is deleted. `--dry-run` does not
+need it.
 
 A pair is only deleted when both paths are identical apart from the ATM/SRF folder, and the netCDF identity
 (`source_id`, `experiment_id`, `variant_label`, `branded_variable`, `frequency`, `region`, `grid_label`) and time

@@ -93,15 +93,24 @@ def _validate(variable, brand, discard, keep, root):
     return signatures
 
 
-def deduplicate(root, fixlog, *, dry_run=False, emit=print):
+def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print):
     """Unlink only approved secondary products with a validated preferred peer.
 
-    A missing keeper is never guessed or synthesized. No NetCDF array is edited.
-    Replaying after deletion finds no secondary candidate and changes nothing.
+    Deleting needs ``only_under``: the caller names the directory deletions are allowed in, which must
+    contain ``root``. A dry run needs nothing. A missing keeper is never guessed or synthesized. No NetCDF
+    array is edited. Replaying after deletion finds no secondary candidate and changes nothing.
     """
     root, fixlog = Path(root).resolve(), Path(fixlog)
     if not root.is_dir():
         raise ValueError("Expected the simulation directory containing ATM/SRF")
+    # These are simulation files: never delete without an explicit, named consent.
+    if not dry_run:
+        if only_under is None:
+            raise ValueError("Deleting files requires --only-under DIR, the directory deletions are allowed in; "
+                             "nothing deleted (use --dry-run to preview)")
+        only_under = Path(only_under).resolve()
+        if not root.is_relative_to(only_under):
+            raise ValueError(f"{root} is not inside --only-under {only_under}; nothing deleted")
     if fixlog.suffix.lower() == ".nc":
         raise ValueError("The deduplication log must not be a NetCDF file")
     counts = dict(deleted=0, would_delete=0, missing_keeper=0, failed=0)
@@ -125,6 +134,8 @@ def deduplicate(root, fixlog, *, dry_run=False, emit=print):
                     if dry_run:
                         status = "would_delete"
                     else:
+                        if not discard.resolve().is_relative_to(only_under):
+                            raise ValueError(f"{discard} is outside --only-under {only_under}; nothing deleted")
                         discard.unlink()
                         status = "deleted"
             except Exception as exc:  # noqa: BLE001 - one bad pair is logged as failed, the others go on
