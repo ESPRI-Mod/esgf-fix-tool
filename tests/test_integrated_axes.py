@@ -272,7 +272,6 @@ def test_actual_v4_report_selects_each_reviewed_variant():
     ).items
     expected = {
         "C051": 4,
-        "C073a": 5,
         "C102": 23,
         "C059": 2,
 

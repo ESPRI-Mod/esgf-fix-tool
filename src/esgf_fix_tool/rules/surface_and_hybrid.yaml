@@ -72,20 +72,13 @@
   params: {var: '{var}', attr: units}
   note: User-approved omission of optional units=1 on b and b_bnds. Shared hybrid recipes accept dimensionless terms without units.
 
-- id: C073a
-  check: \[CMIP7\] \[COORD003\] Coordinate metadata$
-  message: '''seasurface'' axis=''''; the required value is ''Z''\.$'
-  action: fix
-  fix: set_osurf_axis
-  params: {}
-  note: Latest user decision on 2026-11-10 overrides the former removal strategy. Add axis=Z only.
-# User decisions on 2026-11-05. Load before the generated seed's older osurf waivers.
-
 - id: C073
   check: '\[CF-Conventions\] §4\.3 Vertical Coordinate$'
   message: '(?:seasurface: vertical coordinates not defining pressure must include a positive attribute that is either ''up'' or ''down''|§4\.3\.1 seasurface''s units must be defined for vertical coordinates, there is no default)$'
-  action: review
-  note: The latest decision retains axis=Z. Removing it would undo C073a; units/positive interpretation of this categorical label remains unresolved.
+  action: fix
+  fix: drop_osurf_axis
+  params: {}
+  note: User decision on 2026-11-13. Remove seasurface:axis=Z; preserve categorical labels and all other metadata. Do not add units or positive.
 
 - id: C074
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$

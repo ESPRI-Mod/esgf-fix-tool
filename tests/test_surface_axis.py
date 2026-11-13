@@ -8,6 +8,7 @@ from test_horizontal_coordinates import make as make_horizontal
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Outcome, classify
+from esgf_fix_tool.cli.catalogues import default_rule_paths
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
@@ -25,13 +26,14 @@ def make(path, fmt='NETCDF4', label='osurf'):
         data = label.encode() + b'\0' + b' '*(254-len(label))
         v[:] = np.frombuffer(data, dtype='S1')
         v.long_name = 'Ocean surface coordinate'
+        v.axis = 'Z'
         ds['chl'].coordinates = 'seasurface nav_lat nav_lon'
 
 
 @pytest.mark.parametrize('fmt', ['NETCDF4','NETCDF4_CLASSIC','NETCDF3_64BIT_OFFSET'])
 @pytest.mark.parametrize('label', ['osurf','ocean_surface_layer'])
 @pytest.mark.parametrize('sequence', ['axis_first','names_first','same_plan'])
-def test_surface_axis_addition_preserves_values_and_composes_with_horizontal_renames(tmp_path, fmt, label, sequence):
+def test_surface_axis_removal_preserves_values_and_composes_with_horizontal_renames(tmp_path, fmt, label, sequence):
     original, target = tmp_path/'source.nc', tmp_path/'copy.nc'
     make(original, fmt, label); source_bytes = original.read_bytes(); shutil.copyfile(original,target)
     axis = Step('C073','drop_osurf_axis',{})
@@ -45,7 +47,7 @@ def test_surface_axis_addition_preserves_values_and_composes_with_horizontal_ren
     with netCDF4.Dataset(original) as src,netCDF4.Dataset(target) as dst:
         src.set_auto_maskandscale(False);dst.set_auto_maskandscale(False)
         src.set_auto_chartostring(False);dst.set_auto_chartostring(False)
-        assert dst['seasurface'].axis == 'Z'
+        assert 'axis' not in dst['seasurface'].ncattrs()
         assert 'units' not in dst['seasurface'].ncattrs() and 'positive' not in dst['seasurface'].ncattrs()
         assert dst['seasurface'].long_name==src['seasurface'].long_name
         for name,v in src.variables.items():
@@ -67,21 +69,64 @@ def test_surface_axis_and_label_corrections_are_independent(tmp_path,order):
     plans=[FixPlan('test','report',{str(path):steps})] if order=='same_plan' else [FixPlan('test','report',{str(path):[s]}) for s in steps]
     for p in plans:assert apply_plan(p,tmp_path/'log')['changed']==1
     with netCDF4.Dataset(path) as ds:
-        assert ds['seasurface'].axis == 'Z'
+        assert 'axis' not in ds['seasurface'].ncattrs()
         assert ds['seasurface'][:].tobytes().rstrip(b' ') == b'ocean_surface_layer'
     for p in plans:assert apply_plan(p,tmp_path/'log')['changed']==0
 
 
-def test_latest_surface_decision_adds_axis_and_keeps_cf_interpretation_in_review():
+@pytest.mark.parametrize('catalogue', ['surface', 'default'])
+def test_latest_surface_decision_removes_axis_without_restoring_old_dr_marker(catalogue):
     findings=[Finding(3,'[CF-Conventions] §4.3 Vertical Coordinate',m,'dataset','file.nc') for m in MESSAGES]
     findings.append(Finding(3, '[CMIP7] [COORD003] Coordinate metadata',
                             "'seasurface' axis=''; the required value is 'Z'.", 'dataset', 'file.nc'))
-    rules=RuleSet.load(ROOT/'src/esgf_fix_tool/rules/surface_and_hybrid.yaml',
-                       ROOT/'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml')
+    paths = default_rule_paths() if catalogue == 'default' else [
+        ROOT/'src/esgf_fix_tool/rules/surface_and_hybrid.yaml',
+        ROOT/'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml',
+    ]
+    rules = RuleSet.load(*paths)
     c=classify(QAReport(Path('report'),{},findings),rules)
-    assert [i.outcome for i in c.items]==[Outcome.REVIEW,Outcome.REVIEW,Outcome.FIX]
+    # The removed override no longer waives the old DR diagnostic. The generic
+    # fallback reports a missing recipe, but must never recreate axis=Z.
+    assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX,Outcome.FIX_MISSING]
     p=FixPlan.from_classification(c)
-    assert len(p.files['file.nc'])==1 and p.files['file.nc'][0].fix=='set_osurf_axis'
+    assert len(p.files['file.nc'])==1 and p.files['file.nc'][0].fix=='drop_osurf_axis'
+
+
+@pytest.mark.parametrize('axis', [None, '', 'Z'])
+def test_surface_axis_removal_is_idempotent_metadata_only(tmp_path, monkeypatch, axis):
+    from esgf_fix_tool.batch_write import Batch
+
+    path = tmp_path / 'test.nc'
+    make(path)
+    with netCDF4.Dataset(path, 'a') as ds:
+        # Keep the fixture's bounds dimension compliant so the automatic shared
+        # cleanup does not obscure whether this surface fix changed anything.
+        ds.renameDimension('axis_nbounds', 'bnds')
+        coordinate = ds['seasurface']
+        if axis is None:
+            coordinate.delncattr('axis')
+        else:
+            coordinate.axis = axis
+        # Preserve unrelated existing metadata; only axis is being corrected.
+        coordinate.units = '1'
+        coordinate.positive = 'down'
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('A surface attribute fix must not rewrite the file')
+
+    monkeypatch.setattr(Batch, 'write', forbidden)
+    monkeypatch.setattr(shutil, 'copyfile', forbidden)
+    inode = path.stat().st_ino
+    plan = FixPlan('test', 'report', {str(path): [Step('C073', 'drop_osurf_axis', {})]})
+    assert apply_plan(plan, tmp_path / 'log')['changed'] == int(axis is not None)
+    assert path.stat().st_ino == inode
+    with netCDF4.Dataset(path) as ds:
+        assert 'axis' not in ds['seasurface'].ncattrs()
+        assert ds['seasurface'].units == '1'
+        assert ds['seasurface'].positive == 'down'
+    corrected = path.read_bytes()
+    assert apply_plan(plan, tmp_path / 'log')['changed'] == 0
+    assert path.read_bytes() == corrected
 
 
 @pytest.mark.parametrize('coordinate', ['alevel', 'alevhalf'])
