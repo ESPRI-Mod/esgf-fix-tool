@@ -1,6 +1,7 @@
 """Delete only the explicitly reviewed component copies, never by array equality."""
 
 import json
+import re
 
 import netCDF4
 import pytest
@@ -150,14 +151,19 @@ def test_simulation_outside_only_under_is_refused(tmp_path):
     assert discard.exists() and keep.exists()
 
 
+def plain(output):
+    """CLI output without terminal colours or line wrapping (CI renders errors in colour)."""
+    return " ".join(re.sub(r"\x1b\[[0-9;]*m", "", output).split())
+
+
 def test_cli_refuses_to_delete_without_only_under(tmp_path):
     discard, keep = overlap(tmp_path)
     args = ["deduplicate", str(tmp_path), "--fixlog", str(tmp_path / "log.jsonl")]
     result = CliRunner().invoke(app, args)
-    assert result.exit_code == 2 and "--only-under" in result.output
+    assert result.exit_code == 2 and "--only-under" in plain(result.output)
     assert discard.exists() and keep.exists()
     elsewhere = tmp_path.parent / (tmp_path.name + "-other")
     elsewhere.mkdir()
     result = CliRunner().invoke(app, [*args, "--only-under", str(elsewhere)])
-    assert result.exit_code == 2 and "not inside --only-under" in result.output
+    assert result.exit_code == 2 and "not inside --only-under" in plain(result.output)
     assert discard.exists() and keep.exists()
