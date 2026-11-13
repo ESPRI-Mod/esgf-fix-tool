@@ -70,8 +70,22 @@ def final_checks(path, output, steps, entries, coefficient_baseline=None):
                 method.verify_final(path, output, **s.params)
 
 
-def execute(path, steps, *, dry_run=False):
+def _break_hardlinks(path):
+    """Give ``path`` its own copy of the data: its other hard links keep the previous content."""
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".linkbreak", dir=path.parent)
+    os.close(fd)
+    try:
+        shutil.copy2(path, temporary)
+        os.replace(temporary, path)
+    except BaseException:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+        raise
+
+
+def execute(path, steps, *, dry_run=False, break_hardlinks=False):
     path = Path(path)
+    other_links = 0
     entries = []
     backups = {}
     temporary = None
@@ -186,10 +200,14 @@ def execute(path, steps, *, dry_run=False):
                                 source[v.origin],
                                 tuple(v.source_dimensions[i] for i in v.order),
                             )
-                if changed and not rewrite and path.stat().st_nlink > 1:
+                # Other hard links (e.g. a published DRS version) must keep the previous content.
+                # A rewrite gives the path a new file anyway; a direct update needs a copy first.
+                other_links = path.stat().st_nlink - 1 if changed else 0
+                if other_links and not rewrite and not break_hardlinks:
                     raise PermissionError(
                         "Direct updates require an independent copy: this file has hardlinks; "
-                        "no change applied. Break its physical links before applying metadata fixes."
+                        "no change applied. Use --break-hardlinks to copy it first, so its other "
+                        "links keep the previous content."
                     )
                 mode = (
                     "rewrite-once"
@@ -210,6 +228,9 @@ def execute(path, steps, *, dry_run=False):
                         if rewrite
                         else "metadata-and-edited-auxiliaries",
                     )
+                if other_links:
+                    for e in entries:
+                        e["hardlinks_broken"] = other_links
                 for s, e in zip(steps, entries):
                     if fixes.REGISTRY[s.fix].layout_change:
                         e["layout_verified"] = not dry_run
@@ -294,6 +315,9 @@ def execute(path, steps, *, dry_run=False):
         finally:
             preview.close()
 
+    if other_links:
+        with activity("Copie du fichier pour rompre ses liens physiques"):
+            _break_hardlinks(path)
     try:
         with activity("Application directe des noms et attributs"):
             reopen = any(

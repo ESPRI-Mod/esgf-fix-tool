@@ -115,6 +115,8 @@ def test_multiple_variable_permutations_do_not_multiply_file_writes(tmp_path,mon
         assert ds['science'][:].tobytes()==raw.transpose(0,2,1,3,4).tobytes()
         assert ds['second'][:].tobytes()==raw.astype('f4').transpose(0,1,3,4,2).tobytes()
     with netCDF4.Dataset(source) as ds:assert ds['science'].dimensions==('time','radius','tau','lat','lon')
+    # the rewrite gave p a new file: the fixlog says one other link kept the old content
+    assert {json.loads((tmp_path/'log').read_text())['steps'][i]['hardlinks_broken'] for i in (0,1)}=={1}
 
 
 def test_dry_run_does_not_create_or_write_a_full_temporary_file(tmp_path,monkeypatch):

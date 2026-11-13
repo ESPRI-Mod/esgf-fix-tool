@@ -58,6 +58,14 @@ def run(
             help="stop at the first file error; default: report errors and continue",
         ),
     ] = False,
+    break_hardlinks: Annotated[
+        bool,
+        typer.Option(
+            "--break-hardlinks",
+            help="copy a hard-linked file before a metadata update, so its other links (e.g. a published "
+            "DRS version) keep the previous content; default: refuse such files",
+        ),
+    ] = False,
 ):
     """Apply a plan: update metadata directly or combine structural changes in one rewrite."""
     from ..apply import apply_plan  # needs netCDF4
@@ -72,6 +80,7 @@ def run(
             progress=None if quiet else _progress,
             events=display,
             continue_on_error=not fail_fast,
+            break_hardlinks=break_hardlinks,
         )
     print(stats, flush=True)
     if stats.get("failed", 0):

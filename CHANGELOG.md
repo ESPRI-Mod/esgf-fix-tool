@@ -4,6 +4,14 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `apply --break-hardlinks`: a hard-linked file (e.g. a WORK file already linked into the DRS, when preparing a new
+  version) is copied before a metadata update, so its other links keep the previous content. Without it, such files
+  are still refused. The fixlog records `hardlinks_broken` for metadata updates and structural rewrites alike.
+
 ## [0.3.0] - 2026-11-13
 
 ### Added

@@ -81,7 +81,9 @@ falls through to a broader rule under another ID.
   correct is never written.
 - **Metadata changes** (attributes, renames, small auxiliary arrays) update the file in place. They are not
   atomic: an interruption can leave some changes applied. **Hardlinked files are refused** so a staging copy can
-  never alias a simulation file.
+  never alias a simulation file. For a file that is meant to be hard-linked (a WORK file already linked into the
+  DRS, when preparing a new version), `--break-hardlinks` copies it first: WORK gets the fix, and the other links
+  (the published version) keep the previous content. The fixlog records `hardlinks_broken`.
 - **Structural changes** (dimension order, singleton removal, bounds merges) are combined into **one** rewrite per
   file. The output is verified against the source, then atomically replaces it.
 - When a fix changes the grid label, the file is renamed to match.
