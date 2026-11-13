@@ -127,7 +127,7 @@ def deduplicate(root, fixlog, *, dry_run=False, emit=print):
                     else:
                         discard.unlink()
                         status = "deleted"
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - one bad pair is logged as failed, the others go on
                 status = "failed"
                 entry["error"] = str(exc)
             entry["status"] = status

@@ -1,17 +1,16 @@
 """Prepare every fix before writing: direct patches or exactly one rebuilt output."""
 
 import os
-from pathlib import Path
 import shutil
 import tempfile
 import time
+from pathlib import Path
 
 import netCDF4
-import numpy as np
 
 from . import fixes
 from .batch_write import Batch, raw_equal
-from .fixes import layouts, rectilinear, hybrid, cleanup, bounds
+from .fixes import bounds, cleanup, hybrid, layouts, rectilinear
 from .preview import Preview
 from .progress import activity, notify, step_scope
 
@@ -311,9 +310,8 @@ def execute(path, steps, *, dry_run=False):
         if reopen:
             with activity(
                 "Finalisation directe des coordonnées renommées après fermeture"
-            ):
-                with netCDF4.Dataset(path, "a") as dst:
-                    batch.patch_auxiliaries(dst, backups)
+            ), netCDF4.Dataset(path, "a") as dst:
+                batch.patch_auxiliaries(dst, backups)
         final_checks(path, path, steps, entries, coefficient_baseline)
         with activity("Vérification des métadonnées et coordonnées affectées"):
             batch.verify_patches(path, backups)

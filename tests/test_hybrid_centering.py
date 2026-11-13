@@ -1,7 +1,7 @@
 """LMDZ-approved interface means and reference centers, in one atomic rewrite."""
 
-from itertools import permutations
 import json
+from itertools import permutations
 
 import netCDF4
 import numpy as np
@@ -177,8 +177,8 @@ def test_time_chunk_larger_than_current_unlimited_dimension_is_preserved(tmp_pat
 
 
 def test_two_diagnostics_do_not_average_twice_and_tiles_remain_bounded(tmp_path, monkeypatch):
-    from esgf_fix_tool.fixes import hybrid_centering
     from esgf_fix_tool.data_integrity import _slices
+    from esgf_fix_tool.fixes import hybrid_centering
 
     path = tmp_path / "edt.nc"
     expected = interface_file(path)

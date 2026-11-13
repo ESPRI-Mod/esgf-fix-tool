@@ -69,21 +69,22 @@ def fix(
     return register
 
 
-from . import attributes  # noqa: F401  (registers the fixes)
-from . import coordinates  # noqa: F401
-from . import layouts  # noqa: F401
-from . import bounds  # noqa: F401
-from . import horizontal  # noqa: F401
-from . import surface  # noqa: F401
-from . import hybrid  # noqa: F401
-from . import rectilinear  # noqa: F401
-from . import qa_metadata  # noqa: F401
-from . import grid_labels  # noqa: F401
-from . import reviewed_structures  # noqa: F401
-from . import final_coordinates  # noqa: F401
-from . import climatology  # noqa: F401
-from . import heat_transport  # noqa: F401
-from . import hybrid_centering  # noqa: F401
-from . import basin_latitude_bounds  # noqa: F401
-
-from . import cleanup  # noqa: F401
+from . import (
+    attributes,  # noqa: F401  (registers the fixes)
+    basin_latitude_bounds,  # noqa: F401
+    bounds,  # noqa: F401
+    cleanup,  # noqa: F401
+    climatology,  # noqa: F401
+    coordinates,  # noqa: F401
+    final_coordinates,  # noqa: F401
+    grid_labels,  # noqa: F401
+    heat_transport,  # noqa: F401
+    horizontal,  # noqa: F401
+    hybrid,  # noqa: F401
+    hybrid_centering,  # noqa: F401
+    layouts,  # noqa: F401
+    qa_metadata,  # noqa: F401
+    rectilinear,  # noqa: F401
+    reviewed_structures,  # noqa: F401
+    surface,  # noqa: F401
+)

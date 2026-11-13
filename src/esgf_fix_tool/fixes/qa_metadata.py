@@ -258,9 +258,8 @@ def convert_basin_region_mask(ds):
         flag_meanings=BASIN_MASK_MEANINGS,
         units="1",
     )
-    if "units" in v.ncattrs():
-        if v.units != "1":
-            raise ValueError("Unexpected physical units on the basin region mask")
+    if "units" in v.ncattrs() and v.units != "1":
+        raise ValueError("Unexpected physical units on the basin region mask")
     for a, value in wanted.items():
         current = v.getncattr(a) if a in v.ncattrs() else None
         if (
