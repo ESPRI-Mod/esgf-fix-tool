@@ -1,13 +1,23 @@
 """Compile all recipes into one schema, then patch metadata or stream one rebuilt file."""
+import tempfile
 from dataclasses import dataclass
 from hashlib import sha256
-import tempfile
 
 import netCDF4
 import numpy as np
 
 from .data_integrity import data_blocks
-from .fixes import bounds, coordinates, horizontal, hybrid, layouts, rectilinear, climatology, heat_transport, hybrid_centering
+from .fixes import (
+    bounds,
+    climatology,
+    coordinates,
+    heat_transport,
+    horizontal,
+    hybrid,
+    hybrid_centering,
+    layouts,
+    rectilinear,
+)
 from .preview import MAX_AUX_BYTES
 
 
@@ -135,7 +145,7 @@ class Batch:
         hybrid_centering.configure(self, preview)
 
     def _profile(self,preview,var):
-        name,values=rectilinear._profile(preview,var)
+        name,_values=rectilinear._profile(preview,var)
         lat=self.variables.pop(name)
         lat.name='lat'
         if name=='nav_lat':
@@ -159,13 +169,13 @@ class Batch:
         for v in self.variables.values():
             for attr in coordinates.REFERENCE_ATTRS:
                 if attr in v.attrs and isinstance(v.attrs[attr][0],str):
-                    old,kind=v.attrs[attr]
+                    old,_kind=v.attrs[attr]
                     new=token.sub('lat',old)
                     if new!=old:
                         v.attrs[attr]=(new,2)
         main=self.variables[var]
         if 'coordinates' in main.attrs:
-            text,kind=main.attrs['coordinates']
+            text,_kind=main.attrs['coordinates']
             main.attrs['coordinates']=(' '.join(t for t in text.split() if t not in ['nav_lon','longitude']),2)
 
     @property
@@ -440,7 +450,7 @@ class Snapshot:
         else:
             if source.dtype is str:
                 raise ValueError('Large string-coordinate snapshots are not supported')
-            self.file=tempfile.TemporaryFile()
+            self.file=tempfile.TemporaryFile()  # noqa: SIM115 - read back later by blocks()
             for slab in data_blocks(source,'Sauvegarde de la coordonnée renommée'):
                 a=np.asarray(source[slab])
                 offset=self.file.tell()

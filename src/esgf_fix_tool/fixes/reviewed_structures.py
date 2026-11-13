@@ -269,7 +269,7 @@ def fix_basin_sector(ds):
 
 def _approved_rlat(values):
     """Use the reviewed transport endpoint, including on former one-ULP outputs."""
-    from .rectilinear import OLD_END, NEW_END
+    from .rectilinear import NEW_END, OLD_END
 
     values = np.asarray(values).copy()
     delta = np.diff(values)

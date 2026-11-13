@@ -1,6 +1,7 @@
 """Delete only the explicitly reviewed component copies, never by array equality."""
 
 import json
+import re
 
 import netCDF4
 import pytest
@@ -55,11 +56,11 @@ def test_four_overlaps_dry_run_deletion_and_idempotence(tmp_path):
     dry = deduplicate(root, log, dry_run=True, emit=lambda text: None)
     assert dry["would_delete"] == 4 and dry["failed"] == 0
     assert all(p.read_bytes() == data for p, data in originals.items())
-    result = deduplicate(root, log, emit=lambda text: None)
+    result = deduplicate(root, log, only_under=root, emit=lambda text: None)
     assert result["deleted"] == 4 and result["failed"] == 0
     for keep, discard in pairs:
         assert keep.read_bytes() == originals[keep] and not discard.exists()
-    again = deduplicate(root, log, emit=lambda text: None)
+    again = deduplicate(root, log, only_under=tmp_path, emit=lambda text: None)  # a parent is allowed too
     assert again == dict(deleted=0, would_delete=0, missing_keeper=0, failed=0)
     entries = [json.loads(x) for x in log.read_text().splitlines()]
     assert sum(e["status"] == "deleted" for e in entries) == 4
@@ -69,14 +70,14 @@ def test_four_overlaps_dry_run_deletion_and_idempotence(tmp_path):
 def test_other_products_are_never_deleted(tmp_path, variable, surface):
     paths = [product(tmp_path, c, variable, surface=surface) for c in ("ATM", "SRF")]
     original = [p.read_bytes() for p in paths]
-    assert deduplicate(tmp_path, tmp_path / "log.jsonl", emit=lambda text: None)["deleted"] == 0
+    assert deduplicate(tmp_path, tmp_path / "log.jsonl", only_under=tmp_path, emit=lambda text: None)["deleted"] == 0
     assert [p.read_bytes() for p in paths] == original
 
 
 def test_missing_or_different_period_keeper_is_not_enough(tmp_path):
     discard = product(tmp_path, "SRF", "evspsbl", period="185001-185412")
     keep = product(tmp_path, "ATM", "evspsbl", period="185501-185912")
-    result = deduplicate(tmp_path, tmp_path / "log.jsonl", emit=lambda text: None)
+    result = deduplicate(tmp_path, tmp_path / "log.jsonl", only_under=tmp_path, emit=lambda text: None)
     assert result["missing_keeper"] == 1 and result["deleted"] == 0
     assert discard.exists() and keep.exists()
 
@@ -110,7 +111,7 @@ def test_invalid_pairs_are_retained_and_reported(tmp_path, error):
             elif error == "units":
                 ds["time"].units = "hours since 1850-01-01"
     before = discard.read_bytes(), keep.read_bytes()
-    result = deduplicate(root, tmp_path / "log.jsonl", emit=lambda text: None)
+    result = deduplicate(root, tmp_path / "log.jsonl", only_under=root, emit=lambda text: None)
     assert result["failed"] == 1 and result["deleted"] == 0
     assert (discard.read_bytes(), keep.read_bytes()) == before
 
@@ -122,6 +123,47 @@ def test_cli_works_without_a_report_or_plan(tmp_path):
     dry = CliRunner().invoke(app, [*args, "--dry-run"])
     assert dry.exit_code == 0, dry.output
     assert discard.exists() and "would_delete" in dry.output
-    result = CliRunner().invoke(app, args)
+    result = CliRunner().invoke(app, [*args, "--only-under", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert keep.exists() and not discard.exists()
+
+
+def overlap(root):
+    return product(root, "ATM", "snc", surface="lnd"), product(root, "SRF", "snc", surface="lnd")
+
+
+def test_deleting_requires_only_under(tmp_path):
+    root = tmp_path / "simulation"
+    discard, keep = overlap(root)
+    log = tmp_path / "log.jsonl"
+    with pytest.raises(ValueError, match="--only-under"):
+        deduplicate(root, log, emit=lambda text: None)
+    assert discard.exists() and keep.exists() and not log.exists()
+
+
+def test_simulation_outside_only_under_is_refused(tmp_path):
+    root = tmp_path / "simulation"
+    discard, keep = overlap(root)
+    elsewhere = tmp_path / "staging"
+    elsewhere.mkdir()
+    with pytest.raises(ValueError, match="not inside --only-under"):
+        deduplicate(root, tmp_path / "log.jsonl", only_under=elsewhere, emit=lambda text: None)
+    assert discard.exists() and keep.exists()
+
+
+def plain(output):
+    """CLI output without terminal colours or line wrapping (CI renders errors in colour)."""
+    return " ".join(re.sub(r"\x1b\[[0-9;]*m", "", output).split())
+
+
+def test_cli_refuses_to_delete_without_only_under(tmp_path):
+    discard, keep = overlap(tmp_path)
+    args = ["deduplicate", str(tmp_path), "--fixlog", str(tmp_path / "log.jsonl")]
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 2 and "--only-under" in plain(result.output)
+    assert discard.exists() and keep.exists()
+    elsewhere = tmp_path.parent / (tmp_path.name + "-other")
+    elsewhere.mkdir()
+    result = CliRunner().invoke(app, [*args, "--only-under", str(elsewhere)])
+    assert result.exit_code == 2 and "not inside --only-under" in plain(result.output)
+    assert discard.exists() and keep.exists()

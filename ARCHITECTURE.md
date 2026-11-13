@@ -112,6 +112,10 @@ legacy rewrites. A custom finalizer requires a verified output; it must not perf
 rewrite. Explicit reviewed `data_targets` and domain verifiers remain enforced. The unified mapping
 proof handles combinations such as profile squeezing plus bounds-dimension merging.
 
+A failing file does not stop `apply`: the exception and traceback go to the fixlog (`status: failed`) and the next
+file is processed; the exit code is 1 if any file failed (`--fail-fast` aborts instead). Cancellation and global plan
+validation always abort.
+
 `--dry-run` performs only preflight in the diskless view: it does not write or physically verify an
 output. Real application records `verification_scope`, `write_mode` and `rewrite_count` (0 or 1).
 Per-file completion means every step/check succeeded; recipes remain idempotent. A grid-label fix can
@@ -136,9 +140,10 @@ src/esgf_fix_tool/
   preview.py     diskless recipe preflight, lazy arrays
   batch_write.py compose final schema and one source-to-output mapping
   execute.py     direct update / one rewrite / no-op execution
+  deduplicate.py ATM/SRF overlap removal (the `deduplicate` command), independent of reports and rules
   fixes/         registry + fix functions (attributes.py, …)
   cli/           Typer app: main.py (entry point) + one file per command
-                 (classify.py, plan.py, apply.py; common.py = shared options)
+                 (classify.py, plan.py, apply.py, deduplicate.py; common.py = shared options)
   rules/         rule files (versioned, shipped in the package; fallbacks/ included by catalogue_fallbacks.yaml)
 tests/           small synthetic reports and netCDF files
 ```

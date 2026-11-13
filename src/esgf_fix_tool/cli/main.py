@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 from .. import __version__
-from . import apply, classify, plan, deduplicate
+from . import apply, classify, deduplicate, plan
 
 app = typer.Typer(help=__doc__, no_args_is_help=True, add_completion=False)
 

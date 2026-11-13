@@ -8,9 +8,9 @@ import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.plan import FixPlan, Step
-from esgf_fix_tool.cli.common import classification
 from esgf_fix_tool.cli.catalogues import default_rule_paths
+from esgf_fix_tool.cli.common import classification
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def apply(path, tmp, steps):

@@ -8,9 +8,9 @@ import pytest
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.batch_write import Batch
-from esgf_fix_tool.plan import FixPlan, Step
-from esgf_fix_tool.fixes.hybrid import _coefficient_reference
 from esgf_fix_tool.fixes.final_coordinates import ICE_PASSAGES, ICE_RADII
+from esgf_fix_tool.fixes.hybrid import _coefficient_reference
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def exercise(path, tmp, steps, monkeypatch, writes):
@@ -225,9 +225,9 @@ def test_changed_comment_content_is_not_silently_overwritten(tmp_path,brand):
 
 
 def test_actual_report_classifies_all_approved_variants_including_conventional_latitude_bounds():
+    from esgf_fix_tool.classify import Outcome, classify
     from esgf_fix_tool.report import QAReport
     from esgf_fix_tool.ruleset import RuleSet
-    from esgf_fix_tool.classify import classify, Outcome
     root=Path('/Users/glipsl/Desktop/QA_results_v3_fixed')
     if not root.is_dir():pytest.skip('Local QA fixture is unavailable')
     report=QAReport.load(next(p for p in root.glob('qa_result_*.json') if '.cluster.' not in p.name))

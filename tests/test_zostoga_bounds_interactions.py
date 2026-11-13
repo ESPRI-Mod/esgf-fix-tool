@@ -1,15 +1,15 @@
 """Removing an auxiliary also satisfies the request to detach its bounds."""
 
-from itertools import permutations
 import json
+from itertools import permutations
 
 import netCDF4
 import numpy as np
 import pytest
+from test_reviewed_structures import zostoga_file
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.plan import FixPlan, Step
-from test_reviewed_structures import zostoga_file
 
 
 @pytest.mark.parametrize("order", list(permutations(["C111", "lat", "lon"])))

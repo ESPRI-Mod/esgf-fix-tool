@@ -4,6 +4,26 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `deduplicate`: delete the secondary copy of approved ATM/SRF overlaps (`areacella` and `evspsbl` hxy-u kept from
+  ATM, `snc` hxy-lnd kept from SRF) after checking paths, netCDF identity and time coordinate; `--dry-run`, JSONL log.
+  Deleting requires `--only-under DIR`, which must contain the simulation directory.
+- Reviewed fixes from the QA v4/v5 iterations of the pilot, among them: conventional lat/rlat bounds for the NEMO
+  transport profiles and msfty, edt/evu interpolation from 80 interfaces to 79 centers, ta/zg lev normalization and
+  `axis_nbounds` rename, vertical hfx/hfy sums, retired variables and scoped bounds removal, severity-2 metadata
+  recommendations and DR cell_methods order. Now 233 rules (141 reviewed `C` rules) and 62 fix functions.
+
+### Changed
+
+- `apply` no longer stops at the first failing file: each error is printed with its traceback and recorded in the
+  fixlog, the other files are processed, and the exit code is 1 if any file failed. `--fail-fast` restores the
+  previous behaviour.
+- C001 removes `history` from every variable of a selected file, including unreported auxiliaries, with a final
+  sweep after all recipes. Global `history` is kept.
+
 ## [0.1.0] - 2026-11-12
 
 First release, from the CMIP7 pilot on `CM6-ESMCO2-FT-esm-pi-s.01`

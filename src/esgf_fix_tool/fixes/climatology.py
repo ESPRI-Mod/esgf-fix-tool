@@ -10,7 +10,6 @@ from ..progress import io_progress
 from . import fix
 from .bounds import _verify_climatology, fix_climatology_reference
 
-
 TEMPORAL_STATISTICS = {
     "tclm": ("mean", "years"),
     "tmaxavg": ("maximum", "days"),
@@ -51,11 +50,10 @@ def _verify_method_order(source, output):
         label = getattr(ds, "temporal_label", "")
         for name, v in ds.variables.items():
             text = getattr(v, "cell_methods", "")
-            if "within " in text or "over " in text:
-                if text != _ordered_methods(text, label):
-                    raise ValueError(
-                        f"Cell-method order differs from the DR in {name}:cell_methods"
-                    )
+            if ("within " in text or "over " in text) and text != _ordered_methods(text, label):
+                raise ValueError(
+                    f"Cell-method order differs from the DR in {name}:cell_methods"
+                )
 
 
 @fix("reorder_climatology_cell_methods", verify_final=_verify_method_order)
@@ -67,7 +65,7 @@ def reorder_climatology_cell_methods(ds):
             "Only the reviewed tclm/tmaxavg/tminavg statistics are approved"
         )
     edits = []
-    for name, v in ds.variables.items():
+    for v in ds.variables.values():
         text = getattr(v, "cell_methods", "")
         if "within " in text or "over " in text:
             wanted = _ordered_methods(text, label)

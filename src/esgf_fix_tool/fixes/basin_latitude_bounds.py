@@ -10,7 +10,7 @@ import numpy as np
 from . import fix
 from .auxiliary import replace_auxiliary
 from .rectilinear import NEW_END
-from .reviewed_structures import BASIN_PRODUCTS, finite, delete_variables, set_attrs
+from .reviewed_structures import BASIN_PRODUCTS, delete_variables, finite, set_attrs
 
 
 @lru_cache(maxsize=1)

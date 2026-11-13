@@ -1,17 +1,16 @@
 import shutil
 from pathlib import Path
-import os
 
 import netCDF4
 import numpy as np
 import pytest
+from test_horizontal_coordinates import make as make_horizontal
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.classify import classify, Outcome
+from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
-from test_horizontal_coordinates import make as make_horizontal
 
 ROOT = Path(__file__).resolve().parents[1]
 MESSAGES = ["seasurface: vertical coordinates not defining pressure must include a positive attribute that is either 'up' or 'down'",
