@@ -9,6 +9,7 @@ from typing import Annotated
 import typer
 
 from ..classify import BLOCKING_SEVERITY
+from .catalogues import default_rule_paths
 from .common import Final, OnlyRules, Previous, Report, Rules, classification
 
 NAME = "classify"
@@ -16,7 +17,7 @@ NAME = "classify"
 
 def run(
     report: Report,
-    rules: Rules,
+    rules: Rules = None,
     previous: Previous = None,
     final: Final = False,
     as_json: Annotated[bool, typer.Option("--json", help="JSON output")] = False,
@@ -25,12 +26,13 @@ def run(
 ):
     """Classify a report, print the decision, exit with its code
     (0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)."""
-    c = classification(report, rules, previous, final)
+    c = classification(report, rules or default_rule_paths(), previous, final)
     decision = c.decision()
     if as_json:
         print(json.dumps({
             "decision": decision.name.lower(), "exit_code": int(decision),
             "files": len(c.report.files), "rules_version": c.rules_version,
+            "rules_digest": c.rules_digest,
             "counts": {str(s): dict(cnt) for s, cnt in c.counts().items()},
             "checker_errors": len(c.report.errors),
         }, indent=1))
@@ -38,6 +40,7 @@ def run(
 
     print(f"report     : {c.report.source}")
     print(f"files      : {len(c.report.files)}    rules: {c.rules_version}    mode: {'final' if c.final else 'loop'}")
+    print(f"rules hash : sha256:{c.rules_digest[:16]}")
     for sev, cnt in c.counts().items():
         print(f"severity {sev} : " + ", ".join(f"{o} {n}" for o, n in cnt.most_common()))
     if c.report.errors:

@@ -1,7 +1,7 @@
 # esgf-fix-tool: architecture
 
 Fix CMIP7 netCDF files from an **esgqa report**, with **rules** that say what to do with each QA message.
-It is step 3–4 of the publication pipeline (QA ↔ FIX loop), see `publish_tgcc/fix.md`.
+It is the FIX half of the QA ↔ FIX loop of the publication pipeline. Usage: [README.md](README.md).
 
 ```
 esgqa full report (qa_result_*.json)
@@ -10,7 +10,7 @@ esgqa full report (qa_result_*.json)
   report.py ── QAReport: file → [Finding(severity, check, message)] + checker errors
         │
         ▼
-  rules.py ─── RuleSet (rules/*.yaml): (check regex, message regex with named groups) → action
+  ruleset.py ─ RuleSet (src/esgf_fix_tool/rules/*.yaml): (check regex, message regex with named groups) → action
         │
         ▼
   classify.py ─ every finding gets an Outcome; one Decision for the whole run
@@ -19,7 +19,7 @@ esgqa full report (qa_result_*.json)
   plan.py ──── FixPlan: file → ordered [(fix name, params)]   (only for Outcome.FIX)
         │
         ▼
-  apply.py ─── preflight → direct patch OR one combined rewrite + fix log + renames.tsv
+  apply.py ─── preflight → direct patch OR one combined rewrite (+ filename sync) + fix log
         │
         └── fixes/ ── registry of fix functions (@fix("drop_var_attr", kind="metadata"))
 ```
@@ -29,11 +29,11 @@ esgqa full report (qa_result_*.json)
 | | What | Notes |
 |---|---|---|
 | in | full esgqa report `qa_result_*.json` | `fail[severity][check][message][dataset] → [files]`, `error{}`, `info{}`. Not the `.cluster.json` |
-| in | `rules/*.yaml` | versioned in git; the rules version is recorded in every output |
+| in | `src/esgf_fix_tool/rules/*.yaml` | shipped in the package; the catalogues used are recorded in every output |
 | in | previous report (optional) | to detect "no change" between two loop iterations |
-| out | classification (JSON + text summary, exit code) | drives the loop: `jobs/qa.sh` reads the exit code |
+| out | classification (JSON + text summary, exit code) | drives the loop: the pipeline reads the exit code |
 | out | fix plan (JSON) | reviewable before applying |
-| out | fixed files + `fixlog.jsonl` + `renames.tsv` | fixlog = rules applied per file; renames for the relink step |
+| out | fixed files + `fixlog.jsonl` + `fixlog.events.jsonl` | fixlog = one line per file: tool version, steps, write mode, renames |
 
 ## Rules
 
@@ -52,6 +52,9 @@ esgqa full report (qa_result_*.json)
 - Optional `dataset` regex restricts a rule to an investigated dataset subtype (e.g. thermal soil);
   absent this key, matching is unchanged.
 - **First matching rule wins**; order the file from specific to generic.
+- Catalogue order: `post_apply.yaml` `include`s the thematic catalogues in their reviewed order, and a file is
+  loaded only once, so that list is the order catalogues are tried. Catalogues it does not include are loaded
+  next (`PRIORITY` in `cli/catalogues.py`, then by name), and `catalogue_fallbacks.yaml` always last.
 - Actions → outcomes:
 
 | action | Outcome | Blocks the loop? | Blocks the final gate? |
@@ -111,27 +114,22 @@ proof handles combinations such as profile squeezing plus bounds-dimension mergi
 
 `--dry-run` performs only preflight in the diskless view: it does not write or physically verify an
 output. Real application records `verification_scope`, `write_mode` and `rewrite_count` (0 or 1).
-Per-file completion means every step/check succeeded; recipes remain idempotent. File renames
-(DRS changes) continue to use the separate `renames.tsv` workflow.
+Per-file completion means every step/check succeeded; recipes remain idempotent. A grid-label fix can
+rename the file in its own directory (hardlink then unlink, never overwriting an existing file); the fixlog
+records `drs_rename` and `final_file`, and a replayed plan follows the new name.
 
-## Seeding the rules from the 2026-10-29 Excel triage (`seed-rules`)
+## Historical fallbacks
 
-One-off import, so the Excel is not needed at runtime:
-- template from the cluster report → regex (`{A}` → named group, the "(N occurrences, e.g. …)" suffix removed),
-- quoted names in check labels generalised (`Variable 'abs550aer' attribute 'comment'…` → one rule for all variables),
-- Excel action → rule action: Corriger → fix, Déjà corrigé → fix (`upstream_status: fixed_upstream`),
-  Ignorer → waive, Vérifier / À qualifier → review,
-- overrides: PATH001–003 → defer, FILE004* → other_step (repack), `[Continuity]` → upstream_only.
-
-Generated rules have `fix: null` until someone writes the function: they classify as `FIX_MISSING`, which shows how
-much of the report the tool can fix today.
+`rules/catalogue_fallbacks.yaml` and `rules/fallbacks/` were generated once from the 2026-10-29 Excel triage
+(the one-off `seed-rules` importer has since been removed; see git history). They are always loaded after the
+reviewed thematic catalogues. Rules with `fix: null` classify as `FIX_MISSING`.
 
 ## Layout
 
 ```
 src/esgf_fix_tool/
   report.py      read the esgqa report
-  rules.py       Rule, RuleSet, matching
+  ruleset.py     Rule, RuleSet, matching
   classify.py    Outcome, Decision, summary
   plan.py        FixPlan from classified findings
   apply.py       plan iteration and fix log
@@ -139,13 +137,13 @@ src/esgf_fix_tool/
   batch_write.py compose final schema and one source-to-output mapping
   execute.py     direct update / one rewrite / no-op execution
   fixes/         registry + fix functions (attributes.py, …)
-  seed.py        Excel + cluster report → rules YAML (optional dependency: openpyxl)
   cli/           Typer app: main.py (entry point) + one file per command
-                 (classify.py, plan.py, apply.py, seed_rules.py; common.py = shared options)
-rules/           rule files (versioned)
+                 (classify.py, plan.py, apply.py; common.py = shared options)
+  rules/         rule files (versioned, shipped in the package; fallbacks/ included by catalogue_fallbacks.yaml)
 tests/           small synthetic reports and netCDF files
 ```
 
+## Implementation notes
 
 Horizontal recipes live in fixes/horizontal.py. Coordinate-reference removal is scoped to the main
 variable and 21 bundled DR policies. Numeric 2-D auxiliary renames preserve y/x and reuse the existing

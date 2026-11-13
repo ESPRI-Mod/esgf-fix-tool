@@ -1,11 +1,11 @@
 """Flush file, recipe and actual I/O progress; no timer or periodic message."""
-from dataclasses import asdict
-from datetime import datetime, UTC
 import json
-from pathlib import Path
 import shutil
 import sys
 import time
+from dataclasses import asdict
+from datetime import UTC, datetime
+from pathlib import Path
 
 
 def hms(seconds):
@@ -133,9 +133,8 @@ class ConsoleProgress:
             else:
                 status = 'En cours'
             self._write(f'{prefix} - {status}', transient=event.status=='start')
-        elif event.kind == 'io':
+        elif event.kind == 'io' and event.details['total']*event.details['itemsize'] >= 8*1024*1024:
             # Small coordinates are still recorded in the event log.
             # Reserve console block counters for substantial arrays.
-            if event.details['total']*event.details['itemsize'] >= 8*1024*1024:
-                self._write(f'{prefix} - {self._io_text(event)}', transient=True)
+            self._write(f'{prefix} - {self._io_text(event)}', transient=True)
 

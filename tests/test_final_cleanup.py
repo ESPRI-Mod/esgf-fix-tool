@@ -14,7 +14,7 @@ from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.layouts import _attribute_type
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 
 def apply_replay(path, tmp, steps):
@@ -240,7 +240,7 @@ def test_v5_scope_and_description_peer_expansion():
         next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
     )
     c = classify(
-        report, RuleSet.load(Path(__file__).parents[1] / "rules/post_apply.yaml")
+        report, RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     )
     for rid, count in {
         "C115": 2,

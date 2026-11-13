@@ -9,7 +9,7 @@ from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import classify
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = 'CMIP7.OCE.msfty.tavg-ol-ht-sea.mon.glb.g112.IPSL-CM6-ESMCO2.esm-piControl-spinup.r1i1p1f1'
@@ -20,7 +20,7 @@ def build_plan(path, vertical):
                "coordinate IDs ['gridlatitude', 'olevel', 'basin', 'time'] require "
                "['time', 'basin', 'lev', 'rlat'] as their required order.")
     finding = Finding(3, '[CMIP7] [COORD002] Data-variable coordinate order', message, DATASET, str(path))
-    rules = RuleSet.load(ROOT / 'rules/dimension_order.yaml')
+    rules = RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/dimension_order.yaml')
     return FixPlan.from_classification(classify(QAReport(Path('report'), {}, [finding]), rules))
 
 

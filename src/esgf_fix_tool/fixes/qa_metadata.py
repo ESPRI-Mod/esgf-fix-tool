@@ -1,13 +1,13 @@
 """Guarded metadata fixes for the reviewed CF and CMIP7 recommendation variants."""
 
+import json
+from pathlib import Path
+
 import numpy as np
 
 from . import fix
 from .attributes import set_var_attr_if_matches
 from .coordinates import _replace_references
-import json
-from pathlib import Path
-
 
 # Exact standard names and units observed in the individual consistency reports.
 TEMPERATURES = {
@@ -419,6 +419,7 @@ def rename_ocean_vertices_dimension(ds):
 
 def _verify_redundant_text_label(source, output, var):
     import netCDF4
+
     from .final_coordinates import ICE_PRODUCTS, _verify_ice_passages
 
     with netCDF4.Dataset(output) as ds:
@@ -442,8 +443,8 @@ def rename_redundant_text_label(ds, var):
     The registered name is kept so older fix plans still call this reviewed method.
     """
     from .coordinates import add_text_coordinate_alias
-    from .reviewed_structures import delete_variables
     from .final_coordinates import ICE_PRODUCTS, fix_ice_passage_sector
+    from .reviewed_structures import delete_variables
 
     if var not in ("line", "type"):
         raise ValueError("Unreviewed redundant text coordinate")

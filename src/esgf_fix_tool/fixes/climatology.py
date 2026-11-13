@@ -5,10 +5,10 @@ import re
 import netCDF4
 import numpy as np
 
-from . import fix
-from .bounds import fix_climatology_reference, _verify_climatology
 from ..data_integrity import _slices
 from ..progress import io_progress
+from . import fix
+from .bounds import _verify_climatology, fix_climatology_reference
 
 
 TEMPORAL_STATISTICS = {

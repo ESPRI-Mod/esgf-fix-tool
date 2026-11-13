@@ -11,10 +11,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-
 from . import __version__, fixes
 from .plan import FixPlan, Step, order_steps
-from .progress import ProgressEvent, notify, reporting, step_scope, activity
+from .progress import ProgressEvent, activity, notify, reporting, step_scope
 
 
 def _rename_request(path, steps):
@@ -259,6 +258,7 @@ def apply_plan(
                 "file": path,
                 "tool_version": __version__,
                 "rules_version": plan.rules_version,
+                "rules_digest": plan.rules_digest,
                 "dry_run": dry_run,
                 "status": "done",
                 "steps": entries,

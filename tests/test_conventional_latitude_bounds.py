@@ -15,7 +15,7 @@ from esgf_fix_tool.fixes.basin_latitude_bounds import (
 )
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 PRODUCTS = (
     "hfbasin", "hfbasinpmadv", "hfbasinpmdiff", "htovgyre", "htovovrt",

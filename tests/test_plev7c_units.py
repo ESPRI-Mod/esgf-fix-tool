@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.plan import FixPlan,Step
-
+from esgf_fix_tool.plan import FixPlan, Step
 
 CENTERS=np.array([90000.,74000.,62000.,50000.,37500.,24500.,9000.])
 PAIRS=np.array([[100000.,80000.],[80000.,68000.],[68000.,56000.],[56000.,44000.],

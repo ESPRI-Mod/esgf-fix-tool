@@ -1,7 +1,7 @@
 """Hybrid coordinate metadata and explicitly sourced IPSL coefficients."""
 
-from functools import lru_cache
 import json
+from functools import lru_cache
 from pathlib import Path
 
 import netCDF4
@@ -701,7 +701,7 @@ def normalize_hybrid_coordinate(ds):
         formula=FORMULA,
         formula_terms="ap: ap b: b ps: ps",
     )
-    from .reviewed_structures import set_attrs, delete_variables
+    from .reviewed_structures import delete_variables, set_attrs
 
     changed = set_attrs(lev, attrs) or changed
     if "lev_bnds" not in ds.variables:

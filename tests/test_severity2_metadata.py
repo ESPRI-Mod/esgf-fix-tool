@@ -15,7 +15,7 @@ from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.climatology import _ordered_methods
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 
 @pytest.mark.parametrize(
@@ -280,7 +280,7 @@ def test_actual_residual_report_has_complete_rule_coverage():
         next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
     )
     c = classify(
-        report, RuleSet.load(Path(__file__).parents[1] / "rules/post_apply.yaml")
+        report, RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     )
     targets = {"C075": 1, "C106": 2,  "C084": 23, "C086": 1, "C002b": 2}
     daily = [i for i in c.items if i.match and i.match.rule.id == 'C106r']

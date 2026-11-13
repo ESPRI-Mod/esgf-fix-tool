@@ -10,7 +10,7 @@ from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import classify, Outcome
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 from test_horizontal_coordinates import make as make_horizontal
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,7 +77,8 @@ def test_latest_surface_decision_adds_axis_and_keeps_cf_interpretation_in_review
     findings=[Finding(3,'[CF-Conventions] §4.3 Vertical Coordinate',m,'dataset','file.nc') for m in MESSAGES]
     findings.append(Finding(3, '[CMIP7] [COORD003] Coordinate metadata',
                             "'seasurface' axis=''; the required value is 'Z'.", 'dataset', 'file.nc'))
-    rules=RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml',ROOT/'rules/catalogue_fallbacks.yaml')
+    rules=RuleSet.load(ROOT/'src/esgf_fix_tool/rules/surface_and_hybrid.yaml',
+                       ROOT/'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml')
     c=classify(QAReport(Path('report'),{},findings),rules)
     assert [i.outcome for i in c.items]==[Outcome.REVIEW,Outcome.REVIEW,Outcome.FIX]
     p=FixPlan.from_classification(c)
@@ -92,7 +93,8 @@ def test_hybrid_coordinate_family_selects_reference_coefficients(coordinate):
                "are ['atmosphere_hybrid_height_coordinate', 'atmosphere_hybrid_sigma_ln_pressure_coordinate', "
                "'atmosphere_hybrid_sigma_pressure_coordinate', 'atmosphere_sigma_coordinate', 'model_level_number'].")
     finding = Finding(3, '[CMIP7] [COORD012] Parametric vertical coordinate', message, 'CMIP7.ATM.test', 'file.nc')
-    rules = RuleSet.load(ROOT/'rules/surface_and_hybrid.yaml', ROOT/'rules/catalogue_fallbacks.yaml')
+    rules = RuleSet.load(ROOT/'src/esgf_fix_tool/rules/surface_and_hybrid.yaml',
+                         ROOT/'src/esgf_fix_tool/rules/catalogue_fallbacks.yaml')
     match = rules.match(finding)
     assert match.rule.id == 'C074' and match.groups == {'coordinate': coordinate}
     c = classify(QAReport(Path('report'), {}, [finding]), rules)
@@ -125,7 +127,7 @@ def test_hybrid_dimension_findings_share_one_reference_fix():
                 'CMIP7.ATM.zg', 'file.nc')
         for name in ('ap', 'b')
     ]
-    rules = RuleSet.load(ROOT / 'rules/surface_and_hybrid.yaml')
+    rules = RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/surface_and_hybrid.yaml')
     p = FixPlan.from_classification(classify(QAReport(Path('report'), {}, findings), rules))
     assert len(p.files['file.nc']) == 1
     assert p.files['file.nc'][0].fix == 'fix_hybrid_coefficients'

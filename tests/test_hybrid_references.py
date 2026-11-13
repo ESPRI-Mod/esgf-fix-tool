@@ -1,13 +1,13 @@
 import shutil
+
 """Regression tests for the user's revised names-and-attributes-only hybrid recipe."""
-import os
 import netCDF4
 import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.fixes.hybrid import STANDARD_NAME
+from esgf_fix_tool.plan import FixPlan, Step
 
 
 def make(path,fmt='NETCDF4',name='lev',bounds=False,realm='atmos',var='ta',coefficient_count=80,coefficient_dim='coeff'):
@@ -97,6 +97,7 @@ def test_composes_with_previously_approved_standard_name_only_fix(tmp_path,name_
 @pytest.mark.parametrize('coordinate', ['alevel', 'alevhalf'])
 def test_reference_coefficients_and_deletions_share_one_clean_output(tmp_path, monkeypatch, coordinate, fmt):
     import json
+
     from esgf_fix_tool.batch_write import Batch, Snapshot
     from esgf_fix_tool.fixes.hybrid import _coefficient_reference
 
@@ -127,7 +128,6 @@ def test_reference_coefficients_and_deletions_share_one_clean_output(tmp_path, m
         ds.set_auto_maskandscale(False)
         science = ds['zg'][:].tobytes()
         pressure = ds['ps'][:].tobytes()
-        old_ap = ds['ap'][:].copy()
 
     writes = []
     original_write = Batch.write

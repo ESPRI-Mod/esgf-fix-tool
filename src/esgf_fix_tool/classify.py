@@ -8,7 +8,7 @@ from enum import IntEnum, StrEnum
 
 from . import fixes
 from .report import Finding, QAReport
-from .rules import Action, RuleMatch, RuleSet
+from .ruleset import Action, RuleMatch, RuleSet
 
 BLOCKING_SEVERITY = 3
 
@@ -72,6 +72,10 @@ class Classification:
     @property
     def rules_version(self) -> str:
         return self.rules.version
+
+    @property
+    def rules_digest(self) -> str:
+        return self.rules.digest
 
     def blocking(self) -> list[Classified]:
         accepted = {Outcome.WAIVED} if self.final else {Outcome.WAIVED, Outcome.DEFERRED, Outcome.OTHER_STEP}

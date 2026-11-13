@@ -1,6 +1,5 @@
-import shutil
 import json
-import os
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,7 +12,7 @@ from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes import layouts
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECK = '[CMIP7] [COORD002] Data-variable coordinate order'
@@ -212,7 +211,7 @@ def test_nco_is_preferred_when_visible_and_output_is_verified(tmp_path, monkeypa
 
 
 def test_singleton_and_unresolved_diagnostics_are_classified_separately():
-    rules = RuleSet.load(ROOT / 'rules/dimension_order.yaml')
+    rules = RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/dimension_order.yaml')
     def finding(var):
         msg = (f"'{var}' dimensions in netCDF/C order are ['time', 'y', 'x']; coordinate IDs ['time'] "
                "require ['time'] as their required order.")
@@ -243,7 +242,7 @@ def test_coordinate_metadata_rule_pipeline_and_idempotence(tmp_path, id, var, me
         if old is not None:
             v.setncattr(attr, old)
     finding = Finding(3, '[CMIP7] [COORD003] Coordinate metadata', message, 'dataset', str(path))
-    c = classify(QAReport(Path('report'), {}, [finding]), RuleSet.load(ROOT / 'rules/coordinate_metadata.yaml'))
+    c = classify(QAReport(Path('report'), {}, [finding]), RuleSet.load(ROOT / 'src/esgf_fix_tool/rules/coordinate_metadata.yaml'))
     assert c.items[0].outcome == Outcome.FIX and c.items[0].match.rule.id == id
     p = FixPlan.from_classification(c)
     assert apply_plan(p, tmp_path / 'log')['changed'] == 1

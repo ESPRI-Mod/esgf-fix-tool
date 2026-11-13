@@ -12,7 +12,7 @@ from esgf_fix_tool.classify import Outcome, classify
 from esgf_fix_tool.fixes.hybrid import STANDARD_NAME, _coefficient_reference
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
+from esgf_fix_tool.ruleset import RuleSet
 
 ROOT = Path(__file__).parents[1]
 
@@ -257,7 +257,7 @@ def test_real_v6_report_plans_four_center_fixes_and_five_ocean_endpoint_fixes():
     report = QAReport.load(
         next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
     )
-    classified = classify(report, RuleSet.load(ROOT / "rules/post_apply.yaml"))
+    classified = classify(report, RuleSet.load(ROOT / "src/esgf_fix_tool/rules/post_apply.yaml"))
     plan = FixPlan.from_classification(classified)
     for variable in ("ta", "zg"):
         paths = [

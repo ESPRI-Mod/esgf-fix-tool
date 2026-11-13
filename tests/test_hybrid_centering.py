@@ -13,7 +13,7 @@ from esgf_fix_tool.cli.catalogues import default_rule_paths
 from esgf_fix_tool.fixes.hybrid import _coefficient_reference
 from esgf_fix_tool.plan import FixPlan, Step, order_steps
 from esgf_fix_tool.report import Finding
-from esgf_fix_tool.rules import Action, RuleSet
+from esgf_fix_tool.ruleset import Action, RuleSet
 
 
 def interface_file(path, name="edt", fmt="NETCDF4", chunk=10, coefficient_dim="lev", dtype="f4", time_chunk=1):

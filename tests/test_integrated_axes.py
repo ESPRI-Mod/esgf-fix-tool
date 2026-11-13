@@ -237,9 +237,9 @@ def test_longitude_overlap_matches_both_original_and_renamed_bounds():
     from pathlib import Path
 
     from esgf_fix_tool.report import Finding
-    from esgf_fix_tool.rules import RuleSet
+    from esgf_fix_tool.ruleset import RuleSet
 
-    rules = RuleSet.load(Path(__file__).parents[1] / "rules/post_apply.yaml")
+    rules = RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     for name in ("bounds_lon", "lon_bnds"):
         finding = Finding(
             3,
@@ -259,7 +259,7 @@ def test_actual_v4_report_selects_each_reviewed_variant():
 
     from esgf_fix_tool.classify import Outcome, classify
     from esgf_fix_tool.report import QAReport
-    from esgf_fix_tool.rules import RuleSet
+    from esgf_fix_tool.ruleset import RuleSet
 
     root = Path("/Users/glipsl/Desktop/QA_results_v4")
     if not root.is_dir():
@@ -268,7 +268,7 @@ def test_actual_v4_report_selects_each_reviewed_variant():
         next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
     )
     items = classify(
-        report, RuleSet.load(Path(__file__).parents[1] / "rules/post_apply.yaml")
+        report, RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     ).items
     expected = {
         "C051": 4,

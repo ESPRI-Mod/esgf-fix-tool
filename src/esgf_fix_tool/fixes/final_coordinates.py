@@ -1,13 +1,12 @@
 """Guarded physical coordinate corrections approved after the latest QA review."""
 
-import numpy as np
 import netCDF4
+import numpy as np
 
 from . import fix
 from .bounds import _specs, rename_bounds_variable
 from .layouts import _copy_attrs, _raw
 from .reviewed_structures import delete_variables, finite, set_attrs
-
 
 ICE_PASSAGES = (
     "fram_strait",
@@ -145,10 +144,10 @@ def fix_ice_passage_sector(ds):
             if text != v.coordinates:
                 v.setncattr("coordinates", text)
     changed = delete_variables(ds, redundant) or changed
-    if old_length != "strlen" and old_length in ds.dimensions:
-        if not any(old_length in v.dimensions for v in ds.variables.values()):
-            ds.deleteDimension(old_length)
-            changed = True
+    if (old_length != "strlen" and old_length in ds.dimensions
+            and not any(old_length in v.dimensions for v in ds.variables.values())):
+        ds.deleteDimension(old_length)
+        changed = True
     return changed
 
 

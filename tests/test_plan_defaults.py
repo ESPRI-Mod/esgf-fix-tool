@@ -1,14 +1,12 @@
 """Default catalogue coverage and explicit inclusion/exclusion through the CLI."""
 import json
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
-from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.cli import catalogues
+from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.plan import FixPlan
-
 
 HISTORY = ('[Appendix A] Attribute "history" should not be present in non-coordinate data (D) variable "tas". '
            'This attribute may only appear in global attributes (G).')
@@ -39,6 +37,15 @@ def test_no_rules_option_loads_all_catalogues_from_any_directory(tmp_path,monkey
     p=run(tmp_path,[])
     assert set(ids(p))=={'C001','C002'}
     names=p.rules_version.split(',')
+    assert names[0]=='post_apply.yaml' and names[-1]=='catalogue_fallbacks.yaml'
+    assert len(names)==len(list(catalogues.DEFAULT_RULES_DIR.glob('*.yaml')))
+
+
+def test_classify_without_rules_option_loads_all_catalogues(tmp_path,monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    source,_=report(tmp_path)
+    result=CliRunner().invoke(app,['classify',str(source),'--json'])
+    names=json.loads(result.output)['rules_version'].split(',')
     assert names[0]=='post_apply.yaml' and names[-1]=='catalogue_fallbacks.yaml'
     assert len(names)==len(list(catalogues.DEFAULT_RULES_DIR.glob('*.yaml')))
 
@@ -95,7 +102,7 @@ def test_explicit_catalogue_replaces_defaults(tmp_path):
     assert ids(p)==['FIRST'] and p.rules_version=='custom.yaml'
 
 
-def test_excluded_rule_does_not_fall_through_to_a_seed(tmp_path):
+def test_excluded_rule_does_not_fall_through_to_a_fallback(tmp_path):
     p=run(tmp_path,['-r',str(custom(tmp_path)),'--exclude-rule','FIRST'])
     assert ids(p)==[]
 
@@ -116,16 +123,9 @@ def test_missing_catalogue_has_a_clear_error(tmp_path):
     assert result.exit_code==2 and 'catalogue' in result.output
 
 
-def test_default_discovery_adds_future_catalogues_before_seeds(tmp_path,monkeypatch):
-    for n in ['seed_z.yaml','extra.yaml','post_apply.yaml','variable_attributes.yaml','other.yml']:
+def test_default_discovery_adds_future_catalogues_before_fallbacks(tmp_path,monkeypatch):
+    for n in ['catalogue_fallbacks.yaml','extra.yaml','post_apply.yaml','variable_attributes.yaml','other.yml']:
         (tmp_path/n).write_text('[]')
     monkeypatch.setattr(catalogues,'DEFAULT_RULES_DIR',tmp_path)
     assert [p.name for p in catalogues.default_rule_paths()]==[
-        'post_apply.yaml','variable_attributes.yaml','extra.yaml','other.yml','seed_z.yaml']
-
-
-def test_retired_catalogues_left_by_scp_are_not_loaded_twice(tmp_path,monkeypatch):
-    for name in ('post_apply.yaml','catalogue_fallbacks.yaml','cmip7_ipsl.yaml','seed_20261029.yaml'):
-        (tmp_path/name).write_text('[]')
-    monkeypatch.setattr(catalogues,'DEFAULT_RULES_DIR',tmp_path)
-    assert [p.name for p in catalogues.default_rule_paths()] == ['post_apply.yaml','catalogue_fallbacks.yaml']
+        'post_apply.yaml','variable_attributes.yaml','extra.yaml','other.yml','catalogue_fallbacks.yaml']

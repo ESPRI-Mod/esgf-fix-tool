@@ -9,8 +9,7 @@ from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.classify import Decision, Outcome, classify
 from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import QAReport
-from esgf_fix_tool.rules import RuleSet
-from esgf_fix_tool.seed import template_to_regex
+from esgf_fix_tool.ruleset import RuleSet
 
 HISTORY = ('[Appendix A] Attribute "history" should not be present in non-coordinate data (D) variable "tas". '
            "This attribute may only appear in global attributes (G).")
@@ -125,14 +124,6 @@ def test_apply_never_touches_a_hardlinked_source(tmp_path, rules):
     # idempotent: a second run changes nothing and leaves no temp file behind
     assert apply_plan(plan, tmp_path / "fixlog.jsonl") == {"files": 1, "changed": 0, "unchanged": 1}
     assert sorted(p.name for p in staged.parent.iterdir()) == ["tas.nc"]
-
-
-def test_template_to_regex_matches_the_exact_message():
-    template = "Units \"{A}\" for variable {B} must be convertible to canonical units \"{C}\" (2 occurrences, e.g. A='1')"
-    rx = template_to_regex(template, generalize_quotes=True)
-    import re
-    m = re.match(rx, 'Units "1" for variable basin must be convertible to canonical units "None"')
-    assert m and m.group("B") == "basin"
 
 
 def test_map_paths_and_only_under(tmp_path, rules):
