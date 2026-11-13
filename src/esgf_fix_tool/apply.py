@@ -183,6 +183,8 @@ def apply_plan(
     if continue_on_error:
         stats["failed"] = 0
     total, start = len(plan.files), time.monotonic()
+    # Set by `etb run` in the esgf-toolbox image: links each fixlog line to the run that wrote it.
+    etb_run_id = os.environ.get("ETB_RUN_ID") or None
     with open(fixlog, "a") as out:
         for path, steps in plan.files.items():
             started = time.monotonic()
@@ -220,6 +222,8 @@ def apply_plan(
                     "file": path,
                     "tool_version": __version__,
                     "rules_version": plan.rules_version,
+                    "rules_digest": plan.rules_digest,
+                    "etb_run_id": etb_run_id,
                     "dry_run": dry_run,
                     "status": "failed",
                     "error": {
@@ -259,6 +263,7 @@ def apply_plan(
                 "tool_version": __version__,
                 "rules_version": plan.rules_version,
                 "rules_digest": plan.rules_digest,
+                "etb_run_id": etb_run_id,
                 "dry_run": dry_run,
                 "status": "done",
                 "steps": entries,

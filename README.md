@@ -90,8 +90,9 @@ falls through to a broader rule under another ID.
   (`"status": "failed"`), and the other files are processed. The final summary counts `failed` files and `apply`
   exits with 1 if there is any. `--fail-fast` stops at the first failing file instead.
 
-Each run appends one JSON line per file to the fixlog: tool version, catalogues used, every step applied, write
-mode, timings, and any file rename. A detailed `<fixlog>.events.jsonl` is written alongside, flushed as the run goes,
+Each run appends one JSON line per file to the fixlog: tool version, catalogues used, rules digest, every step
+applied, write mode, timings, and any file rename. Run with `etb run` in the esgf-toolbox image, each line also
+carries `etb_run_id`, which points to that run in the image's run log (`null` otherwise). A detailed `<fixlog>.events.jsonl` is written alongside, flushed as the run goes,
 so a long apply can be followed with `tail -f`.
 
 ## Rules
