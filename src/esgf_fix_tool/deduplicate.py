@@ -8,6 +8,8 @@ from pathlib import Path
 import netCDF4
 import numpy as np
 
+from . import __version__
+
 # variable: (horizontal label, surface label, preferred component)
 POLICY = {
     "areacella": ("hxy", "u", "ATM"),
@@ -118,7 +120,8 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print):
         for variable, brand, discard, keep in _candidates(root):
             entry = dict(time=datetime.now(UTC).isoformat(), operation="component-deduplication",
                          variable=variable, branded_variable=brand, discard=str(discard), keep=str(keep),
-                         dry_run=dry_run)
+                         dry_run=dry_run, tool_version=__version__,
+                         etb_run_id=os.environ.get("ETB_RUN_ID") or None)
             try:
                 if not keep.exists():
                     status = "missing_keeper"

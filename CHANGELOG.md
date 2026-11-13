@@ -4,6 +4,14 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `etb_run_id` in every fixlog line and every `deduplicate` log entry: the `ETB_RUN_ID` set by `etb run` in the
+  esgf-toolbox image, linking the line to the run that wrote it (`null` outside `etb run`). The `deduplicate` log
+  also records the tool version, and failed-file fixlog records now include the rules digest.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added
