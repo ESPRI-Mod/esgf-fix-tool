@@ -39,17 +39,19 @@ def plan(path):
     return FixPlan("test", "report", {str(path): [STEP]})
 
 
-def test_hardlinked_file_is_refused_by_default(tmp_path):
+@pytest.mark.parametrize("workers", [1, 2])
+def test_hardlinked_file_is_refused_by_default(tmp_path, workers):
     work, drs = linked_pair(tmp_path)
     with pytest.raises(PermissionError, match="--break-hardlinks"):
-        apply_plan(plan(work), tmp_path / "fixlog.jsonl")
+        apply_plan(plan(work), tmp_path / "fixlog.jsonl", workers=workers)
     assert history(work) == history(drs) == "drop me" and work.stat().st_nlink == 2
 
 
-def test_break_hardlinks_fixes_work_and_keeps_the_drs_version(tmp_path):
+@pytest.mark.parametrize("workers", [1, 2])
+def test_break_hardlinks_fixes_work_and_keeps_the_drs_version(tmp_path, workers):
     work, drs = linked_pair(tmp_path)
     log = tmp_path / "fixlog.jsonl"
-    stats = apply_plan(plan(work), log, break_hardlinks=True)
+    stats = apply_plan(plan(work), log, break_hardlinks=True, workers=workers)
     assert stats["changed"] == 1
     assert history(work) is None and history(drs) == "drop me"
     assert work.stat().st_nlink == 1 and drs.stat().st_nlink == 1

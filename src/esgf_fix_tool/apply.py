@@ -198,7 +198,7 @@ def apply_plan(
 
     first_error = None
     with open(fixlog, "a") as out, file_jobs(
-        plan.files, workers, dry_run, events, preflight_errors,
+        plan.files, workers, dry_run, events, preflight_errors, break_hardlinks,
         stop_on_error=not continue_on_error,
     ) as jobs:
         for path, steps, result in jobs:
