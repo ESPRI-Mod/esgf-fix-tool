@@ -23,6 +23,23 @@ Rules and code are read from `src/`, so edits are picked up immediately by `uv r
 - Keep a PR to one topic. Several rules for the same QA family can go together.
 - Merge when tests and ruff pass. Delete the branch after merging.
 
+### Commit messages
+
+Commit subjects and PR titles follow [Conventional Commits](https://www.conventionalcommits.org/):
+`type(scope): description`, in the imperative, lowercase after the colon.
+
+- **type:** `feat` (new behaviour, e.g. a new rule, fix function or option), `fix` (a bug), `docs`, `test`,
+  `refactor`, `chore` (tooling, dependencies, releases).
+- **scope:** the area touched, e.g. `apply`, `plan`, `classify`, `console`, `rules`, or a fix module such as
+  `surface`.
+- One topic per commit: split unrelated changes, even inside one PR.
+
+```text
+feat(apply): process independent files in parallel with --workers
+fix(surface): stop validating the seasurface label in drop_osurf_axis
+chore: release 0.5.0
+```
+
 ## From a QA finding to a rule
 
 1. **See what is not covered.** On a full esgqa report:
