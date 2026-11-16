@@ -60,8 +60,8 @@ class Dashboard:
         self.last_render = now
         size = shutil.get_terminal_size(fallback=(120, 24))
         width = max(1, size.columns - 1)  # Never wrap into the next terminal row.
-        lines = [f"Terminés : {len(self.finished)}/{self.total} — Modifiés : {self.changed}"
-                 f" — Déjà conformes : {self.unchanged} — Échecs : {self.failed}"]
+        lines = [(f"Terminés : {len(self.finished)}/{self.total} — Modifiés : {self.changed}"
+                  f" — Déjà conformes : {self.unchanged} — Échecs : {self.failed}")]
         visible = max(1, size.lines - 4)
         filename_width = max(1, (width - 3) // 2)
         phase_width = max(1, width - filename_width - 3)
