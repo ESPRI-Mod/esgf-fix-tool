@@ -81,12 +81,13 @@ def run(
             fixlog,
             dry_run=dry_run,
             only_under=only_under,
-            progress=None if quiet else _progress,
+            progress=None if quiet or display.interactive else _progress,
             events=display,
             continue_on_error=not fail_fast,
             break_hardlinks=break_hardlinks,
             workers=workers,
         )
-    print(stats, flush=True)
+    if not display.interactive:
+        print(stats, flush=True)
     if stats.get("failed", 0):
         raise typer.Exit(1)

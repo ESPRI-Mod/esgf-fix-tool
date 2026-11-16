@@ -56,13 +56,18 @@ esgf-fix-tool apply fixplan.json --only-under "$staging_root" --workers 4 --fixl
 The option also works with `--dry-run`. Each file retains its ordered fixes,
 in-place metadata edits and single combined rewrite when required. NetCDF/HDF5
 handles are never shared between processes. The parent writes both JSONL logs;
-completed files are logged in completion order. Console messages are prefixed
-with the file they belong to. No separate per-file logs are created. Error
-tracebacks remain available, and the CLI continues other files by default.
-With `--fail-fast`, no new files are dispatched once a failure is observed;
-already dispatched files finish and are logged before the error is returned.
-Interruption stops further dispatch and waits for active workers to close their
-files.
+completed files are logged in completion order. In an interactive terminal,
+one compact live view shows totals and a single current-stage line per active
+file, with I/O percentages. If the terminal is too short, remaining active files
+are counted below the visible rows. In batch or redirected output, the existing
+detailed messages are retained, with one final summary per grouped rewrite
+instead of intermediate rewrite percentages. JSONL events retain the detailed
+progress independently of terminal rendering. No separate per-file logs are
+created. Error tracebacks remain available, and the CLI continues other files by
+default. With `--fail-fast`, no new files are dispatched once a failure is
+observed; already dispatched files finish and are logged before the error is
+returned. Interruption stops further dispatch and waits for active workers to
+close their files.
 
 Parallel mode rejects duplicate resolved paths, hardlink aliases and conflicting
 rename targets before applying fixes. More workers increase aggregate memory,
