@@ -66,22 +66,28 @@ def run(
             "DRS version) keep the previous content; default: refuse such files",
         ),
     ] = False,
+    workers: Annotated[
+        int, typer.Option("--workers", "-j", min=1,
+                          help="number of independent files processed concurrently")
+    ] = 1,
 ):
     """Apply a plan: update metadata directly or combine structural changes in one rewrite."""
     from ..apply import apply_plan  # needs netCDF4
 
     events_log = fixlog.with_name(f"{fixlog.stem}.events.jsonl")
-    with ConsoleProgress(events_log, quiet=quiet) as display:
+    with ConsoleProgress(events_log, quiet=quiet, parallel=workers > 1) as display:
         stats = apply_plan(
             FixPlan.read(plan),
             fixlog,
             dry_run=dry_run,
             only_under=only_under,
-            progress=None if quiet else _progress,
+            progress=None if quiet or display.interactive else _progress,
             events=display,
             continue_on_error=not fail_fast,
             break_hardlinks=break_hardlinks,
+            workers=workers,
         )
-    print(stats, flush=True)
+    if not display.interactive:
+        print(stats, flush=True)
     if stats.get("failed", 0):
         raise typer.Exit(1)
