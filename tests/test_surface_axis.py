@@ -147,8 +147,8 @@ def test_hybrid_coordinate_family_selects_reference_coefficients(coordinate):
     assert step.fix=='fix_hybrid_coefficients' and step.params=={'coordinate':coordinate}
 
 
-@pytest.mark.parametrize('invalid',['numeric','unknown_label','wrong_axis'])
-def test_surface_refuses_non_osurf_representations(tmp_path,invalid):
+@pytest.mark.parametrize('invalid',['numeric','wrong_axis'])
+def test_surface_refuses_numeric_coordinates_or_unreviewed_axes(tmp_path,invalid):
     path=tmp_path/'test.nc'
     if invalid=='numeric':
         with netCDF4.Dataset(path,'w') as ds:
@@ -161,6 +161,38 @@ def test_surface_refuses_non_osurf_representations(tmp_path,invalid):
     p=FixPlan('test','report',{str(path):[Step('C073','drop_osurf_axis',{})]})
     with pytest.raises(ValueError):apply_plan(p,tmp_path/'log')
     assert path.read_bytes()==original
+
+
+@pytest.mark.parametrize('raw', [b'osurf\x00\xce\xff', b'ocean_surf\xceace_layer', b'not_osurf'])
+def test_axis_removal_never_decodes_or_changes_label_bytes(tmp_path, raw):
+    # Reproduce a non-ASCII label in a real file. This correction must not try
+    # to repair or validate its value: that belongs to the separate label fix.
+    path = tmp_path / 'test.nc'
+    make(path)
+    with netCDF4.Dataset(path, 'a') as ds:
+        ds.renameDimension('axis_nbounds', 'bnds')
+        coordinate = ds['seasurface']
+        coordinate[:] = np.frombuffer(raw.ljust(coordinate.size, b' '), dtype='S1')
+    with netCDF4.Dataset(path) as ds:
+        ds.set_auto_chartostring(False)
+        ds.set_auto_maskandscale(False)
+        before = {name: v[:].tobytes() for name, v in ds.variables.items()}
+    inode = path.stat().st_ino
+    p = FixPlan('test', 'report', {str(path): [Step('C073', 'drop_osurf_axis', {})]})
+    log = tmp_path / 'log'
+    assert apply_plan(p, log, dry_run=True)['changed'] == 1
+    with netCDF4.Dataset(path) as ds:
+        assert ds['seasurface'].axis == 'Z'
+    assert apply_plan(p, log)['changed'] == 1
+    assert path.stat().st_ino == inode
+    with netCDF4.Dataset(path) as ds:
+        ds.set_auto_chartostring(False)
+        ds.set_auto_maskandscale(False)
+        assert 'axis' not in ds['seasurface'].ncattrs()
+        assert {name: v[:].tobytes() for name, v in ds.variables.items()} == before
+    corrected = path.read_bytes()
+    assert apply_plan(p, log)['unchanged'] == 1
+    assert path.read_bytes() == corrected
 
 
 def test_hybrid_dimension_findings_share_one_reference_fix():
