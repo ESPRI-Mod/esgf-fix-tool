@@ -44,6 +44,31 @@ esgf-fix-tool apply fixplan.json --only-under "$staging_root" --fixlog fixlog.js
 
 Always use the full report, not `qa_result_*.cluster.json`.
 
+### Processing several files concurrently
+
+`apply` defaults to one file at a time. Use `--workers N` (or `-j N`) to process
+up to N independent files in separate spawned processes:
+
+```bash
+esgf-fix-tool apply fixplan.json --only-under "$staging_root" --workers 4 --fixlog fixlog.jsonl
+```
+
+The option also works with `--dry-run`. Each file retains its ordered fixes,
+in-place metadata edits and single combined rewrite when required. NetCDF/HDF5
+handles are never shared between processes. The parent writes both JSONL logs;
+completed files are logged in completion order. Console messages are prefixed
+with the file they belong to. No separate per-file logs are created. Error
+tracebacks remain available, and the CLI continues other files by default.
+With `--fail-fast`, no new files are dispatched once a failure is observed;
+already dispatched files finish and are logged before the error is returned.
+Interruption stops further dispatch and waits for active workers to close their
+files.
+
+Parallel mode rejects duplicate resolved paths, hardlink aliases and conflicting
+rename targets before applying fixes. More workers increase aggregate memory,
+temporary disk space and filesystem traffic; speedup depends on available I/O
+bandwidth and the fixes selected. No change to the fix plan is needed.
+
 ### Decision and exit codes
 
 `classify` looks only at severity-3 findings to decide what the loop does next:

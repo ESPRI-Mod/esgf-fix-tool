@@ -15,7 +15,10 @@ def hms(seconds):
 
 
 class ConsoleProgress:
-    def __init__(self, events_log, *, quiet=False):
+    def __init__(self, events_log, *, quiet=False, parallel=False, label=''):
+        self.parallel = parallel
+        self.label = label
+        self.children = {}
         self.events_log = Path(events_log)
         self.quiet = quiet
         self.file = None
@@ -49,6 +52,9 @@ class ConsoleProgress:
     def _write(self, text, *, transient=False):
         if self.quiet:
             return
+        if self.label:
+            text = f'[{self.label}] {text}'
+            transient = False
         tty = sys.stdout.isatty()
         if self.transient:
             print('\r\033[K', end='', flush=True)
@@ -87,6 +93,17 @@ class ConsoleProgress:
         return text
 
     def __call__(self, event):
+        if self.parallel:
+            child = self.children.get(event.path)
+            if child is None:
+                child = ConsoleProgress(self.events_log, quiet=self.quiet,
+                                        label=event.path)
+                child.stream, child.log_error = self.stream, self.log_error
+                self.children[event.path] = child
+            child(event)
+            if event.kind == 'file' and event.status in ('done', 'failed', 'cancelled'):
+                self.children.pop(event.path, None)
+            return
         now = time.monotonic()
         prefix = self._prefix(event)
 

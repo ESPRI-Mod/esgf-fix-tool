@@ -163,8 +163,9 @@ def test_surface_refuses_numeric_coordinates_or_unreviewed_axes(tmp_path,invalid
     assert path.read_bytes()==original
 
 
+@pytest.mark.parametrize('workers', [1, 2])
 @pytest.mark.parametrize('raw', [b'osurf\x00\xce\xff', b'ocean_surf\xceace_layer', b'not_osurf'])
-def test_axis_removal_never_decodes_or_changes_label_bytes(tmp_path, raw):
+def test_axis_removal_never_decodes_or_changes_label_bytes(tmp_path, workers, raw):
     # Reproduce a non-ASCII label in a real file. This correction must not try
     # to repair or validate its value: that belongs to the separate label fix.
     path = tmp_path / 'test.nc'
@@ -180,10 +181,10 @@ def test_axis_removal_never_decodes_or_changes_label_bytes(tmp_path, raw):
     inode = path.stat().st_ino
     p = FixPlan('test', 'report', {str(path): [Step('C073', 'drop_osurf_axis', {})]})
     log = tmp_path / 'log'
-    assert apply_plan(p, log, dry_run=True)['changed'] == 1
+    assert apply_plan(p, log, workers=workers, dry_run=True)['changed'] == 1
     with netCDF4.Dataset(path) as ds:
         assert ds['seasurface'].axis == 'Z'
-    assert apply_plan(p, log)['changed'] == 1
+    assert apply_plan(p, log, workers=workers)['changed'] == 1
     assert path.stat().st_ino == inode
     with netCDF4.Dataset(path) as ds:
         ds.set_auto_chartostring(False)
@@ -191,7 +192,7 @@ def test_axis_removal_never_decodes_or_changes_label_bytes(tmp_path, raw):
         assert 'axis' not in ds['seasurface'].ncattrs()
         assert {name: v[:].tobytes() for name, v in ds.variables.items()} == before
     corrected = path.read_bytes()
-    assert apply_plan(p, log)['unchanged'] == 1
+    assert apply_plan(p, log, workers=workers)['unchanged'] == 1
     assert path.read_bytes() == corrected
 
 
