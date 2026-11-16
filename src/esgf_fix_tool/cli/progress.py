@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .dashboard import Dashboard, DashboardStderr
+from .text_log import TextLog
 
 
 def hms(seconds):
@@ -23,22 +24,24 @@ class ConsoleProgress:
         self.dashboard = Dashboard() if self.interactive else None
         self.stderr_scope = None
         self.rewrite_io = {}
+        self.io_log_state = {}
         self.parallel = parallel
         self.label = label
         self.children = {}
         self.events_log = Path(events_log)
+        self.text_log = None
         self.quiet = quiet
         self.file = None
         self.phase = None
         self.phase_stack = []
         self.io = None
-        self.last_io_key = None
-        self.last_io_print = 0.
         self.transient = False
         self.stream = None
         self.log_error = False
 
     def __enter__(self):
+        self.text_log = TextLog(self.events_log.with_suffix('.log'))
+        self.text_log.open()
         try:
             self.stream = self.events_log.open('a')
         except OSError as exc:
@@ -56,6 +59,8 @@ class ConsoleProgress:
             self.stderr_scope.__exit__(*exc)
         if self.transient and not self.quiet:
             print(flush=True)
+        if self.text_log is not None:
+            self.text_log.close()
         if self.stream is not None:
             try:
                 self.stream.close()
@@ -66,8 +71,9 @@ class ConsoleProgress:
     def _write(self, text, *, transient=False):
         if self.quiet:
             return
-        if self.label:
-            text = f'[{self.label}] {text}'
+        label = self.label or (Path(self.file.path).name if self.file else '')
+        if label:
+            text = f'[{Path(label).name}] {text}'
             transient = False
         tty = sys.stdout.isatty()
         if self.transient:
@@ -89,6 +95,37 @@ class ConsoleProgress:
             self.log_error = True
             print(f'Journal de progression indisponible : {exc}', file=sys.stderr, flush=True)
 
+    def _log_event(self, event):
+        """Persist coarse I/O milestones, independently of live screen updates.
+
+        Keep every phase/fix/error event. For each large array operation retain
+        at most the initial value and four observed quarter-progress buckets.
+        Small auxiliaries need only their completion event. Never invent a
+        percentage when a single block crosses several milestones.
+        """
+        if event.kind == 'io':
+            d = event.details
+            key = (event.path, event.phase, event.rule, event.fix,
+                   d['variable'], d['operation'])
+            completed, total = d['completed'], d['total']
+            bucket = min(4, max(0, 4 * completed // total)) if total > 0 else 4
+            previous = self.io_log_state.get(key)
+            # The same operation can legitimately run again during verification.
+            if previous and (completed < previous[1] or total != previous[2]):
+                previous = None
+            self.io_log_state[key] = (bucket, completed, total)
+            if total * d['itemsize'] < 8 * 1024 * 1024 and completed < total:
+                return False
+            if previous and bucket == previous[0]:
+                return False
+        self._log(asdict(event))
+        if self.text_log is not None:
+            self.text_log.write(event, self._io_text)
+        if event.kind == 'file' and event.status in ('done', 'failed', 'cancelled'):
+            self.io_log_state = {k: v for k, v in self.io_log_state.items()
+                                 if k[0] != event.path}
+        return True
+
     @staticmethod
     def _prefix(event):
         if event.rule:
@@ -108,44 +145,44 @@ class ConsoleProgress:
 
     def __call__(self, event):
         if self.dashboard is not None:
-            self._log(asdict(event))
+            self._log_event(event)
             self.dashboard.update(event, self._io_text)
             return
         if self.parallel:
             child = self.children.get(event.path)
             if child is None:
                 child = ConsoleProgress(self.events_log, quiet=self.quiet,
-                                        label=event.path)
+                                        label=Path(event.path).name)
                 child.stream, child.log_error = self.stream, self.log_error
+                child.text_log = self.text_log
                 self.children[event.path] = child
             child(event)
-            if event.kind == 'file' and event.status in ('done', 'failed', 'cancelled'):
+            if (event.kind == 'file' and event.status in ('done', 'failed', 'cancelled')
+                    or event.kind == 'error'):
                 self.children.pop(event.path, None)
             return
         now = time.monotonic()
         prefix = self._prefix(event)
 
-        # Keep the latest real I/O counters, but throttle large block loops.
+        # Keep current counters for the final summary, but print only the same
+        # observed quarter milestones retained by the human/JSON journals.
         if event.kind == 'io':
             self.io = event
-            self._log(asdict(event))
+            retained = self._log_event(event)
             if ('réécriture' in event.details['operation'].casefold()
                     or any('réécriture' in phase.phase.casefold() for phase, _ in self.phase_stack)):
                 self.rewrite_io[event.details['variable']] = event.details
-                return  # Batch output contains the enclosing phase's final summary only.
-            key = (event.path,event.phase,event.rule,event.details['variable'],event.details['operation'])
-            if key == self.last_io_key and now-self.last_io_print < 1. and event.details['completed'] != event.details['total']:
+            if not retained:
                 return
-            self.last_io_key, self.last_io_print = key, now
         if event.kind != 'io':
-            self._log(asdict(event))
+            self._log_event(event)
 
         if event.kind == 'file':
             if event.status == 'start':
                 self.file, self.file_started = event, now
                 self.phase, self.io = None, None
                 self.phase_stack = []
-                self._write(f"[{event.details['index']}/{event.details['total']}] En cours - {event.path}")
+                self._write(f"[{event.details['index']}/{event.details['total']}] En cours")
             elif event.status in ['failed','cancelled']:
                 self._write(f"  {'Interrompu' if event.status=='cancelled' else 'Échec'} : {event.details['error']}")
                 self.file, self.phase, self.io = None, None, None

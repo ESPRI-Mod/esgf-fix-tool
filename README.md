@@ -60,10 +60,19 @@ completed files are logged in completion order. In an interactive terminal,
 one compact live view shows totals and a single current-stage line per active
 file, with I/O percentages. If the terminal is too short, remaining active files
 are counted below the visible rows. In batch or redirected output, the existing
-detailed messages are retained, with one final summary per grouped rewrite
-instead of intermediate rewrite percentages. JSONL events retain the detailed
-progress independently of terminal rendering. No separate per-file logs are
-created. Error tracebacks remain available, and the CLI continues other files by
+detailed messages are retained, with rewrite progress sampled at observed 25%
+milestones and a final summary per grouped rewrite. Human-readable prefixes use
+only the filename; full file paths remain in the JSON journals and tracebacks.
+The events JSONL retains every
+phase, fix result and error. Array I/O is sampled at observed 25% milestones
+(at most five entries per large variable and operation, including start/end);
+small auxiliary arrays record completion only. The interactive view still uses
+live counters independently of this journal sampling. A human-readable text
+journal is also appended automatically: `--fixlog fixlog.jsonl` creates
+`fixlog.events.log` alongside `fixlog.events.jsonl`. It contains the file, phase
+and fix messages, readable parameters, sampled I/O progress and tracebacks,
+including with `--quiet`. All journals are written by the parent process;
+no separate per-file logs are created. Error tracebacks remain available, and the CLI continues other files by
 default. With `--fail-fast`, no new files are dispatched once a failure is
 observed; already dispatched files finish and are logged before the error is
 returned. Interruption stops further dispatch and waits for active workers to

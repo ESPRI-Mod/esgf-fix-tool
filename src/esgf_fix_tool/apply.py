@@ -223,6 +223,10 @@ def apply_plan(
                     file_total=total,
                 )
             except Exception as exc:
+                trace = result["traceback"] if result is not None else traceback.format_exc()
+                if events:
+                    events(ProgressEvent("error", "failed", path=path,
+                                         details={"traceback": trace}))
                 if not continue_on_error and workers == 1:
                     raise
                 if not continue_on_error and first_error is None:
@@ -231,7 +235,6 @@ def apply_plan(
                 # file as unchanged: a direct update can fail after partial edits.
                 stats["files"] += 1
                 stats["failed"] = stats.get("failed", 0) + 1
-                trace = result["traceback"] if result is not None else traceback.format_exc()
                 record = {
                     "time": datetime.now(UTC).isoformat(timespec="seconds"),
                     "file": path,
@@ -259,7 +262,7 @@ def apply_plan(
                 out.write(json.dumps(record) + "\n")
                 out.flush()
                 print(
-                    f"Échec du fichier {path} — "
+                    f"Échec du fichier {Path(path).name} — "
                     + ("poursuite du plan." if continue_on_error
                        else "arrêt après les fichiers déjà en cours."),
                     file=sys.stderr,
