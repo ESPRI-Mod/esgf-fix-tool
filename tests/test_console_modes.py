@@ -103,9 +103,10 @@ def test_quiet_terminal_still_logs_without_dashboard(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("workers", [1, 2])
 def test_batch_cli_prints_one_summary_per_actual_grouped_rewrite(tmp_path, workers):
-    from typer.testing import CliRunner
-    from esgf_fix_tool.cli.main import app
     from test_parallel_apply import make_plan
+    from typer.testing import CliRunner
+
+    from esgf_fix_tool.cli.main import app
 
     plan = make_plan(tmp_path / "data", count=2, structural=True)
     path = tmp_path / "plan.json"
@@ -121,8 +122,9 @@ def test_batch_cli_prints_one_summary_per_actual_grouped_rewrite(tmp_path, worke
 
 
 def test_interactive_cli_uses_only_live_view(tmp_path, monkeypatch):
-    from esgf_fix_tool.cli.apply import run
     from test_parallel_apply import make_plan
+
+    from esgf_fix_tool.cli.apply import run
 
     plan = make_plan(tmp_path / "data", count=2)
     path = tmp_path / "plan.json"

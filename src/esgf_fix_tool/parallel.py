@@ -45,7 +45,7 @@ def _run(path, steps, dry_run, index, total, error, break_hardlinks):
                              break_hardlinks=break_hardlinks)
         return dict(entries=entries, error=None, elapsed=time.monotonic() - started,
                     worker_pid=os.getpid())
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - sent back to the parent, which logs it like a serial failure
         return dict(entries=None, error=exc, traceback=traceback.format_exc(),
                     elapsed=time.monotonic() - started, worker_pid=os.getpid())
 
