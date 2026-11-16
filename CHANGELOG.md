@@ -4,6 +4,16 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- `deduplicate` no longer refuses ATM/SRF pairs whose time axes only differ by an equivalent calendar name:
+  `gregorian`/`standard` (or no calendar), `365_day`/`noleap`, `366_day`/`all_leap`, and `standard`/
+  `proleptic_gregorian` when the reference date and every time value fall on or after 15 October 1582. Seen on a
+  CM6-ESMCO2 historical simulation, where all 20 pairs failed (SRF `gregorian`, ATM `proleptic_gregorian`). Other
+  calendar differences still keep both files, now with the error `Calendars differ (a / b)`.
+
 ## [0.5.0] - 2026-11-16
 
 ### Added
