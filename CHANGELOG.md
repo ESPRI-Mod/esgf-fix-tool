@@ -4,6 +4,23 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [0.5.0] - 2026-11-16
+
+### Added
+
+- `apply --workers N` (`-j N`): process up to N independent files at once, in separate spawned processes. Each file
+  keeps its ordered fixes and single combined rewrite; the parent writes both JSONL logs in completion order and
+  records each `worker_pid`. Duplicate paths, hardlink aliases and conflicting rename targets are refused before
+  anything is applied. Works with `--dry-run`, `--fail-fast` and `--break-hardlinks`.
+
+### Changed
+
+- In an interactive terminal, `apply` shows one live view (totals and one current-stage line per active file)
+  instead of the detailed messages, also without `--workers`. Batch or redirected output keeps the detailed
+  messages, with one summary per grouped rewrite instead of intermediate percentages. The events log is unchanged.
+- C073 (`drop_osurf_axis`) no longer checks the `seasurface` label value, only that it is a scalar string or a
+  one-dimensional character label: unexpected or non-ASCII label bytes no longer block removing `axis`.
+
 ## [0.4.0] - 2026-11-13
 
 ### Added
