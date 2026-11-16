@@ -201,6 +201,8 @@ uv run ruff check
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch workflow and how to add a rule or a fix.
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat(apply): …`, `fix(surface): …`, `chore: …`).
 
 ## History
 
