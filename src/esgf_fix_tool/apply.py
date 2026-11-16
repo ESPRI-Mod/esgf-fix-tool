@@ -133,6 +133,7 @@ def apply_plan(
     progress: Callable[[int, int, str, bool | None, float], None] | None = None,
     events: Callable[[ProgressEvent], None] | None = None,
     continue_on_error: bool = False,
+    workers: int = 1,
 ) -> dict[str, int]:
     """Apply every file of the plan. ``progress(done, total, path, changed, elapsed_s)`` is called after each file;
     each fixlog line is flushed at once, so the log can be followed while a long run goes on.
@@ -141,6 +142,8 @@ def apply_plan(
     mode ordinary per-file exceptions are recorded and printed, while cancellation
     and global plan validation still abort. A failed progress callback uses changed=None.
     """
+    if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
+        raise ValueError("workers must be a positive integer")
     if only_under is not None:
         check_under(plan, only_under)
     # Preserve plan-wide target checks, but defer individual validation errors to
@@ -158,6 +161,10 @@ def apply_plan(
         raise FileExistsError(
             "Multiple plan entries target the same final filename: nothing applied"
         )
+    if workers > 1:
+        from .parallel import check_independent
+
+        check_independent(effective)
     missing = [p for p, (actual, _, _) in effective.items() if not actual.exists()]
     if missing and not continue_on_error:
         raise FileNotFoundError(
@@ -183,11 +190,19 @@ def apply_plan(
     if continue_on_error:
         stats["failed"] = 0
     total, start = len(plan.files), time.monotonic()
-    with open(fixlog, "a") as out:
-        for path, steps in plan.files.items():
-            started = time.monotonic()
+    from .parallel import file_jobs
+
+    first_error = None
+    with open(fixlog, "a") as out, file_jobs(
+        plan.files, workers, dry_run, events, preflight_errors,
+        stop_on_error=not continue_on_error,
+    ) as jobs:
+        for path, steps, result in jobs:
+            started = time.monotonic() - (result["elapsed"] if result else 0)
             try:
-                if path in preflight_errors:
+                if result is not None and result["error"] is not None:
+                    raise result["error"]
+                if result is None and path in preflight_errors:
                     exc = preflight_errors[path]
                     with reporting(events, path):
                         notify(
@@ -199,7 +214,7 @@ def apply_plan(
                         )
                         notify("file", "failed", error=str(exc) or type(exc).__name__)
                     raise exc
-                entries = apply_file(
+                entries = result["entries"] if result is not None else apply_file(
                     path,
                     steps,
                     dry_run=dry_run,
@@ -208,13 +223,15 @@ def apply_plan(
                     file_total=total,
                 )
             except Exception as exc:
-                if not continue_on_error:
+                if not continue_on_error and workers == 1:
                     raise
+                if not continue_on_error and first_error is None:
+                    first_error = exc
                 # Do not catch KeyboardInterrupt/SystemExit. Never report a failed
                 # file as unchanged: a direct update can fail after partial edits.
                 stats["files"] += 1
-                stats["failed"] += 1
-                trace = traceback.format_exc()
+                stats["failed"] = stats.get("failed", 0) + 1
+                trace = result["traceback"] if result is not None else traceback.format_exc()
                 record = {
                     "time": datetime.now(UTC).isoformat(timespec="seconds"),
                     "file": path,
@@ -237,10 +254,14 @@ def apply_plan(
                     "changes_may_have_been_applied": not dry_run,
                     "elapsed_seconds": time.monotonic() - started,
                 }
+                if result is not None:
+                    record["worker_pid"] = result["worker_pid"]
                 out.write(json.dumps(record) + "\n")
                 out.flush()
                 print(
-                    f"Échec du fichier {path} — poursuite du plan.",
+                    f"Échec du fichier {path} — "
+                    + ("poursuite du plan." if continue_on_error
+                       else "arrêt après les fichiers déjà en cours."),
                     file=sys.stderr,
                     flush=True,
                 )
@@ -270,6 +291,8 @@ def apply_plan(
             }
             if path in drs_targets:
                 record["drs_rename"] = {"source": path, "target": drs_targets[path]}
+            if result is not None:
+                record["worker_pid"] = result["worker_pid"]
             renamed = next((e for e in entries if "filename_target" in e), None)
             if renamed is not None:
                 record["final_file"] = renamed["filename_target"]
@@ -278,4 +301,6 @@ def apply_plan(
             out.flush()
             if progress:
                 progress(stats["files"], total, path, changed, time.monotonic() - start)
+    if first_error is not None:
+        raise first_error
     return stats
