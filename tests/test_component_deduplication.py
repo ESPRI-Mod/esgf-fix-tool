@@ -116,6 +116,46 @@ def test_invalid_pairs_are_retained_and_reported(tmp_path, error):
     assert (discard.read_bytes(), keep.read_bytes()) == before
 
 
+@pytest.mark.parametrize("keep_calendar,discard_calendar", [
+    ("gregorian", "proleptic_gregorian"),      # seen on CM6-ESMCO2 historical: SRF gregorian, ATM proleptic
+    ("standard", "gregorian"),
+    (None, "proleptic_gregorian"),             # no calendar attribute: CF default, standard
+    ("365_day", "noleap"),
+])
+def test_equivalent_calendars_are_the_same_coverage(tmp_path, keep_calendar, discard_calendar):
+    root = tmp_path / "simulation"
+    keep, discard = product(root, "ATM", "evspsbl"), product(root, "SRF", "evspsbl")
+    for path, calendar in ((keep, keep_calendar), (discard, discard_calendar)):
+        with netCDF4.Dataset(path, "a") as ds:
+            if calendar is None:
+                ds["time"].delncattr("calendar")
+            else:
+                ds["time"].calendar = calendar
+    result = deduplicate(root, tmp_path / "log.jsonl", only_under=root, emit=lambda text: None)
+    assert result["deleted"] == 1 and result["failed"] == 0
+    assert keep.exists() and not discard.exists()
+
+
+@pytest.mark.parametrize("units,calendars", [
+    ("days since 1500-01-01", ("gregorian", "proleptic_gregorian")),   # before the 1582 reform: dates differ
+    ("days since 1850-01-01", ("noleap", "standard")),
+    ("days since 1850-01-01", ("360_day", "proleptic_gregorian")),
+])
+def test_different_calendars_are_retained(tmp_path, units, calendars):
+    root = tmp_path / "simulation"
+    keep, discard = product(root, "ATM", "evspsbl"), product(root, "SRF", "evspsbl")
+    for path, calendar in zip((keep, discard), calendars):
+        with netCDF4.Dataset(path, "a") as ds:
+            ds["time"].units = units
+            ds["time"].calendar = calendar
+    log = tmp_path / "log.jsonl"
+    result = deduplicate(root, log, only_under=root, emit=lambda text: None)
+    assert result["failed"] == 1 and result["deleted"] == 0
+    assert keep.exists() and discard.exists()
+    (entry,) = [json.loads(x) for x in log.read_text().splitlines() if '"failed"' in x]
+    assert entry["error"].startswith("Calendars differ")
+
+
 def test_cli_works_without_a_report_or_plan(tmp_path):
     keep = product(tmp_path, "SRF", "snc", surface="lnd")
     discard = product(tmp_path, "ATM", "snc", surface="lnd")

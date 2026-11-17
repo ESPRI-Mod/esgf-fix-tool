@@ -5,6 +5,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
+import cftime
 import netCDF4
 import numpy as np
 
@@ -16,6 +17,11 @@ POLICY = {
     "evspsbl": ("hxy", "u", "ATM"),
     "snc": ("hxy", "lnd", "SRF"),
 }
+# CF calendar names that mean the same calendar (a missing calendar is "standard")
+CALENDAR_ALIASES = {"": "standard", "gregorian": "standard", "365_day": "noleap", "366_day": "all_leap"}
+# standard (mixed Julian/Gregorian) and proleptic_gregorian give the same dates from the Gregorian reform on
+GREGORIAN_REFORM = cftime.DatetimeProlepticGregorian(1582, 10, 15)
+
 IDENTITY = (
     "source_id", "experiment_id", "variant_label", "branded_variable",
     "frequency", "region", "grid_label",
@@ -49,6 +55,18 @@ def _candidates(root):
                 continue
             parts[positions[0]] = preferred
             yield variable, variable + "_" + brand, path, root.joinpath(*parts)
+
+
+def _same_calendar(a, b, values, units):
+    """True if two CF calendars give the same dates for these time values."""
+    a, b = (CALENDAR_ALIASES.get(c.strip().lower(), c.strip().lower()) for c in (a, b))
+    if a == b:
+        return True
+    if {a, b} != {"standard", "proleptic_gregorian"}:
+        return False
+    # the reference date and every value must fall on or after the reform (15 October 1582)
+    first = cftime.num2date([0, float(values.min())], units, calendar="proleptic_gregorian")
+    return all(day >= GREGORIAN_REFORM for day in first)
 
 
 def _validate(variable, brand, discard, keep, root):
@@ -87,11 +105,14 @@ def _validate(variable, brand, discard, keep, root):
                 or not x.size or x.shape != y.shape
                 or getattr(a, "units", None) != getattr(b, "units", None)
                 or not getattr(a, "units", "")
-                or getattr(a, "calendar", "standard") != getattr(b, "calendar", "standard")
                 or np.ma.getmaskarray(x).any() or np.ma.getmaskarray(y).any()
                 or not np.isfinite(x).all() or not np.array_equal(x, y)
             ):
                 raise ValueError("Temporal coverage differs; both files retained")
+            calendars = getattr(a, "calendar", ""), getattr(b, "calendar", "")
+            if not _same_calendar(*calendars, x, a.units):
+                raise ValueError(f"Calendars differ ({calendars[0] or 'none'} / {calendars[1] or 'none'}); "
+                                 "both files retained")
     return signatures
 
 
