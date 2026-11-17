@@ -70,7 +70,7 @@ def final_checks(path, output, steps, entries, coefficient_baseline=None):
                 method.verify_final(path, output, **s.params)
 
 
-def execute(path, steps, *, dry_run=False):
+def execute(path, steps, *, dry_run=False, allow_hardlinks=False):
     path = Path(path)
     entries = []
     backups = {}
@@ -186,11 +186,22 @@ def execute(path, steps, *, dry_run=False):
                                 source[v.origin],
                                 tuple(v.source_dimensions[i] for i in v.order),
                             )
-                if changed and not rewrite and path.stat().st_nlink > 1:
-                    raise PermissionError(
-                        "Direct updates require an independent copy: this file has hardlinks; "
-                        "no change applied. Break its physical links before applying metadata fixes."
-                    )
+                link_count = path.stat().st_nlink
+                if changed and link_count > 1:
+                    if allow_hardlinks and rewrite:
+                        # Atomic replacement would detach this path from its aliases.
+                        # Never silently split a published hardlink set in shared mode.
+                        raise PermissionError(
+                            "--allow-hardlinks supports direct updates only; this file "
+                            "needs a structural rewrite, which would break its hardlinks. "
+                            "Use an independent copy and rebuild its publication links."
+                        )
+                    if not allow_hardlinks and not rewrite:
+                        raise PermissionError(
+                            "Direct updates require an independent copy: this file has hardlinks; "
+                            "no change applied. Use --allow-hardlinks to explicitly update all "
+                            "physical aliases, or break its links first."
+                        )
                 mode = (
                     "rewrite-once"
                     if rewrite and changed
@@ -210,6 +221,9 @@ def execute(path, steps, *, dry_run=False):
                         if rewrite
                         else "metadata-and-edited-auxiliaries",
                     )
+                if allow_hardlinks and link_count > 1:
+                    for e in entries:
+                        e.update(hardlink_count=link_count, shared_hardlinks=True)
                 for s, e in zip(steps, entries):
                     if fixes.REGISTRY[s.fix].layout_change:
                         e["layout_verified"] = not dry_run

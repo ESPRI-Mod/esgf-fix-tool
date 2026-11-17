@@ -17,7 +17,7 @@ def _initialize(events):
     _events = events
 
 
-def _run(path, steps, dry_run, index, total, error):
+def _run(path, steps, dry_run, index, total, error, allow_hardlinks=False):
     from .apply import apply_file
     from .progress import notify, reporting
 
@@ -41,7 +41,8 @@ def _run(path, steps, dry_run, index, total, error):
                 notify("file", "failed", error=str(error))
             raise error
         entries = apply_file(path, steps, dry_run=dry_run, events=report,
-                             file_index=index, file_total=total)
+                             file_index=index, file_total=total,
+                             allow_hardlinks=allow_hardlinks)
         return dict(entries=entries, error=None, elapsed=time.monotonic() - started,
                     worker_pid=os.getpid())
     except Exception as exc:
@@ -71,7 +72,7 @@ def check_independent(effective):
 
 
 @contextmanager
-def file_jobs(files, workers, dry_run, events, errors, stop_on_error=False):
+def file_jobs(files, workers, dry_run, events, errors, stop_on_error=False, allow_hardlinks=False):
     """Keep at most workers files in flight, yielding in completion order.
 
     On failure/cancellation stop dispatching. Already running files finish their
@@ -93,7 +94,9 @@ def file_jobs(files, workers, dry_run, events, errors, stop_on_error=False):
             index, (path, steps) = next(source)
         except StopIteration:
             return
-        future = pool.submit(_run, path, steps, dry_run, index, len(files), errors.get(path))
+        future = pool.submit(
+            _run, path, steps, dry_run, index, len(files), errors.get(path), allow_hardlinks
+        )
         pending[future] = (path, steps)
 
     def drain():

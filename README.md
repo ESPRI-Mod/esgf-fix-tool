@@ -79,10 +79,37 @@ observed; already dispatched files finish and are logged before the error is
 returned. Interruption stops further dispatch and waits for active workers to
 close their files.
 
-Parallel mode rejects duplicate resolved paths, hardlink aliases and conflicting
-rename targets before applying fixes. More workers increase aggregate memory,
+By default, parallel mode rejects duplicate resolved paths, hardlink aliases and
+conflicting rename targets before applying fixes. More workers increase aggregate memory,
 temporary disk space and filesystem traffic; speedup depends on available I/O
 bandwidth and the fixes selected. No change to the fix plan is needed.
+
+### Updating hardlinked publication files
+
+Direct updates of hardlinked files are refused by default. For intentional
+updates of an already organized publication tree, opt in explicitly:
+
+```bash
+esgf-fix-tool apply fixplan.json --only-under "$simulation_root" --allow-hardlinks --workers 4 --fixlog fixlog.jsonl
+```
+
+Attributes, identifier renames and small coordinate edits are applied directly;
+every hardlink to that physical file sees the result, including links outside
+`--only-under`. This boundary checks the selected paths, not all existing links.
+`--dry-run` validates the same restrictions without modifying any file.
+
+Planned regular hardlink aliases (for example `files/d...` and `v...`) are grouped
+by device/inode. Their distinct fixes run in one job, so parallel workers never
+write the same file simultaneously. The fixlog records the other planned paths
+in `hardlink_aliases`, and statistics count physical-file jobs plus the number
+of grouped aliases. Unlisted links are not scanned or renamed.
+
+In this mode a structural rewrite or filename synchronization of a shared file
+is refused before writing: atomically replacing just one path would split the
+hardlink set. For those operations use an independent copy and rebuild the
+publication links afterwards. Without this option, the existing independent-copy
+behavior is unchanged. Stop other writers and publication/repacking jobs while
+applying direct updates to the same files.
 
 ### Hybrid coefficient dimensions
 

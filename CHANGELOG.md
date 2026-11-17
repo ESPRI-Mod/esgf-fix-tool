@@ -4,6 +4,20 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `apply --allow-hardlinks`: explicitly permit direct edits shared by every physical alias.
+  Group planned hardlink aliases into one job, merging their selected steps and logging the aliases.
+  Shared structural rewrites and filename changes are refused before writing in this mode.
+
+### Changed
+
+- C107 now adds `lev:computed_standard_name = "air_pressure"` for the CF §4.3.3 diagnostic,
+  without model or experiment restrictions. Shared hybrid recipes also set and retain it;
+  the former CMIP7 recommendation no longer triggers attribute deletion.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added

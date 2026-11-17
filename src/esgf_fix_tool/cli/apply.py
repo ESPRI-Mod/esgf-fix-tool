@@ -45,6 +45,13 @@ def run(
             help="refuse the plan if any file is outside this directory (use the staging dir)"
         ),
     ] = None,
+    allow_hardlinks: Annotated[
+        bool,
+        typer.Option(
+            "--allow-hardlinks",
+            help="allow direct edits visible through every hardlink; group planned aliases, refuse shared rewrites",
+        ),
+    ] = False,
     quiet: Annotated[
         bool,
         typer.Option(
@@ -77,6 +84,7 @@ def run(
             events=display,
             continue_on_error=not fail_fast,
             workers=workers,
+            allow_hardlinks=allow_hardlinks,
         )
     if not display.interactive:
         print(stats, flush=True)

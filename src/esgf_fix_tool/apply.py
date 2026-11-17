@@ -65,6 +65,7 @@ def apply_file(
     steps: list[Step],
     *,
     dry_run: bool = False,
+    allow_hardlinks: bool = False,
     events: Callable[[ProgressEvent], None] | None = None,
     file_index: int = 1,
     file_total: int = 1,
@@ -75,7 +76,10 @@ def apply_file(
         notify("file", "start", index=file_index, total=file_total, dry_run=dry_run)
         try:
             actual, target, rename_index = _rename_request(path, steps)
-            entries = _apply_file(actual, steps, dry_run=dry_run)
+            _check_shared_rename(actual, target, allow_hardlinks)
+            entries = _apply_file(
+                actual, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks
+            )
             if target is not None:
                 # Reserve the destination without ever overwriting an existing file.
                 # Both paths have the same parent, and all NetCDF handles are closed.
@@ -121,14 +125,60 @@ def apply_file(
 
 
 def _apply_file(
-    path: str | Path, steps: list[Step], *, dry_run: bool = False
+    path: str | Path,
+    steps: list[Step],
+    *,
+    dry_run: bool = False,
+    allow_hardlinks: bool = False,
 ) -> list[dict]:
     unknown = [s.fix for s in steps if s.fix not in fixes.REGISTRY]
     if unknown:
         raise KeyError(f"{Path(path).name}: fixes not implemented: {unknown}")
     from .execute import execute
 
-    return execute(path, steps, dry_run=dry_run)
+    return execute(path, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks)
+
+
+def _check_shared_rename(actual, target, allow_hardlinks):
+    """A filename change cannot synchronize unlisted names of the same inode."""
+    if (
+        allow_hardlinks
+        and target is not None
+        and actual.exists()
+        and actual.stat().st_nlink > 1
+    ):
+        raise PermissionError(
+            "--allow-hardlinks cannot synchronize filenames of all physical aliases; "
+            "use an independent copy and rebuild its publication links."
+        )
+
+
+def _group_hardlink_aliases(files, effective):
+    """Merge selected fixes of regular hardlink paths into one physical-file job.
+
+    Preserve every distinct planned step and record all aliases. This prevents
+    concurrent HDF5 updates through files/d... and v... without scanning the tree
+    or guessing which other links exist outside the plan.
+    """
+    owners, aliases = {}, {}
+    for path, (actual, _, _) in list(effective.items()):
+        if not actual.exists() or actual.is_symlink():
+            continue
+        stat = actual.stat()
+        if stat.st_nlink < 2:
+            continue
+        key = (stat.st_dev, stat.st_ino)
+        if key not in owners:
+            owners[key] = path
+            continue
+        primary = owners[key]
+        for step in files[path]:
+            if step not in files[primary]:
+                files[primary] = [*files[primary], step]
+        aliases.setdefault(primary, []).append(path)
+        del files[path]
+        del effective[path]
+    return aliases
 
 
 def check_under(plan: FixPlan, root: str | Path) -> None:
@@ -151,6 +201,7 @@ def apply_plan(
     events: Callable[[ProgressEvent], None] | None = None,
     continue_on_error: bool = False,
     workers: int = 1,
+    allow_hardlinks: bool = False,
 ) -> dict[str, int]:
     """Apply every file of the plan. ``progress(done, total, path, changed, elapsed_s)`` is called after each file;
     each fixlog line is flushed at once, so the log can be followed while a long run goes on.
@@ -158,6 +209,8 @@ def apply_plan(
     The Python API stays fail-fast unless continue_on_error is requested. In that
     mode ordinary per-file exceptions are recorded and printed, while cancellation
     and global plan validation still abort. A failed progress callback uses changed=None.
+    With allow_hardlinks, planned physical aliases share one direct-update job;
+    the files/changed/unchanged counters then count jobs rather than alias paths.
     """
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise ValueError("workers must be a positive integer")
@@ -181,7 +234,9 @@ def apply_plan(
     effective, preflight_errors = {}, {}
     for path, steps in active_files.items():
         try:
-            effective[path] = _rename_request(path, steps)
+            resolved = _rename_request(path, steps)
+            _check_shared_rename(resolved[0], resolved[1], allow_hardlinks)
+            effective[path] = resolved
         except Exception as exc:
             if not continue_on_error:
                 raise
@@ -191,6 +246,9 @@ def apply_plan(
         raise FileExistsError(
             "Multiple plan entries target the same final filename: nothing applied"
         )
+    hardlink_aliases = (
+        _group_hardlink_aliases(active_files, effective) if allow_hardlinks else {}
+    )
     if workers > 1:
         from .parallel import check_independent
 
@@ -217,6 +275,8 @@ def apply_plan(
             if target is not None:
                 drs_targets[path] = str(target)
     stats = {"files": 0, "changed": 0, "unchanged": 0}
+    if allow_hardlinks:
+        stats["hardlink_aliases"] = sum(map(len, hardlink_aliases.values()))
     if continue_on_error:
         stats["failed"] = 0
     total, start = len(active_files), time.monotonic()
@@ -226,7 +286,7 @@ def apply_plan(
     failed_paths = set()
     with open(fixlog, "a") as out, file_jobs(
         active_files, workers, dry_run, events, preflight_errors,
-        stop_on_error=not continue_on_error,
+        stop_on_error=not continue_on_error, allow_hardlinks=allow_hardlinks,
     ) as jobs:
         for path, steps, result in jobs:
             started = time.monotonic() - (result["elapsed"] if result else 0)
@@ -249,12 +309,14 @@ def apply_plan(
                     path,
                     steps,
                     dry_run=dry_run,
+                    allow_hardlinks=allow_hardlinks,
                     events=events,
                     file_index=stats["files"] + 1,
                     file_total=total,
                 )
             except Exception as exc:
                 failed_paths.add(path)
+                failed_paths.update(hardlink_aliases.get(path, []))
                 if path in effective:
                     actual, target, _ = effective[path]
                     failed_paths.add(str(actual))
@@ -294,6 +356,8 @@ def apply_plan(
                     "changes_may_have_been_applied": not dry_run,
                     "elapsed_seconds": time.monotonic() - started,
                 }
+                if path in hardlink_aliases:
+                    record["hardlink_aliases"] = hardlink_aliases[path]
                 if result is not None:
                     record["worker_pid"] = result["worker_pid"]
                 out.write(json.dumps(record) + "\n")
@@ -329,6 +393,8 @@ def apply_plan(
                 ),
                 "elapsed_seconds": time.monotonic() - started,
             }
+            if path in hardlink_aliases:
+                record["hardlink_aliases"] = hardlink_aliases[path]
             if path in drs_targets:
                 record["drs_rename"] = {"source": path, "target": drs_targets[path]}
             if result is not None:

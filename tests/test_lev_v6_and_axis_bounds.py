@@ -119,7 +119,7 @@ def test_each_ta_zg_file_normalizes_and_adds_center_bounds_in_place(
         assert ds[variable].filters() == filters and ds[variable].chunking() == chunks
         assert (
             "units" not in ds["b"].ncattrs()
-            and "computed_standard_name" not in ds["lev"].ncattrs()
+            and ds["lev"].computed_standard_name == "air_pressure"
         )
     after = p.read_bytes()
     assert apply_plan(q, tmp_path / "again")["changed"] == 0
@@ -167,8 +167,8 @@ def test_80_point_al_axes_need_center_bounds_reference_and_are_not_reclassified_
                 str(p): [
                     Step(
                         "C107",
-                        "drop_var_attr",
-                        {"var": "lev", "attr": "computed_standard_name"},
+                        "set_var_attr",
+                        {"var": "lev", "attr": "computed_standard_name", "value": "air_pressure"},
                     )
                 ]
             },

@@ -90,6 +90,7 @@ def _attributes(ds, coordinate):
     attrs = {
         name: dict(
             standard_name=STANDARD_NAME,
+            computed_standard_name="air_pressure",
             units="1",
             axis="Z",
             positive="down",
@@ -170,7 +171,15 @@ def clean_hybrid_metadata(ds):
         return False
     from .reviewed_structures import set_attrs
 
-    changed = set_attrs(ds["lev"], {"long_name": "hybrid sigma pressure coordinate"})
+    # Keep the dimensional interpretation alongside the parametric standard name.
+    # Every shared hybrid recipe must preserve this metadata after later fixes.
+    changed = set_attrs(
+        ds["lev"],
+        {
+            "long_name": "hybrid sigma pressure coordinate",
+            "computed_standard_name": "air_pressure",
+        },
+    )
     for term in ("ap", "b"):
         changed = (
             set_attrs(ds[term], {"long_name": _term_long_name(ds, term)}) or changed
@@ -181,7 +190,6 @@ def clean_hybrid_metadata(ds):
         if name in ds.variables:
             changed = set_attrs(ds[name], {"long_name": long_name}) or changed
     for name, attrs in {
-        "lev": ("computed_standard_name",),
         "b": ("units",),
         "b_bnds": ("units",),
     }.items():
@@ -222,6 +230,8 @@ def verify_hybrid_cleanup(output):
     with netCDF4.Dataset(output) as ds:
         if not _is_hybrid(ds):
             return
+        if getattr(ds["lev"], "computed_standard_name", None) != "air_pressure":
+            raise ValueError("Required lev computed_standard_name must be air_pressure")
         for name, long_name in BOUND_LONG_NAMES.items():
             if name in ds.variables and getattr(ds[name], "long_name", None) != long_name:
                 raise ValueError(
