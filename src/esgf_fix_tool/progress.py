@@ -15,7 +15,7 @@ TITLES = {
     'normalize_hybrid_coordinate': 'Normalisation de lev et de ses bornes avec P_REF=101325 Pa',
     'fix_ice_passage_sector': 'Labels des quatre passages de glace',
     'convert_ice_radius': 'Conversion des rayons effectRadIc en microns',
-    'add_reviewed_coordinate_bounds': 'Bornes physiques approuvées du sol ou de plev7c',
+    'add_reviewed_coordinate_bounds': 'Bornes physiques approuvées de depth ou plev',
     'fix_orchidee_soil_depth': 'Profondeurs et bornes du sol ORCHIDEE',
     'fix_basin_sector': 'Labels sector des trois bassins océaniques',
     'fix_msfty_coordinates': 'Coordonnées rlat et lev de msfty',

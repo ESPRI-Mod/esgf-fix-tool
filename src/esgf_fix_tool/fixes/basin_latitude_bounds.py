@@ -75,8 +75,7 @@ def _inspect(ds):
     main = ds.variables.get(name)
     lat = ds.variables.get(coordinate)
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or name not in BASIN_PRODUCTS
+        name not in BASIN_PRODUCTS
         or getattr(ds, "branded_variable", "")
         != name + ("_tavg-ol-ht-sea" if msfty else "_tavg-u-hyb-sea")
         or getattr(ds, "grid_label", "") != "g112"

@@ -38,8 +38,10 @@ def test_hemisphere_grid_correction_keeps_region_and_reports_drs_name(tmp_path, 
     target = tmp_path / name.replace("_nh_g112_", "_nh_g011_")
     assert record["drs_rename"] == {"source": str(path), "target": str(target)}
     assert record["rewrite_count"] == int(include_layout)
-    assert (path.stat().st_ino == inode) == (not include_layout)
-    with netCDF4.Dataset(path) as ds:
+    assert not path.exists() and target.is_file()
+    assert record['filename_renamed'] and record['final_file'] == str(target)
+    assert (target.stat().st_ino == inode) == (not include_layout)
+    with netCDF4.Dataset(target) as ds:
         assert ds.region == "nh" and ds.grid_label == "g011"
         assert ds["siarea"].dimensions == (("time",) if include_layout else ("time", "y", "x"))
         np.testing.assert_array_equal(ds["siarea"][:].reshape(2), [2, 3])

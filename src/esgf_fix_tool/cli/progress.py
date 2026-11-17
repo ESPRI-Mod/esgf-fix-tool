@@ -210,6 +210,8 @@ class ConsoleProgress:
                 self.phase_stack.pop()
                 self.phase, self.phase_started = self.phase_stack[-1] if self.phase_stack else (None,0.)
                 self.io = None
+        elif event.kind == 'deduplication':
+            self._write(f"  {event.details['message']}")
         elif event.kind == 'fix':
             if event.status == 'done':
                 suffix = ' (simulation)' if event.details['dry_run'] else ' (déjà conforme)' if not event.details['changed'] else ''

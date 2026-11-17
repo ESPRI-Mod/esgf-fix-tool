@@ -60,8 +60,7 @@ def fix_orchidee_soil_depth(ds):
     name = "depth" if "depth" in ds.variables else "solay"
     v = ds.variables.get(name)
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "variable_id", "") not in ("mrsfl", "mrsll", "mrsol", "slthick")
+        getattr(ds, "variable_id", "") not in ("mrsfl", "mrsll", "mrsol", "slthick")
         or v is None
         or v.dimensions != (name,)
         or v.shape != (11,)
@@ -173,8 +172,7 @@ def fix_basin_sector(ds):
     """Expose sector regions and retain numeric basin values as dimensionless indices."""
     main_name = getattr(ds, "variable_id", "")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or main_name not in BASIN_PRODUCTS
+        main_name not in BASIN_PRODUCTS
         or "basin" not in ds.dimensions
         or len(ds.dimensions["basin"]) != 3
         or main_name not in ds.variables
@@ -317,12 +315,13 @@ def fix_msfty_coordinates(ds):
 
     # Validate the reviewed layout and accept coordinate names from earlier fixes.
     main = ds.variables.get("msfty")
+    pending_x = "x" in getattr(ds, "_pending_shared_singletons", set())
+    expected_dims = (("time", "basin", "lev", "y"), ("time", "basin", "lev", "rlat"))
+    if pending_x and len(ds.dimensions["x"]) == 1:
+        expected_dims += tuple(dims + ("x",) for dims in expected_dims)
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or main is None
-        or "x" in main.dimensions
-        or main.dimensions
-        not in (("time", "basin", "lev", "y"), ("time", "basin", "lev", "rlat"))
+        main is None
+        or main.dimensions not in expected_dims
     ):
         raise ValueError("Expected msfty after removal of the singleton x dimension")
     name = next(
@@ -330,20 +329,21 @@ def fix_msfty_coordinates(ds):
     )
     dim = "rlat" if "rlat" in ds.dimensions else "y"
     lat = ds.variables.get(name)
-    if lat is None or lat.dimensions != (dim,) or lat.shape != (332,):
+    horizontal_dims = ((dim,), (dim, "x")) if pending_x else ((dim,),)
+    if lat is None or lat.dimensions not in horizontal_dims or lat.size != 332:
         raise ValueError("Expected the existing 332 meridional positions")
     if lat.dtype.kind != "f" or any(
         a in lat.ncattrs() for a in ("scale_factor", "add_offset")
     ):
         raise ValueError("Expected an unpacked floating msfty latitude")
-    original_lat = finite(lat)
+    original_lat = finite(lat).reshape(332)
     wanted_lat = _approved_rlat(original_lat)
 
     # Only discard longitude auxiliaries whose values are all zero.
     lons = [n for n in ("nav_lon", "longitude") if n in ds.variables]
     for n in lons:
         lon = ds[n]
-        if lon.dimensions != (dim,) or not np.all(finite(lon) == 0):
+        if lon.dimensions not in horizontal_dims or not np.all(finite(lon) == 0):
             raise ValueError("Only an all-zero nav_lon may be removed from msfty")
     lev = ds.variables.get("lev")
     if (
@@ -366,7 +366,7 @@ def fix_msfty_coordinates(ds):
         changed = True
     if not np.array_equal(original_lat, wanted_lat):
         # The shared 89.36999 endpoint replaces the old one-ULP convention.
-        ds["rlat"][:] = wanted_lat
+        ds["rlat"][:] = wanted_lat.reshape(ds["rlat"].shape)
         changed = True
     changed = (
         set_attrs(
@@ -423,8 +423,7 @@ def reduce_replicated_zostoga(ds):
 
     v = ds.variables.get("zostoga")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "branded_variable", "") != "zostoga_tavg-u-hm-sea"
+        getattr(ds, "branded_variable", "") != "zostoga_tavg-u-hm-sea"
         or v is None
         or v.dimensions not in (("time", "y", "x"), ("time",))
     ):

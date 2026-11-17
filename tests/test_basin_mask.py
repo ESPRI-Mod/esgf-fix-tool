@@ -11,8 +11,9 @@ from esgf_fix_tool.batch_write import Batch
 from esgf_fix_tool.classify import classify
 from esgf_fix_tool.fixes.qa_metadata import BASIN_MASK_MEANINGS
 from esgf_fix_tool.plan import FixPlan, Step
-from esgf_fix_tool.report import QAReport
+from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
+from esgf_fix_tool.cli.catalogues import default_rule_paths
 
 
 def make(path, fmt='NETCDF4', dtype='f4'):
@@ -122,3 +123,78 @@ def test_actual_report_selects_one_mask_and_distinct_sector_fixes_for_nine_axes(
     selected.files={p:steps for p,steps in selected.files.items() if steps}
     assert len(selected.files)==1
     assert [s.rule for steps in selected.files.values() for s in steps]==['C101']
+
+
+@pytest.mark.parametrize('experiment', ['piControl-spinup', 'esm-piControl-spinup'])
+@pytest.mark.parametrize('fmt', ['NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_64BIT_OFFSET'])
+@pytest.mark.parametrize('dtype', ['f4', 'i4'])
+def test_units_one_diagnostic_plans_and_applies_the_full_mask_recipe(tmp_path, monkeypatch, experiment, fmt, dtype):
+    """Reproduce the supplied header: units=1 exists but categorical flags do not."""
+    p = tmp_path/f'basin_ti-u-hxy-u_fx_glb_g112_IPSL-CM6-ESMCO2_{experiment}_r1i1p1f1.nc'
+    expected, mask = make(p, fmt, dtype)
+    with netCDF4.Dataset(p, 'a') as ds:
+        ds.experiment_id = experiment
+        ds.frequency, ds.region, ds.variant_label = 'fx', 'glb', 'r1i1p1f1'
+        ds.createDimension('bnds', 2)
+        ds.createDimension('vertices', 4)
+        ds.createDimension('time', None)  # Keep the unused fixed-field time axis empty.
+        ds['basin'].units = '1'
+        ds['basin'].comment = 'Keep the existing scientific comment.'
+        for name in ('latitude', 'longitude'):
+            ds[name].bounds = 'vertices_' + name
+            ds.createVariable('vertices_' + name, 'f8', ('y', 'x', 'vertices'))[:] = 0.
+        ds.history = 'Keep original global history.'
+    with netCDF4.Dataset(p) as ds:
+        original_grid = {n: v[:].tobytes() for n, v in ds.variables.items() if n != 'basin'}
+        compression, chunks = ds['basin'].filters(), ds['basin'].chunking()
+
+    finding = Finding(3, '[CF-Conventions] §3.1 Units',
+        'Units "1" for variable basin must be convertible to canonical units "None"',
+        f'CMIP7.OCE.basin.ti-u-hxy-u.fx.glb.g112.IPSL-CM6-ESMCO2.{experiment}.r1i1p1f1', str(p))
+    report = QAReport(Path('qa.json'), {}, [finding])
+    classification = classify(report, RuleSet.load(*default_rule_paths()))
+    item = classification.items[0]
+    assert item.outcome.value == 'fix' and item.match.rule.id == 'C101w'
+    q = FixPlan.from_classification(classification)
+    assert [s.fix for s in q.files[str(p)]] == ['convert_basin_region_mask']
+
+    writes, write = [], Batch.write
+    def record(batch, output):
+        writes.append(output)
+        return write(batch, output)
+    monkeypatch.setattr(Batch, 'write', record)
+    before = p.read_bytes()
+    assert apply_plan(q, tmp_path/'dry', dry_run=True)['changed'] == 1
+    assert p.read_bytes() == before and not writes
+    assert apply_plan(q, tmp_path/'apply')['changed'] == 1
+    assert len(writes) == (1 if dtype == 'f4' else 0)
+    with netCDF4.Dataset(p) as ds:
+        v = ds['basin']
+        assert v.dtype == np.dtype('i4') and v.dimensions == ('y', 'x')
+        assert v.units == '1'
+        assert v.flag_values.dtype == np.dtype('i4')
+        np.testing.assert_array_equal(v.flag_values, np.arange(11, dtype='i4'))
+        assert v.flag_meanings == BASIN_MASK_MEANINGS
+        np.testing.assert_array_equal(np.ma.getmaskarray(v[:]), mask)
+        np.testing.assert_array_equal(v[:][~mask], expected[~mask])
+        assert np.asarray(v._FillValue).dtype == np.dtype('i4')
+        assert np.asarray(v.missing_value).dtype == np.dtype('i4')
+        if dtype == 'f4':
+            assert v._FillValue == -2147483647 and v.missing_value == -2147483647
+        assert ds.history == 'Keep original global history.'
+        assert v.comment == 'Keep the existing scientific comment.'
+        assert v.filters() == compression and v.chunking() == chunks
+        assert ds.dimensions['time'].isunlimited() and len(ds.dimensions['time']) == 0
+        assert all(ds[n][:].tobytes() == values for n, values in original_grid.items())
+    corrected = p.read_bytes()
+    assert apply_plan(q, tmp_path/'replay')['changed'] == 0
+    assert p.read_bytes() == corrected
+
+
+def test_canonical_units_diagnostic_on_a_basin_axis_does_not_select_mask_conversion():
+    finding = Finding(3, '[CF-Conventions] §3.1 Units',
+        'Units "1" for variable basin must be convertible to canonical units "None"',
+        'CMIP7.OCE.msfty.tavg-ol-ht-sea.mon.glb.g112.IPSL-CM6-ESMCO2.piControl-spinup.r1i1p1f1', 'msfty.nc')
+    result = classify(QAReport(Path('qa'), {}, [finding]), RuleSet.load(*default_rule_paths()))
+    assert result.items[0].match.rule.id == 'C101a'
+    assert result.items[0].match.rule.fix == 'fix_basin_sector'

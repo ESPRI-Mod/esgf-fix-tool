@@ -252,11 +252,10 @@ def test_wrong_endpoint_size_is_rejected_before_writing(tmp_path):
 
 def test_real_v6_report_plans_four_center_fixes_and_five_ocean_endpoint_fixes():
     root = Path("/Users/glipsl/Desktop/QA_results_v6")
-    if not root.is_dir():
-        pytest.skip("Local QA fixture unavailable")
-    report = QAReport.load(
-        next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
-    )
+    source = root / "qa_result_20261111-0926_72fe283c63c086e694e76b25c34c6f28.json"
+    if not source.is_file():
+        pytest.skip("The exact 11 November QA fixture is unavailable")
+    report = QAReport.load(source)
     classified = classify(report, RuleSet.load(ROOT / "src/esgf_fix_tool/rules/post_apply.yaml"))
     plan = FixPlan.from_classification(classified)
     for variable in ("ta", "zg"):

@@ -234,11 +234,10 @@ def test_basin_removal_never_deletes_bounds_on_another_product(tmp_path):
 
 def test_v5_scope_and_description_peer_expansion():
     root = Path("/Users/glipsl/Desktop/QA_results_v5")
-    if not root.is_dir():
-        pytest.skip("Local QA fixture unavailable")
-    report = QAReport.load(
-        next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
-    )
+    source = root / "qa_result_20261110-1439_f4a06d03d490aceb73665421b259cda8.json"
+    if not source.is_file():
+        pytest.skip("The exact 10 November QA fixture is unavailable")
+    report = QAReport.load(source)
     c = classify(
         report, RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     )

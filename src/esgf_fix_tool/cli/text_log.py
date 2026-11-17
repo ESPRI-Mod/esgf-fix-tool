@@ -40,6 +40,8 @@ class TextLog:
             duration = f' ({event.duration:.2f} s)' if event.status != 'start' else ''
             error = f" — {details['error']}" if 'error' in details else ''
             text = f'Phase — {event.phase} — {state}{duration}{error}'
+        elif event.kind == 'deduplication':
+            text = details['message']
         elif event.kind == 'fix':
             state = {'start': 'En cours', 'prepared': 'Préparé — vérifications en attente',
                      'done': 'Done'}.get(event.status, event.status)

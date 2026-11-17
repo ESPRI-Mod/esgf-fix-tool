@@ -59,6 +59,18 @@ def _raw(v):
     v.set_auto_chartostring(False)
 
 
+def resolved_target_order(ds, var, target_order):
+    """Follow dimension identities renamed by another selected metadata fix."""
+    origins = getattr(ds, "_dim_origins", {})
+    renamed = {old: new for new, old in origins.items() if old is not None}
+    # A replay starts from the finished rlat schema, so its original y name is
+    # no longer in the source header. Retain C054's reviewed target semantics.
+    if var == "msfty" and "y" not in ds.dimensions and "rlat" in ds.dimensions:
+        renamed["y"] = "rlat"
+    return [name if name in ds.dimensions else renamed.get(name, name)
+            for name in target_order]
+
+
 def _check_layout(ds, var, target_order, aliases, drop):
     if var not in ds.variables:
         raise ValueError(f"Data variable {var} is absent")
@@ -348,6 +360,7 @@ def fix_data_layout(
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     aliases = aliases or {}
     drop = drop or []
+    target_order = resolved_target_order(ds, var, target_order)
     canonical = _check_layout(ds, var, target_order, aliases, drop)
     shared = set(drop) & ds.dimensions.keys() if drop_shared else set()
     for name in shared:
@@ -355,6 +368,11 @@ def fix_data_layout(
             raise ValueError(
                 f"Cannot remove shared dimension {name}: expected a singleton absent from the target"
             )
+    if shared and hasattr(ds, "_dim_origins"):
+        # Downstream metadata fixes may inspect the planned singleton-free
+        # coordinate while the actual data squeeze remains deferred to Batch.
+        pending = getattr(ds, "_pending_shared_singletons", set()) | shared
+        object.__setattr__(ds, "_pending_shared_singletons", pending)
     changed = False
 
     # 2. Prepare approved identifier renames before the controlled structural rewrite.
@@ -371,7 +389,13 @@ def fix_data_layout(
                 name
                 for name in tokens
                 if name not in ds.variables
-                or set(ds.variables[name].dimensions).issubset(target_order)
+                or set(
+                    # A character label's final dimension is string storage,
+                    # not another axis of the scientific field (e.g. sector).
+                    ds[name].dimensions[:-1]
+                    if ds[name].dtype == np.dtype("S1")
+                    else ds[name].dimensions
+                ).issubset(target_order)
             ]
             if kept != tokens:
                 data.setncattr("coordinates", " ".join(kept))

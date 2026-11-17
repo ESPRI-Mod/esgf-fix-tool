@@ -32,21 +32,62 @@ def _candidates(root):
         for filename in sorted(files):
             if not filename.endswith(".nc"):
                 continue
-            fields = filename[:-3].split("_", 2)
-            if len(fields) != 3 or fields[0] not in POLICY:
-                continue
-            variable, brand, _ = fields
-            horizontal, surface, preferred = POLICY[variable]
-            labels = brand.split("-")
-            if len(labels) != 4 or labels[2:] != [horizontal, surface]:
-                continue
             path = Path(directory) / filename
-            parts = list(path.relative_to(root).parts)
-            positions = [i for i, part in enumerate(parts[:-1]) if part in ("ATM", "SRF")]
-            if len(positions) != 1 or parts[positions[0]] == preferred:
-                continue
-            parts[positions[0]] = preferred
-            yield variable, variable + "_" + brand, path, root.joinpath(*parts)
+            peer = _preferred_peer(root, path)
+            if peer is not None:
+                variable, brand, keep = peer
+                yield variable, brand, path, keep
+
+
+def _preferred_peer(root, path):
+    fields = path.stem.split("_", 2)
+    if path.suffix != ".nc" or len(fields) != 3 or fields[0] not in POLICY:
+        return None
+    variable, brand, _ = fields
+    horizontal, surface, preferred = POLICY[variable]
+    labels = brand.split("-")
+    if len(labels) != 4 or labels[2:] != [horizontal, surface]:
+        return None
+    try:
+        parts = list(path.relative_to(root).parts)
+    except ValueError:
+        return None
+    positions = [i for i, part in enumerate(parts[:-1]) if part in ("ATM", "SRF")]
+    if len(positions) != 1 or parts[positions[0]] == preferred:
+        return None
+    parts[positions[0]] = preferred
+    return variable, variable + "_" + brand, root.joinpath(*parts)
+
+
+def completed_discard(root, path):
+    """Replay skips only an absent secondary copy with a readable preferred peer.
+
+    Never apply the deleted copy's planned metadata changes to the kept file.
+    Existing files and broken symbolic links still follow normal validation.
+    """
+    path = Path(path)
+    if path.exists() or path.is_symlink():
+        return None
+    peer = _preferred_peer(root, path)
+    if peer is None:
+        return None
+    variable, brand, keep = peer
+    if not keep.is_file() or keep.is_symlink() or keep.resolve() != keep:
+        return None
+    try:
+        with netCDF4.Dataset(keep) as ds:
+            if (getattr(ds, "variable_id", "") != variable
+                    or getattr(ds, "branded_variable", "") != brand
+                    or any(not getattr(ds, attr, "") for attr in IDENTITY)
+                    or variable not in ds.variables or ds[variable].size == 0):
+                return None
+            prefix = "_".join((brand, *(str(getattr(ds, a)) for a in
+                ("frequency", "region", "grid_label", "source_id", "experiment_id", "variant_label"))))
+            if keep.stem != prefix and not keep.stem.startswith(prefix + "_"):
+                return None
+    except OSError:
+        return None
+    return keep
 
 
 def _validate(variable, brand, discard, keep, root):
@@ -62,11 +103,10 @@ def _validate(variable, brand, discard, keep, root):
             if (
                 getattr(ds, "variable_id", "") != variable
                 or getattr(ds, "branded_variable", "") != brand
-                or getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
                 or variable not in ds.variables
                 or ds[variable].size == 0
             ):
-                raise ValueError("Unexpected or empty IPSL product; both files retained")
+                raise ValueError("Unexpected or empty product; both files retained")
         for attr in IDENTITY:
             if not getattr(src, attr, "") or getattr(src, attr) != getattr(dst, attr, None):
                 raise ValueError(f"Product identity differs or is missing: {attr}")
@@ -93,7 +133,47 @@ def _validate(variable, brand, discard, keep, root):
     return signatures
 
 
-def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print):
+def apply_root(plan, only_under=None):
+    """Use the mapped report scope; recover the flat CMIP7 tree for old plans.
+
+    Never treat an arbitrary --only-under ancestor as permission to scan every
+    simulation below it. An empty legacy plan needs a directly named ATM/SRF tree.
+    """
+    root = getattr(plan, "deduplicate_root", None)
+    if root is None:
+        roots = set()
+        for name in plan.files:
+            path = Path(name)
+            for parent in path.parents:
+                if parent.name in ("ATM", "SRF") and parent.parent.name == "CMIP7":
+                    roots.add(parent.parent)
+                    break
+        if len(roots) == 1:
+            root = roots.pop()
+        elif not roots and only_under is not None:
+            base = Path(only_under)
+            for candidate in (base, base / "CMIP7"):
+                if (candidate / "ATM").is_dir() and (candidate / "SRF").is_dir():
+                    root = candidate
+                    break
+    if root is None:
+        return None
+    root = Path(root).resolve()
+    if not root.is_dir():
+        raise ValueError(f"Deduplication scope does not exist: {root}; regenerate/map the plan")
+    if only_under is not None and not root.is_relative_to(Path(only_under).resolve()):
+        raise ValueError(f"Deduplication scope {root} is outside --only-under {only_under}")
+    if any(not Path(name).resolve().is_relative_to(root) for name in plan.files):
+        raise ValueError("Plan files are outside the deduplication scope; regenerate/map the plan")
+    # Automatic cleanup is limited to one flat component tree. A report scope
+    # over published DRS data or several simulations must not trigger a broad scan.
+    for candidate in (root, root / "CMIP7"):
+        if any((candidate / component).is_dir() for component in ("ATM", "SRF")):
+            return candidate
+    return None
+
+
+def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print, blocked_paths=()):
     """Unlink only approved secondary products with a validated preferred peer.
 
     Deleting needs ``only_under``: the caller names the directory deletions are allowed in, which must
@@ -114,12 +194,15 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print):
     if fixlog.suffix.lower() == ".nc":
         raise ValueError("The deduplication log must not be a NetCDF file")
     counts = dict(deleted=0, would_delete=0, missing_keeper=0, failed=0)
+    blocked = {Path(p).resolve() for p in blocked_paths}
     with fixlog.open("a", encoding="utf-8") as log:
         for variable, brand, discard, keep in _candidates(root):
             entry = dict(time=datetime.now(UTC).isoformat(), operation="component-deduplication",
                          variable=variable, branded_variable=brand, discard=str(discard), keep=str(keep),
                          dry_run=dry_run)
             try:
+                if discard.resolve() in blocked or keep.resolve() in blocked:
+                    raise ValueError("A planned correction failed for this pair; both files retained")
                 if not keep.exists():
                     status = "missing_keeper"
                 else:
@@ -145,6 +228,8 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print):
             log.write(json.dumps(entry) + "\n")
             log.flush()
             counts[status] += 1
-            emit(f"{status}: {discard} — keep: {keep}" +
+            preferred = POLICY[variable][2]
+            other = "SRF" if preferred == "ATM" else "ATM"
+            emit(f"{status}: {discard.name} [{other}] — keep: {preferred}" +
                  (f" — {entry['error']}" if "error" in entry else ""))
     return counts

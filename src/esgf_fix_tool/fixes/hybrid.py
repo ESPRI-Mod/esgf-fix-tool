@@ -64,9 +64,7 @@ def _term_long_name(ds, term):
 def _attributes(ds, coordinate):
     if coordinate not in ["alevel", "alevhalf"]:
         raise ValueError("Expected alevel or alevhalf")
-    if getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2" or getattr(
-        ds, "realm", ""
-    ) not in ["atmos", "aerosol"]:
+    if getattr(ds, "realm", "") not in ["atmos", "aerosol"]:
         raise ValueError(
             "Hybrid metadata correction is scoped to the reviewed IPSL atmosphere"
         )
@@ -156,8 +154,7 @@ def is_hybrid_step(step):
 
 def _is_hybrid(ds):
     return (
-        getattr(ds, "source_id", "") == "IPSL-CM6-ESMCO2"
-        and getattr(ds, "realm", "") in ("atmos", "aerosol")
+        getattr(ds, "realm", "") in ("atmos", "aerosol")
         and {"lev", "ap", "b"} <= ds.variables.keys()
         and getattr(ds["lev"], "standard_name", "") == STANDARD_NAME
     )
@@ -372,6 +369,44 @@ def _verify_coefficients(source, output, coordinate):
                 )
 
 
+def _check_interface_coefficients(ds, wanted):
+    """Validate interface coefficients, including the reviewed 80/79 mismatch.
+
+    _reference_values has already matched the complete 80-value lev vector.
+    When both coefficients still have 79 entries, replace their association
+    using the supplied 80-entry reference. Do not pad/interpolate the old arrays.
+    """
+    for name in ("ap", "b"):
+        v = ds[name]
+        if v.dtype != np.dtype("f8") or any(
+            attr in v.ncattrs() for attr in ("scale_factor", "add_offset", "_Unsigned")
+        ):
+            raise ValueError(f"Unexpected interface coefficient type or packing: {name}")
+    if ds[_coordinate(ds)].shape == (80,) and _label(ds) == "alh" and all(
+        ds[name].shape == (79,) and ds[name].dimensions != ("lev",)
+        for name in ("ap", "b")
+    ):
+        # The authorized trigger is lev(80), ap(79), b(79). Old coefficient
+        # values are not a prerequisite: they belong to the wrong-sized axis.
+        # The replacement loop binds the provided 80-entry arrays before C102.
+        return
+    arrays = {}
+    for name in ("ap", "b"):
+        v = ds[name]
+        values = np.ma.asarray(v[:])
+        if np.ma.getmaskarray(values).any() or not np.isfinite(values).all():
+            raise ValueError(f"Missing/non-finite interface coefficient {name}")
+        arrays[name] = np.asarray(values)
+    if all(np.array_equal(arrays[name], wanted[name][1]) for name in arrays):
+        return
+    shapes = ", ".join(f"{name}{arrays[name].shape}" for name in arrays)
+    raise ValueError(
+        f"Interface coefficients ({shapes}) do not match the supplied 80-level "
+        "reference and are not both 79-entry arrays on an alh lev(80) axis; "
+        "no value replacement is authorized"
+    )
+
+
 @fix(
     "fix_hybrid_coefficients",
     verify_data=True,
@@ -385,18 +420,7 @@ def fix_hybrid_coefficients(ds, coordinate):
     _attributes(ds, coordinate)
     wanted = _reference_values(ds, coordinate)
     if coordinate == "alevhalf":
-        # Interface coordinates are already physical interfaces. Only rebind their
-        # existing coefficients; do not replace a different staggering or values.
-        for name in ("ap", "b"):
-            v = ds.variables.get(name)
-            if (
-                v is None
-                or v.dtype != np.dtype("f8")
-                or not np.array_equal(v[:], wanted[name][1])
-            ):
-                raise ValueError(
-                    f"Interface {name} differs from the supplied 80-level reference; no value replacement is authorized"
-                )
+        _check_interface_coefficients(ds, wanted)
     for name in wanted:
         v = ds.variables.get(name)
         if v is None:
@@ -479,8 +503,8 @@ def prepare_normalization_inputs(ds):
     """Reuse C074 reference binding before C102, even without a separate QA finding.
 
     No synthetic interfaces: the complete lev vector must match the supplied
-    reference. The 80-interface path additionally requires ap/b values to remain
-    identical when their dimensions are rebound.
+    reference. Bind matching 80-interface coefficients, or replace both wrongly
+    dimensioned 79-entry arrays, before capturing the C102 baseline.
     """
     coordinate = _resolved_coordinate(ds)
     changed = fix_hybrid_coefficients(ds, coordinate)
@@ -504,7 +528,6 @@ def _normalization_values(ds):
         name != "lev"
         or lev.dtype != np.dtype("f8")
         or any(a in lev.ncattrs() for a in ("scale_factor", "add_offset"))
-        or getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
         or getattr(ds, "realm", "") not in ("atmos", "aerosol")
         or not {*terms, "ps"} <= ds.variables.keys()
         or getattr(ds["ps"], "units", "") != "Pa"
