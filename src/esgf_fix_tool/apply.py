@@ -17,15 +17,32 @@ from .progress import ProgressEvent, activity, notify, reporting, step_scope
 
 
 def _rename_request(path, steps):
-    requests = [
-        (i, s) for i, s in enumerate(steps) if s.fix == "sync_filename_grid_label"
-    ]
+    """Resolve both explicit C097 renames and a grid edit's paired filename edit."""
+    requests = []
+    for i, step in enumerate(steps):
+        if step.fix == "sync_filename_grid_label":
+            target = fixes.grid_labels.filename_grid_target(path, **step.params)
+        elif step.fix == "set_reduced_grid_label":
+            # The filename is part of this grid-label correction. Do not wait
+            # for a later QA iteration to discover its mismatch (C097).
+            target = fixes.grid_labels.proposed_drs_path(path, **step.params)
+        elif step.fix == "reduce_replicated_zostoga":
+            fields = Path(path).name.split("_", 5)
+            if len(fields) != 6 or fields[0] != "zostoga":
+                continue  # A non-DRS basename contains no grid field to change.
+            target = fixes.grid_labels.filename_grid_target(path, "g112", "g010")
+        else:
+            continue
+        requests.append((i, target))
     if not requests:
         return Path(path), None, None
-    if len(requests) != 1:
-        raise ValueError("Expected a single filename synchronization per file")
-    i, step = requests[0]
-    target = fixes.grid_labels.filename_grid_target(path, **step.params)
+    if len({str(target or path) for _, target in requests}) != 1:
+        raise ValueError("Conflicting filename synchronizations for one file")
+    # Prefer the explicit rename's log entry when both diagnostics were selected.
+    i, target = next(
+        ((i, target) for i, target in requests if steps[i].fix == "sync_filename_grid_label"),
+        requests[0],
+    )
     if target is None:
         return Path(path), None, i
     original = Path(path)
@@ -148,10 +165,23 @@ def apply_plan(
         raise ValueError("workers must be a positive integer")
     if only_under is not None:
         check_under(plan, only_under)
+    from .deduplicate import apply_root, completed_discard, deduplicate
+
+    # Resolve the simulation boundary before modifying any planned file. The
+    # deduplication itself runs after the workers have closed all NetCDF handles.
+    deduplicate_root = apply_root(plan, only_under)
+    active_files = dict(plan.files)
+    removed_duplicates = {}
+    if deduplicate_root is not None:
+        for path in plan.files:
+            keep = completed_discard(deduplicate_root, path)
+            if keep is not None:
+                removed_duplicates[path] = str(keep)
+                del active_files[path]
     # Preserve plan-wide target checks, but defer individual validation errors to
     # their file so continuation also handles bad renames and missing inputs.
     effective, preflight_errors = {}, {}
-    for path, steps in plan.files.items():
+    for path, steps in active_files.items():
         try:
             effective[path] = _rename_request(path, steps)
         except Exception as exc:
@@ -172,10 +202,10 @@ def apply_plan(
         raise FileNotFoundError(
             f"{len(missing)} file(s) of the plan don't exist, e.g. {missing[0]}: nothing applied"
         )
-    # A grid-label edit changes a DRS component. Validate the proposed filename
-    # before any file is written and report it for the separate relink stage.
+    # Keep the original DRS proposal in the log for existing consumers. The
+    # basename itself is now synchronized by apply_file in the same operation.
     drs_targets = {}
-    for path, steps in plan.files.items():
+    for path, steps in active_files.items():
         for step in steps:
             if step.fix != "set_reduced_grid_label":
                 continue
@@ -191,14 +221,15 @@ def apply_plan(
     stats = {"files": 0, "changed": 0, "unchanged": 0}
     if continue_on_error:
         stats["failed"] = 0
-    total, start = len(plan.files), time.monotonic()
+    total, start = len(active_files), time.monotonic()
     # Set by `etb run` in the esgf-toolbox image: links each fixlog line to the run that wrote it.
     etb_run_id = os.environ.get("ETB_RUN_ID") or None
     from .parallel import file_jobs
 
     first_error = None
+    failed_paths = set()
     with open(fixlog, "a") as out, file_jobs(
-        plan.files, workers, dry_run, events, preflight_errors, break_hardlinks,
+        active_files, workers, dry_run, events, preflight_errors, break_hardlinks,
         stop_on_error=not continue_on_error,
     ) as jobs:
         for path, steps, result in jobs:
@@ -228,6 +259,16 @@ def apply_plan(
                     break_hardlinks=break_hardlinks,
                 )
             except Exception as exc:
+                failed_paths.add(path)
+                if path in effective:
+                    actual, target, _ = effective[path]
+                    failed_paths.add(str(actual))
+                    if target is not None:
+                        failed_paths.add(str(target))
+                trace = result["traceback"] if result is not None else traceback.format_exc()
+                if events:
+                    events(ProgressEvent("error", "failed", path=path,
+                                         details={"traceback": trace}))
                 if not continue_on_error and workers == 1:
                     raise
                 if not continue_on_error and first_error is None:
@@ -236,7 +277,6 @@ def apply_plan(
                 # file as unchanged: a direct update can fail after partial edits.
                 stats["files"] += 1
                 stats["failed"] = stats.get("failed", 0) + 1
-                trace = result["traceback"] if result is not None else traceback.format_exc()
                 record = {
                     "time": datetime.now(UTC).isoformat(timespec="seconds"),
                     "file": path,
@@ -266,7 +306,7 @@ def apply_plan(
                 out.write(json.dumps(record) + "\n")
                 out.flush()
                 print(
-                    f"Échec du fichier {path} — "
+                    f"Échec du fichier {Path(path).name} — "
                     + ("poursuite du plan." if continue_on_error
                        else "arrêt après les fichiers déjà en cours."),
                     file=sys.stderr,
@@ -311,4 +351,29 @@ def apply_plan(
                 progress(stats["files"], total, path, changed, time.monotonic() - start)
     if first_error is not None:
         raise first_error
+    if deduplicate_root is not None:
+        log_path = Path(fixlog)
+        dedup_log = log_path.with_name(f"{log_path.stem}.deduplicate.jsonl")
+        with reporting(events, deduplicate_root), activity("Dédoublonnage ATM/SRF"):
+            if removed_duplicates:
+                with dedup_log.open("a", encoding="utf-8") as log:
+                    for discard, keep in removed_duplicates.items():
+                        log.write(json.dumps(dict(
+                            time=datetime.now(UTC).isoformat(), operation="component-deduplication",
+                            status="already_removed", discard=discard, keep=keep, dry_run=dry_run,
+                        )) + "\n")
+                        notify("deduplication", "result", message=f"already_removed: {Path(discard).name}")
+            result = deduplicate(
+                deduplicate_root, dedup_log, dry_run=dry_run,
+                only_under=only_under or deduplicate_root,
+                blocked_paths=failed_paths,
+                emit=lambda message: notify("deduplication", "result", message=message),
+            )
+            notify("deduplication", "summary", message=(
+                f"Doublons ATM/SRF : {result['deleted']} supprimés, "
+                f"{result['would_delete']} à supprimer (simulation), "
+                f"{len(removed_duplicates)} déjà supprimés, {result['failed']} échecs"
+            ))
+        stats.update({f"duplicates_{key}": value for key, value in result.items()})
+        stats["duplicates_already_removed"] = len(removed_duplicates)
     return stats

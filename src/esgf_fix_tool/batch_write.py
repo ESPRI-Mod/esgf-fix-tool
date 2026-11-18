@@ -94,7 +94,7 @@ class Batch:
             if s.fix!='fix_data_layout':
                 continue
             var=s.params['var']
-            target=tuple(s.params['target_order'])
+            target=tuple(layouts.resolved_target_order(preview, var, s.params['target_order']))
             if var in desired and desired[var]!=target:
                 raise ValueError(f'Conflicting final layouts for {var}')
             desired[var]=target

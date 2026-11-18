@@ -11,8 +11,7 @@ from . import fix, hybrid, layouts
 def _scope(ds):
     name = getattr(ds, "variable_id", "")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "realm", "") != "atmos"
+        getattr(ds, "realm", "") != "atmos"
         or name not in ("edt", "evu")
         or getattr(ds, "branded_variable", "") != name + "_tavg-al-hxy-u"
         or hybrid._label(ds) != "al"

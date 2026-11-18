@@ -27,8 +27,10 @@ def order_steps(steps: list[Step]) -> list[Step]:
         "fix_hybrid_coordinate_metadata": {"center_hybrid_interfaces"},
         "normalize_hybrid_coordinate": {"fix_hybrid_coefficients", "center_hybrid_interfaces"},
         "drop_unused_horizontal_bounds": {"reduce_replicated_zostoga"},
+        "fix_msfty_coordinates": {"fix_data_layout", "fix_ocean_vertical_metadata"},
         "add_basin_latitude_bounds": {"fix_msfty_coordinates"},
         "drop_basin_latitude_bounds": {"fix_msfty_coordinates"},
+        "sync_filename_grid_label": {"set_reduced_grid_label", "reduce_replicated_zostoga"},
     }
     pending, ordered = list(steps), []
     while pending:
@@ -47,6 +49,7 @@ class FixPlan:
     report: str
     files: dict[str, list[Step]] = field(default_factory=dict)
     rules_digest: str = ""  # absent from plans written before 0.1.0
+    deduplicate_root: str | None = None  # report scope, including files without QA failures
 
     @classmethod
     def from_classification(
@@ -54,6 +57,9 @@ class FixPlan:
     ) -> FixPlan:
         """Fixes of every finding classified FIX; ``only_rules`` keeps the fixes of these rule ids only."""
         plan = cls(c.rules_version, str(c.report.source), rules_digest=c.rules_digest)
+        root = c.report.info.get("parent_dir")
+        if isinstance(root, str) and root and Path(root).is_absolute():
+            plan.deduplicate_root = root
         for item in c.items:
             if item.outcome is not Outcome.FIX:
                 continue
@@ -101,6 +107,12 @@ class FixPlan:
                 path, n = new + path[len(old) :], n + 1
             files[path] = steps
         self.files = files
+        if self.deduplicate_root:
+            root = self.deduplicate_root.rstrip("/")
+            if root == old.rstrip("/"):
+                self.deduplicate_root = new.rstrip("/")
+            elif root.startswith(old):
+                self.deduplicate_root = new + root[len(old):]
         return n
 
     def dump(self, path: str | Path) -> None:

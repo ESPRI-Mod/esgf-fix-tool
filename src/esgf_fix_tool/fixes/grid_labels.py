@@ -113,9 +113,6 @@ def set_reduced_grid_label(ds, source, horizontal, region, target):
         current not in (source, target)
         or getattr(ds, "horizontal_label", "") != horizontal
         or getattr(ds, "region", "") != region
-        or getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "experiment_id", "") != "esm-piControl-spinup"
-        or getattr(ds, "variant_label", "") != "r1i1p1f1"
         or getattr(ds, "frequency", "") not in frequencies
     ):
         raise ValueError(

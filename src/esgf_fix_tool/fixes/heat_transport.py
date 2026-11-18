@@ -26,8 +26,7 @@ def integrate_heat_transport(ds):
     name = getattr(ds, "variable_id", "")
     main = ds.variables.get(name)
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or name not in ("hfx", "hfy")
+        name not in ("hfx", "hfy")
         or getattr(ds, "branded_variable", "") != name + "_tavg-u-hxy-sea"
         or main is None
         or main.dtype.kind != "f"

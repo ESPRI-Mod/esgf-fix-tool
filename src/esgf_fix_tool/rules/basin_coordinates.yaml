@@ -11,7 +11,7 @@
 - id: C078
   check: \[CF-Conventions\] §6\.1 Labels$
   message: 6\.1\.1 '1\.02\.03\.0' specified by 'basin' is not a valid region$
-  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\..*\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  dataset: CMIP7\.OCE\.(hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|msfty|sltbasin|sltovgyre|sltovovrt)\..*\.[^.]+\.[^.]+\.[^.]+$
   action: fix
   note: Same shared recipe as C032. Region standard_name belongs to character sector; remove it from numeric basin without changing codes or dimension.
   fix: fix_basin_sector
@@ -31,8 +31,10 @@
   check: \[CF-Conventions\] §3\.1 Units$
   message: 'Units "1" for variable basin must be convertible to canonical units "None"$'
   dataset: CMIP7\.OCE\.basin\.ti-u-hxy-u\.
-  action: waive
-  note: The user explicitly requires units=1 on the integer 2-D region mask; retain it despite the known CF checker interpretation.
+  action: fix
+  fix: convert_basin_region_mask
+  note: Do not waive this message before verifying the actual mask encoding. Reuse C101 to convert float basin(y,x) to int32
+    and install typed flag_values/flag_meanings while retaining units=1. Already-correct masks are validated and left unchanged.
 
 - id: C101
   check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[ATTR001\] Variable 'basin' attribute 'units' existence$
@@ -46,7 +48,7 @@
 
 - id: C101a
   check: \[CF-Conventions\] §3\.1 Units$
-  message: units attribute is required for basin when variable is not a dimensionless quantity$
+  message: '(?:units attribute is required for basin when variable is not a dimensionless quantity|Units "1" for variable basin must be convertible to canonical units "None")$'
   action: fix
   note: Same shared recipe as C032. Numeric basin retains its codes with units=1; sector carries region metadata. The 2-D mask is separate C101.
   fix: fix_basin_sector

@@ -32,9 +32,11 @@ def _text(v):
     v.set_auto_chartostring(False)
     a = np.asarray(v[...])
     if v.dtype == str and not v.dimensions:
-        text = str(a.item())
+        text = str(a.item()).split("\x00", 1)[0]
     elif a.dtype.kind == "S" and a.dtype.itemsize == 1 and a.ndim == 1:
-        text = a.tobytes().decode("ascii")
+        # Bytes after a C-string terminator are padding, sometimes uninitialized
+        # and non-ASCII. Validate the label before the first NUL only.
+        text = a.tobytes().split(b"\x00", 1)[0].decode("ascii")
     else:
         raise ValueError(
             f"{v.name} is not a scalar string / one-dimensional character label"
@@ -180,10 +182,7 @@ ICEBAND_BOUNDS = tuple(zip((0.0, *ICEBAND_VALUES[:-1]), ICEBAND_VALUES))
 def _iceband_coordinate(ds):
     var = getattr(ds, "variable_id", "")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "experiment_id", "") != "esm-piControl-spinup"
-        or getattr(ds, "grid_label", "") != "g112"
-        or getattr(ds, "variant_label", "") != "r1i1p1f1"
+        getattr(ds, "grid_label", "") != "g112"
         or var not in {"siitdconc", "siitdthick", "siitdsnthick"}
         or var not in ds.variables
         or "iceband" not in ds[var].dimensions

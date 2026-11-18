@@ -196,12 +196,64 @@ def _attach(v, name):
         v.setncattr("coordinates", (current.rstrip() + " " + name).strip())
 
 
+def _complete_scalar_bounds(ds, target, spec):
+    """Attach explicit DR bounds to an existing, numerically verified scalar."""
+    v = ds[target]
+    # Convert the reference interval into the parent's stored units. Never
+    # reinterpret or rescale the existing coordinate value itself.
+    scales = {"m": ("length", 1.0), "cm": ("length", 0.01),
+              "mm": ("length", 0.001), "Pa": ("pressure", 1.0),
+              "hPa": ("pressure", 100.0)}
+    source = scales.get(spec["attributes"]["units"])
+    stored = scales.get(getattr(v, "units", ""))
+    if (v.dimensions or v.dtype.kind != "f" or source is None or stored is None
+            or source[0] != stored[0]
+            or any(a in v.ncattrs() for a in ("scale_factor", "add_offset", "_Unsigned"))):
+        raise ValueError("Unexpected scalar coordinate representation or units")
+    factor = source[1] / stored[1]
+    current = np.ma.asarray(v[...])
+    if (np.ma.getmaskarray(current).any() or not np.isfinite(current).all()
+            or not np.isclose(current.item(), spec["value"] * factor, rtol=1e-12, atol=1e-12)):
+        raise ValueError(f"{target} scalar differs from its explicit DR center")
+    wanted = np.asarray(spec["bounds"], dtype="f8") * factor
+    name = target + "_bnds"
+    reference = getattr(v, "bounds", "")
+    if reference not in ("", name):
+        raise ValueError(f"Unexpected existing scalar bounds reference: {reference}")
+
+    # Refuse conflicting orphan arrays instead of overwriting them. A scalar
+    # parent correctly has a one-dimensional pair of bounds, with no fake axis.
+    if name in ds.variables:
+        b = ds[name]
+        values = np.ma.asarray(b[:])
+        if (b.ndim != 1 or b.shape != (2,) or b.dtype.kind != "f"
+                or ds.dimensions[b.dimensions[0]].isunlimited()
+                or any(a in b.ncattrs() for a in ("scale_factor", "add_offset", "_Unsigned"))
+                or getattr(b, "units", v.units) != v.units
+                or np.ma.getmaskarray(values).any()
+                or not np.array_equal(values, wanted)):
+            raise ValueError(f"Existing {name} conflicts with the explicit DR bounds")
+    elif "bnds" in ds.dimensions and (
+        len(ds.dimensions["bnds"]) != 2 or ds.dimensions["bnds"].isunlimited()
+    ):
+        raise ValueError("Scalar bounds require a fixed size-two bnds dimension")
+
+    changed = False
+    if name not in ds.variables:
+        if "bnds" not in ds.dimensions:
+            ds.createDimension("bnds", 2)
+        ds.createVariable(name, "f8", ("bnds",))[:] = wanted
+        changed = True
+    if not reference:
+        v.setncattr("bounds", name)
+        changed = True
+    return changed
+
+
 @fix("add_registry_scalar", verify_data=True)
 def add_registry_scalar(ds, target: str) -> bool:
-    """Add a missing scalar and explicit registry bounds from the bundled, verified branded-variable map."""
+    """Add a missing scalar or complete its explicit bundled DR bounds."""
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
-    if target in ds.variables:
-        return False
     specs = json.loads(Path(__file__).with_name("coordinate_specs.json").read_text())
     brand = getattr(ds, "branded_variable", "")
     entry = specs["brands"].get(brand.casefold()) if isinstance(brand, str) else None
@@ -212,6 +264,8 @@ def add_registry_scalar(ds, target: str) -> bool:
     spec = specs["coordinates"][entry["coordinates"][target]]
     data = _main_variable(ds, entry["variable"])
     bounds = spec.get("bounds")
+    if target in ds.variables:
+        return _complete_scalar_bounds(ds, target, spec) if bounds is not None else False
     bound_name = target + "_bnds"
     if bounds is not None and bound_name in ds.variables:
         raise ValueError(f"Cannot create {bound_name}: name already used")
@@ -293,8 +347,7 @@ def fix_ocean_vertical_metadata(ds):
     name = "lev" if "lev" in ds.variables else "olevel"
     v = ds.variables.get(name)
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "vertical_label", "") != "ol"
+        getattr(ds, "vertical_label", "") != "ol"
         or v is None
         or v.dimensions != (name,)
         or v.dtype.kind != "f"

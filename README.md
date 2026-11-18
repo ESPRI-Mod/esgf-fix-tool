@@ -24,7 +24,8 @@ The rule catalogues ship inside the package; nothing else needs to be downloaded
 
 ## Usage
 
-Three commands for the QA ↔ FIX loop (plus [`deduplicate`](#deduplicate-atmsrf-overlaps), see below).
+Three commands for the QA ↔ FIX loop. `apply` also handles the approved ATM/SRF
+overlaps automatically; [`deduplicate`](#deduplicate-atmsrf-overlaps) remains available separately.
 Work on an **independent staging copy** of the files, never on the simulation output itself.
 
 ```bash
@@ -60,10 +61,19 @@ completed files are logged in completion order. In an interactive terminal,
 one compact live view shows totals and a single current-stage line per active
 file, with I/O percentages. If the terminal is too short, remaining active files
 are counted below the visible rows. In batch or redirected output, the existing
-detailed messages are retained, with one final summary per grouped rewrite
-instead of intermediate rewrite percentages. JSONL events retain the detailed
-progress independently of terminal rendering. No separate per-file logs are
-created. Error tracebacks remain available, and the CLI continues other files by
+detailed messages are retained, with rewrite progress sampled at observed 25%
+milestones and a final summary per grouped rewrite. Human-readable prefixes use
+only the filename; full file paths remain in the JSON journals and tracebacks.
+The events JSONL retains every
+phase, fix result and error. Array I/O is sampled at observed 25% milestones
+(at most five entries per large variable and operation, including start/end);
+small auxiliary arrays record completion only. The interactive view still uses
+live counters independently of this journal sampling. A human-readable text
+journal is also appended automatically: `--fixlog fixlog.jsonl` creates
+`fixlog.events.log` alongside `fixlog.events.jsonl`. It contains the file, phase
+and fix messages, readable parameters, sampled I/O progress and tracebacks,
+including with `--quiet`. All journals are written by the parent process;
+no separate per-file logs are created. Error tracebacks remain available, and the CLI continues other files by
 default. With `--fail-fast`, no new files are dispatched once a failure is
 observed; already dispatched files finish and are logged before the error is
 returned. Interruption stops further dispatch and waits for active workers to
@@ -74,6 +84,20 @@ rename targets before applying fixes. More workers increase aggregate memory,
 temporary disk space and filesystem traffic; speedup depends on available I/O
 bandwidth and the fixes selected. No change to the fix plan is needed.
 
+### Hybrid coefficient dimensions
+
+Rules and recipes do not filter by model, experiment or realization. They retain
+their product, structure, unit and numerical-reference checks; removing a model
+filter does not authorize extrapolating physical coefficients or bounds.
+
+For atmospheric `alh` files with `lev=80` but both `ap` and `b` on 79 entries,
+the existing C074/C074a recipe binds the supplied 80-interface coefficient
+reference before C102 normalization. It first validates the complete existing
+`lev(80)` against that reference; the old 79-entry values are not interpolated
+or required to match the 79-center reference. The main field and `ps` retain
+their values and compression. Already 80-entry coefficients with different
+values, mixed 79/80 coefficient pairs, and unknown vertical references remain
+rejected. This does not change the separate handling of 79-level outputs.
 ### Decision and exit codes
 
 `classify` looks only at severity-3 findings to decide what the loop does next:
@@ -116,7 +140,9 @@ falls through to a broader rule under another ID.
   (the published version) keep the previous content. The fixlog records `hardlinks_broken`.
 - **Structural changes** (dimension order, singleton removal, bounds merges) are combined into **one** rewrite per
   file. The output is verified against the source, then atomically replaces it.
-- When a fix changes the grid label, the file is renamed to match.
+- When a fix changes the grid label, the file is renamed to match in the same
+  application, without waiting for another QA report to select C097. Existing
+  destination files are never overwritten.
 - `--only-under DIR` refuses the whole plan if any file is outside `DIR`.
 - **A file that fails does not stop the run**: its error and traceback are printed and recorded in the fixlog
   (`"status": "failed"`), and the other files are processed. The final summary counts `failed` files and `apply`
@@ -165,16 +191,44 @@ A rule maps a QA message to an action:
 
 The first matching rule wins. See [ARCHITECTURE.md](ARCHITECTURE.md#rules) for every field and action.
 
+## Basin region mask
+
+The fixed 2-D `basin_ti-u-hxy-u` mask is handled by the shared C101/C101w recipe:
+int32 codes 0..10, typed `flag_values`, the approved `flag_meanings`, and `units=1`.
+The CF canonical-units diagnostic selects this conversion too; it is not waived
+before inspecting the encoding. An already-correct mask is verified without
+another write. Numeric basin axes in transport products use a separate recipe.
+
 ## Deduplicate ATM/SRF overlaps
 
-Some IPSL products are written by both the atmosphere (ATM) and surface (SRF) components. `deduplicate` keeps one copy
-of each approved overlap and **deletes the other file**. It does not use a QA report or rules:
+Some products are written by both the atmosphere (ATM) and surface (SRF) components.
+At the end of `apply`, the tool automatically keeps the preferred component and
+**deletes the secondary file**, only when its matching preferred file exists and
+passes the identity/coverage checks. This runs independently of QA diagnostics
+and rule selections, including when there are no QA fixes in the plan:
 
 | Product | Kept | Deleted when both exist |
 |---|---|---|
 | `areacella`, hxy-u | ATM | SRF |
 | `evspsbl`, hxy-u | ATM | SRF |
 | `snc`, hxy-lnd | SRF | ATM |
+
+New plans retain `deduplicate_root` from the report's `info.parent_dir`;
+`--map-path` updates that root along with file paths. `--only-under` also checks
+this scope before any write. Older plans recover a single `CMIP7/ATM|SRF` tree
+from their paths, or use `--only-under` when it directly names a simulation tree.
+The tool never scans an arbitrary parent containing other simulations as a
+fallback. A replay skips already removed secondary copies only after checking
+the existing preferred file; its planned fixes are never redirected to the keeper.
+
+The phase runs sequentially after all file workers finish. If a planned fix
+failed on either file of a pair, both are retained. `--dry-run` previews deletions
+without changing files. Full paths and decisions are written to
+`<fixlog-stem>.deduplicate.jsonl`; the progress journals also record the phase.
+The final counters include `duplicates_deleted`, `duplicates_would_delete`,
+`duplicates_missing_keeper`, `duplicates_failed` and `duplicates_already_removed`.
+
+To run this operation separately, without a plan:
 
 ```bash
 esgf-fix-tool deduplicate "$simulation_dir" --dry-run --fixlog deduplicate.preview.jsonl   # what would be deleted
@@ -188,8 +242,9 @@ need it.
 A pair is only deleted when both paths are identical apart from the ATM/SRF folder, and the netCDF identity
 (`source_id`, `experiment_id`, `variant_label`, `branded_variable`, `frequency`, `region`, `grid_label`) and time
 coordinate match. A mismatch, an unreadable file or a symlink marks the pair `failed` and deletes nothing; the exit
-code is then 1. Run it on the simulation tree (it needs the ATM/SRF component folders) **before** QA and planning,
-so later steps do not reference removed copies.
+code is then 1. A separate run can be used before QA and planning. Normal `apply`
+already includes this operation and needs no additional command. Model,
+experiment and realization must agree within a pair but are not fixed to one simulation.
 
 ## Development
 
