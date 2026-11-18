@@ -13,7 +13,6 @@ from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 TITLE = "sigma_t criterion that determines layer thickness"
 OLD = TITLE + ". The method is documented in Griffies et al. 2016 ( https://doi.org/10.5194/gmd-9-3231-2016 )."
 

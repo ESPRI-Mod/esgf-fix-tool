@@ -14,7 +14,6 @@ from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 CASES = [
     ('co2mass', 'u', 'g111', 'hm', 'glb', 'g010'),
     ('tos', 'sea', 'g112', 'hm', 'glb', 'g010'),

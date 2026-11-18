@@ -9,11 +9,11 @@ import pytest
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.batch_write import Batch
 from esgf_fix_tool.classify import classify
+from esgf_fix_tool.cli.catalogues import default_rule_paths
 from esgf_fix_tool.fixes.qa_metadata import BASIN_MASK_MEANINGS
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
-from esgf_fix_tool.cli.catalogues import default_rule_paths
 
 
 def make(path, fmt='NETCDF4', dtype='f4'):

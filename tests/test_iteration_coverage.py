@@ -15,7 +15,6 @@ from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 FORMATS = ['NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_64BIT_OFFSET']
 
 

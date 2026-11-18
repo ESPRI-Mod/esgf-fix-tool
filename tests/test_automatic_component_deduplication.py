@@ -1,17 +1,15 @@
 """The ordinary plan/apply loop includes component policy without a QA rule."""
 
 import json
-from pathlib import Path
 
 import netCDF4
 import pytest
+from test_component_deduplication import product
 from typer.testing import CliRunner
 
 from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.plan import FixPlan, Step
-
-from test_component_deduplication import product
 
 
 def overlaps(root):

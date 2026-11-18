@@ -217,10 +217,11 @@ def test_batch_progress_and_text_journal_use_filename_and_quarters(tmp_path, cap
 
 @pytest.mark.parametrize('workers', [1, 2])
 def test_text_journal_retains_tracebacks_even_in_quiet_mode(tmp_path, workers):
+    from test_parallel_apply import make_plan
     from typer.testing import CliRunner
+
     from esgf_fix_tool.cli.main import app
     from esgf_fix_tool.plan import Step
-    from test_parallel_apply import make_plan
 
     plan = make_plan(tmp_path / 'data', count=2)
     bad = next(iter(plan.files))
@@ -239,9 +240,11 @@ def test_text_journal_retains_tracebacks_even_in_quiet_mode(tmp_path, workers):
 @pytest.mark.parametrize('stage', ['open', 'write', 'close'])
 def test_text_log_failure_does_not_interrupt_corrections(tmp_path, monkeypatch, stage):
     from pathlib import Path
-    from typer.testing import CliRunner
-    from esgf_fix_tool.cli.main import app
+
     from test_parallel_apply import make_plan
+    from typer.testing import CliRunner
+
+    from esgf_fix_tool.cli.main import app
 
     original = Path.open
 

@@ -11,7 +11,6 @@ from esgf_fix_tool.plan import FixPlan
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 MESSAGE = (
     "§4.3.3 The standard_name of `lev` must map to the correct "
     "computed_standard_name, `['air_pressure']`"
