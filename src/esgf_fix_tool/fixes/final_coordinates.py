@@ -71,8 +71,7 @@ def fix_ice_passage_sector(ds):
     main = ds.variables.get(main_name)
     dim = "line" if "line" in ds.dimensions else "siline"
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or main_name not in ICE_PRODUCTS
+        main_name not in ICE_PRODUCTS
         or main is None
         or main.dimensions != ("time", dim)
         or main.shape[1] != 4
@@ -169,8 +168,7 @@ def convert_ice_radius(ds):
     """Recognize raw metres or already-correct microns before a single conversion."""
     v = ds.variables.get("effectRadIc")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "variable_id", "") != "jpdftaureicemodis"
+        getattr(ds, "variable_id", "") != "jpdftaureicemodis"
         or v is None
         or v.dimensions != ("effectRadIc",)
         or v.dtype != np.dtype("f8")
@@ -245,13 +243,18 @@ def _coordinate_bounds(ds, coordinate, pairs):
 
 @fix("add_reviewed_coordinate_bounds", verify_data=True)
 def add_reviewed_coordinate_bounds(ds, coordinate, add_bounds=True):
-    """Dispatch only the approved thermal and ISCCP pressure bounds definitions."""
+    """Dispatch approved scalar, thermal and ISCCP pressure bounds definitions."""
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or coordinate not in ds.variables
+        coordinate not in ds.variables
     ):
         raise ValueError("Missing reviewed IPSL coordinate")
     v = ds[coordinate]
+    if coordinate in ("depth", "plev") and not v.dimensions:
+        # The bundled branded-variable table already supplies these exact scalar
+        # centers and intervals; no midpoint reconstruction is needed here.
+        from .coordinates import add_registry_scalar
+
+        return add_registry_scalar(ds, coordinate)
     if (
         v.dimensions != (coordinate,)
         or v.dtype != np.dtype("f8")

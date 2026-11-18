@@ -85,7 +85,7 @@
   check: \[CF-Conventions\] §4\.4 Time Coordinate$
   message: Variable time has a calendar attribute of proleptic_gregorian and it is recommended that the units_metadata attribute
     is present and has one of the values .*
-  dataset: CMIP7\..*\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  dataset: CMIP7\..*\.[^.]+\.[^.]+\.[^.]+$
   action: waive
   note: The reviewed files declare CF 1.13. Its proleptic Gregorian calendar excludes leap seconds.
 
@@ -122,7 +122,7 @@
     umo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g168| uo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g168| vmo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g169|
     vo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g169| wmo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| wo\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
     zfullo\.tavg\-ol\-hxy\-sea\.yr\.glb\.g112| zmeso\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112| zmicro\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112|
-    zooc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112 )\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1)$'
+    zooc\.tavg\-ol\-hxy\-sea\.mon\.glb\.g112 )\.[^.]+\.[^.]+\.[^.]+)$'
   action: waive
   note: The reviewed datasets declare both areacello and volcello in external_variables and use the valid two-measure syntax.
 
@@ -136,7 +136,7 @@
 - id: C083
   check: \[CMIP7\] \[ATTR004\] Variable 'rsus' attribute 'cell_methods' registry expected-term check$
   message: 'Expected ''area: mean where land time: mean'' to equal ''area: time: mean where land'' from registry key ''cell_methods''\.$'
-  dataset: CMIP7\.SRF\.rsus\.tavg-u-hxy-lnd\.mon\.glb\.g111\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  dataset: CMIP7\.SRF\.rsus\.tavg-u-hxy-lnd\.mon\.glb\.g111\.[^.]+\.[^.]+\.[^.]+$
   action: fix
   fix: set_var_attr_if_matches
   params:
@@ -157,13 +157,14 @@
     attr: long_name
     expected: '{expected}'
     value: '{value}'
-  note: Copy only the explicit long_name recommendation while the observed old value still matches. All numeric arrays are
-    preserved.
+  note: Copy only the explicit long_name recommendation while the observed old value still matches. The user-approved
+    deltasigt title 'sigma_t criterion that determines layer thickness' is applied independently of old-text formatting.
+    All numeric arrays are preserved.
 
 - id: C084b
   check: \[CF-Conventions\] §3\.3 Standard Name$
   message: 'Attribute long_name or/and standard_name is highly recommended for variable (?P<term>ap|b)_bnds\.?$'
-  dataset: CMIP7\..*IPSL-CM6-ESMCO2\.
+  dataset: CMIP7\.
   action: fix
   fix: set_var_attr_if_matches
   params:

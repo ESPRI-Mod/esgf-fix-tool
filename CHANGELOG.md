@@ -4,6 +4,29 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `apply` deduplicates ATM/SRF overlaps automatically at the end, after the workers have closed every file: the
+  plan keeps the report scope (`deduplicate_root`, from `info.parent_dir`), limited to one ATM/SRF tree inside
+  `--only-under`. A pair whose planned fix failed keeps both files; a copy already removed is skipped on replay.
+  Logged in `<fixlog-stem>.deduplicate.jsonl`. The separate `deduplicate` command is unchanged.
+- A readable text journal next to the events log: `--fixlog fixlog.jsonl` also writes `fixlog.events.log` (file,
+  phase and fix messages, parameters, sampled I/O progress, tracebacks), also with `--quiet`.
+- Tracebacks of failed files are recorded in the events log.
+
+### Changed
+
+- The events log samples array I/O at 25% steps (at most five entries per large variable and operation) instead of
+  every block; phases, fix results and errors are all kept. Console messages name the file, not its full path.
+- `deduplicate` no longer requires `source_id = IPSL-CM6-ESMCO2`: any model with the same ATM/SRF layout.
+- Rules and fixes: C107 adds `lev:computed_standard_name = "air_pressure"` (shared hybrid recipes keep it) instead
+  of removing it; the basin region mask is converted to int32 (`convert_basin_region_mask`) instead of waived;
+  scalar thetao/mrsol/clcalipso bounds from the bundled DR values; eight registry label mappings, NUL-padded labels
+  accepted; a grid-label correction renames the file in the same operation; 80-interface `alh` coefficients
+  (C074/C074a); fixes in about fifteen fix modules. Rules and recipes no longer filter by model or experiment.
+
 ## [0.5.1] - 2026-11-17
 
 ### Fixed

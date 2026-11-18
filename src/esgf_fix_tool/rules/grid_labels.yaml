@@ -29,7 +29,7 @@
   check: '\[CMIP7\] \[COORD011\] Registered grid(?: region|-label recommendation)$'
   message: >-
     (?:File region='nh' is inconsistent with the registered grid region='glb' for registered grid 'g112'\. Verify the intended output region and make the region and grid_label selections consistent\.|The file uses grid_label='g112', but for horizontal_label='hm' and region='nh' it is recommended to use the registered grid_label='g011'\.)$
-  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.nh\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.nh\.g112\.[^.]+\.[^.]+\.[^.]+$'
   action: fix
   fix: set_reduced_grid_label
   params: {source: g112, horizontal: hm, region: nh, target: g011}
@@ -39,7 +39,7 @@
   check: '\[CMIP7\] \[COORD011\] Registered grid(?: region|-label recommendation)$'
   message: >-
     (?:File region='sh' is inconsistent with the registered grid region='glb' for registered grid 'g112'\. Verify the intended output region and make the region and grid_label selections consistent\.|The file uses grid_label='g112', but for horizontal_label='hm' and region='sh' it is recommended to use the registered grid_label='g012'\.)$
-  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.sh\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  dataset: 'CMIP7\.OCE\.(siarea|siextent|sisnmass|sivol)\.tavg-u-hm-(u|si)\.mon\.sh\.g112\.[^.]+\.[^.]+\.[^.]+$'
   action: fix
   fix: set_reduced_grid_label
   params: {source: g112, horizontal: hm, region: sh, target: g012}
@@ -49,7 +49,7 @@
   check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
   message: >-
     The file uses grid_label='(?P<source>g111|g112)', but for horizontal_label='hm' and region='glb' it is recommended to use the registered grid_label='g010'\.$
-  dataset: '(?:CMIP7\.ATM\.co2mass\.tavg-u-hm-u\.mon\.glb\.g111|CMIP7\.OCE\.(bigthetao|masso|so|sos|thetao|tos|volo)\.tavg-u-hm-sea\.mon\.glb\.g112)\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  dataset: '(?:CMIP7\.ATM\.co2mass\.tavg-u-hm-u\.mon\.glb\.g111|CMIP7\.OCE\.(bigthetao|masso|so|sos|thetao|tos|volo)\.tavg-u-hm-sea\.mon\.glb\.g112)\.[^.]+\.[^.]+\.[^.]+$'
   action: fix
   fix: set_reduced_grid_label
   params: {source: "{source}", horizontal: hm, region: glb, target: g010}
@@ -59,7 +59,7 @@
   check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
   message: >-
     The file uses grid_label='g112', but for horizontal_label='ht' and region='glb' it is recommended to use the registered grid_label='g014'\.$
-  dataset: 'CMIP7\.OCE\.(hfacrossline|mfo|sfacrossline|siareaacrossline|simassacrossline|sisnmassacrossline)\.tavg-u-ht-(sea|u)\.mon\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  dataset: 'CMIP7\.OCE\.(hfacrossline|mfo|sfacrossline|siareaacrossline|simassacrossline|sisnmassacrossline)\.tavg-u-ht-(sea|u)\.mon\.glb\.g112\.[^.]+\.[^.]+\.[^.]+$'
   action: fix
   fix: set_reduced_grid_label
   params: {source: g112, horizontal: ht, region: glb, target: g014}
@@ -76,7 +76,7 @@
   check: '\[CMIP7\] \[COORD011\] Registered grid-label recommendation$'
   message: >-
     The file uses grid_label='g112', but for horizontal_label='hm' and region='glb' it is recommended to use the registered grid_label='g010'\.$
-  dataset: 'CMIP7\.OCE\.zostoga\.tavg-u-hm-sea\.(day|mon)\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$'
+  dataset: 'CMIP7\.OCE\.zostoga\.tavg-u-hm-sea\.(day|mon)\.glb\.g112\.[^.]+\.[^.]+\.[^.]+$'
   action: fix
   fix: set_reduced_grid_label
   params: {source: g112, horizontal: hm, region: glb, target: g010}

@@ -55,13 +55,12 @@
   note: LMDZ method confirmed on 2026-11-12. Average adjacent interfaces for edt/evu, 80 to 79 levels, and use the supplied 79-center coefficients/bounds. Preserve science metadata and compression; mask a pair if either interface is missing. One atomic rewrite with numerical verification.
 
 - id: C107
-  check: \[CMIP7\] \[COORD004a\] Additional permitted coordinate metadata$
-  message: Coordinate 'lev' defines optional attribute computed_standard_name='air_pressure'\. No expected value is currently
-    specified in the coordinate vocabulary, so this value cannot be verified\.$
+  check: \[CF-Conventions\] §4\.3 Vertical Coordinate$
+  message: '§4\.3\.3 The standard_name of `lev` must map to the correct computed_standard_name, `\[''air_pressure''\]`'
   action: fix
-  fix: drop_var_attr
-  params: {var: lev, attr: computed_standard_name}
-  note: Latest user decision removes this optional attribute; shared hybrid recipes no longer recreate it.
+  fix: set_var_attr
+  params: {var: lev, attr: computed_standard_name, value: air_pressure}
+  note: User decision on 2026-11-17. Add the missing computed_standard_name to lev; shared hybrid recipes preserve it. No model, experiment or dataset-layout restriction.
 
 - id: C108
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$

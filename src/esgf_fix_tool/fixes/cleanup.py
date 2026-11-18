@@ -66,8 +66,7 @@ def harmonize_main_description(ds):
     name = getattr(ds, "variable_id", "")
     values = {"ta": "Air Temperature", "zg": "Geopotential height"}
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or name not in values
+        name not in values
         or name not in ds.variables
         or getattr(ds, "branded_variable", "") != name + "_tpt-al-hxy-u"
         or getattr(ds, "frequency", "") != "6hr"

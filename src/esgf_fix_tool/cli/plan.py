@@ -52,3 +52,5 @@ def run(
         print(f"{p.map_paths(old, new)} of {len(p.files)} paths mapped {old} → {new}")
     p.dump(output)
     print(f"{sum(len(s) for s in p.files.values())} fixes for {len(p.files)} files → {output}")
+    if p.deduplicate_root:
+        print(f"Automatic ATM/SRF deduplication during apply → {p.deduplicate_root}")

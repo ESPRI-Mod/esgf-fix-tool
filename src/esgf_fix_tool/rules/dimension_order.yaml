@@ -199,7 +199,7 @@
   message: '''msfty'' dimensions in netCDF/C order are \[''time'', ''basin'', ''(?:olevel|lev)'', ''y'', ''x''\]; coordinate
     IDs \[''gridlatitude'', ''olevel'', ''basin'', ''time''\] require \[''time'', ''basin'', ''lev'', ''rlat''\] as their
     required order\.$'
-  dataset: CMIP7\.OCE\.msfty\.tavg-ol-ht-sea\.mon\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  dataset: CMIP7\.OCE\.msfty\.tavg-ol-ht-sea\.mon\.glb\.g112\.[^.]+\.[^.]+\.[^.]+$
   action: fix
   fix: fix_data_layout
   params:

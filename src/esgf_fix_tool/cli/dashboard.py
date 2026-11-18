@@ -21,6 +21,7 @@ class Dashboard:
         self.total = self.changed = self.unchanged = self.failed = 0
         self.lines = 0
         self.last_render = 0.
+        self.maintenance = None
 
     def clear(self):
         if self.lines:
@@ -29,6 +30,13 @@ class Dashboard:
             self.lines = 0
 
     def update(self, event, io_text):
+        if event.kind == "deduplication":
+            self.maintenance = event.details["message"]
+        elif event.kind == "phase" and event.phase == "Dédoublonnage ATM/SRF":
+            if event.status == "start":
+                self.maintenance = event.phase + " — En cours"
+            elif event.status in ("failed", "cancelled"):
+                self.maintenance = event.phase + " — " + event.details.get("error", event.status)
         if event.kind == "file":
             if event.status == "start":
                 self.total = event.details["total"]
@@ -62,6 +70,8 @@ class Dashboard:
         width = max(1, size.columns - 1)  # Never wrap into the next terminal row.
         lines = [(f"Terminés : {len(self.finished)}/{self.total} — Modifiés : {self.changed}"
                   f" — Déjà conformes : {self.unchanged} — Échecs : {self.failed}")]
+        if self.maintenance:
+            lines.append(self.maintenance)
         visible = max(1, size.lines - 4)
         filename_width = max(1, (width - 3) // 2)
         phase_width = max(1, width - filename_width - 3)

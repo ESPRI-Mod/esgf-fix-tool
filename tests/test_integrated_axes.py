@@ -262,11 +262,10 @@ def test_actual_v4_report_selects_each_reviewed_variant():
     from esgf_fix_tool.ruleset import RuleSet
 
     root = Path("/Users/glipsl/Desktop/QA_results_v4")
-    if not root.is_dir():
-        pytest.skip("Local QA fixture is unavailable")
-    report = QAReport.load(
-        next(p for p in root.glob("qa_result_*.json") if ".cluster." not in p.name)
-    )
+    source = root / "qa_result_20261110-0946_d34f748ccff6dbe539c21af6fbe15340.json"
+    if not source.is_file():
+        pytest.skip("The exact 10 November QA fixture is unavailable")
+    report = QAReport.load(source)
     items = classify(
         report, RuleSet.load(Path(__file__).parents[1] / "src/esgf_fix_tool/rules/post_apply.yaml")
     ).items

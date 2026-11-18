@@ -42,12 +42,12 @@
 - id: C103a
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'depth' to have a 'bounds' attribute according to its coordinate definition\.$
-  dataset: CMIP7\.SRF\.tsl\.
+  dataset: (?:CMIP7\.SRF\.tsl\.|CMIP7\.SRF\.mrsol\.(?:tavg|tpt)-d10cm-hxy-lnd\.|CMIP7\.OCE\.thetao\.tavg-d(?:300|700|2000)m-hxy-sea\.)
   action: fix
   fix: add_reviewed_coordinate_bounds
   params:
     coordinate: depth
-  note: Use the supplied 18-level ORCHIDEE thermal scheme. Validate strictly increasing edges, center containment and agreement
+  note: Scalar thetao/mrsol intervals use the bundled explicit DR values with parent-unit conversion. Thermal tsl uses the supplied 18-level ORCHIDEE scheme. Validate strictly increasing edges, center containment and agreement
     with the 19-edge reference to 0.001 m.
 
 - id: C103b
@@ -62,12 +62,12 @@
 - id: C103c
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'plev' to have a 'bounds' attribute according to its coordinate definition\.$
-  dataset: CMIP7\.ATM\.clisccp\.tavg-p7c-hxy-air\.
+  dataset: CMIP7\.ATM\.(?:clisccp\.tavg-p7c-hxy-air|clcalipso\.tavg-(?:220|560|840)hPa-hxy-air)\.
   action: fix
   fix: add_reviewed_coordinate_bounds
   params:
     coordinate: plev
-  note: Use the bundled explicit DR plev7c edges after checking all seven centers and their units/order. Store bounds in the
+  note: Scalar clcalipso intervals use the bundled explicit DR values after checking their centers/units. ISCCP uses the explicit plev7c edges after checking all seven centers and their units/order. Store bounds in the
     same pressure units as the parent.
 
 - id: C105a
@@ -110,26 +110,27 @@
 
 - id: C057
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
-  message: Scalar coordinate 'seasurface'='osurf\\x00'; the required value is 'ocean_surface_layer'\.$
+  message: >-
+    Scalar coordinate 'seasurface'=['"]osurf(?:\\x00|\x00)[^\r\n]*['"]; the required value is 'ocean_surface_layer'\.$
   action: fix
   fix: fix_scalar_label
   params:
     var: seasurface
     expected: osurf
     value: ocean_surface_layer
-  note: Registry label, not coordinate ID; write a scalar string without a NUL terminator.
+  note: Accept single/double-quoted diagnostics with NUL padding and garbage after the terminator. Validate the actual old label before the first NUL, then write the registry label with space padding.
 
 - id: C058
   check: \[CMIP7\] \[COORD007\] Requested coordinate values$
-  message: Scalar coordinate 'type'='(?P<old>typebare|typecrop|typenatgr|typeresidual|typetree|typeveg|typec3pft|typec4pft)\\x00';
-    the required value is '(?P<value>bare_ground|crops|natural_grasses|residual|trees|vegetation|c3_plant_functional_types|c4_plant_functional_types)'\.$
+  message: >-
+    Scalar coordinate 'type'=['"](?P<old>typebare|typecrop|typenatgr|typeresidual|typetree|typeveg|typec3pft|typec4pft)(?:\\x00|\x00)[^\r\n]*['"]; the required value is '(?P<value>bare_ground|crops|natural_grasses|residual|trees|vegetation|c3_plant_functional_types|c4_plant_functional_types)'\.$
   action: fix
   fix: fix_scalar_label
   params:
     var: type
     expected: '{old}'
     value: '{value}'
-  note: Six exact registry mappings; runtime checks the pair and current scalar label.
+  note: Eight exact registry mappings; runtime checks the pair and the actual label before the first NUL. Replace all trailing garbage with space padding; no arbitrary prefix matching.
 
 - id: C059
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
@@ -173,7 +174,7 @@
 - id: C063
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
   message: It is required for 'iceband' to have a 'bounds' attribute according to its coordinate definition\.$
-  dataset: CMIP7\.OCE\.(siitdconc|siitdsnthick|siitdthick)\.tavg-u-hxy-si\.mon\.glb\.g112\.IPSL-CM6-ESMCO2\.esm-piControl-spinup\.r1i1p1f1$
+  dataset: CMIP7\.OCE\.(siitdconc|siitdsnthick|siitdthick)\.tavg-u-hxy-si\.mon\.glb\.g112\.[^.]+\.[^.]+\.[^.]+$
   action: fix
   fix: fix_iceband
   note: Model bounds confirmed by the user, from 0 to 99 m. The axis uses the five upper bounds in the original class order.

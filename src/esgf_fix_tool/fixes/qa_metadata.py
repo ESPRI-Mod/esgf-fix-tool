@@ -144,8 +144,7 @@ def _basin_mask_values(ds):
     """Inspect only the approved 2-D region mask; never reinterpret a basin axis."""
     v = ds.variables.get("basin")
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or getattr(ds, "branded_variable", "") != "basin_ti-u-hxy-u"
+        getattr(ds, "branded_variable", "") != "basin_ti-u-hxy-u"
         or getattr(ds, "grid_label", "") != "g112"
         or v is None
         or v.dimensions != ("y", "x")
@@ -592,8 +591,7 @@ def _delete_reduced_horizontal_arrays(ds):
 
     main = ds.variables.get(getattr(ds, "variable_id", ""))
     if (
-        getattr(ds, "source_id", "") != "IPSL-CM6-ESMCO2"
-        or main is None
+        main is None
         or "-hm-" not in getattr(ds, "branded_variable", "")
         or getattr(ds, "grid_label", "") not in ("g010", "g011", "g012", "g112")
     ):
