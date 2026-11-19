@@ -4,6 +4,23 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- Known checker errors: `rules/checker_errors.yaml` waives checker crashes known to be a checker bug
+  (`applies_to: checker_error`; these rules only match the report's error section, never findings). `classify`
+  lists them apart and only stops at `checker_error` (40) for the other crashes. E001: compliance-checker #1374,
+  `check_geographic_region` on flag-encoded region variables (`basin`), which stopped every QA iteration at 40.
+- `classify` writes its summary next to the report, `<report>.classify.json`: decision, counts, blocking findings
+  and files per outcome, known and unknown checker errors (also printed by `--json`).
+- C117 / C118 (`rules/packing.yaml`): FILE004b / FILE004c (time coordinate / bounds chunking) go to the repack
+  step (`other_step`), like FILE004a: most of the unmatched findings of a CMIP7 simulation's second iteration.
+
+### Changed
+
+- `classify` lists the unknown checker errors by check and message.
+
 ## [0.7.1] - 2026-11-19
 
 ### Fixed

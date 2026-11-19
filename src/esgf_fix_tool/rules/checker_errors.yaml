@@ -1,0 +1,12 @@
+# Checker crashes (the "error" section of an esgqa report) known to come from a bug in the checker, not from
+# the file. classify lists them apart and does not stop at checker_error (40) for them; any other crash still
+# does. These rules only match crashes (applies_to: checker_error), never ordinary findings.
+# Remove an entry once the checker is fixed upstream.
+
+- id: E001
+  applies_to: checker_error
+  check: \[CF-Conventions\] check_geographic_region$
+  message: 'Exception: sequence item 0: expected str instance, numpy\.ndarray found'
+  action: waive
+  note: compliance-checker bug on flag-encoded region variables (e.g. basin with flag_values/flag_meanings),
+    https://github.com/ioos/compliance-checker/issues/1374 (open, 6.1.0). The other checks of these files did run.

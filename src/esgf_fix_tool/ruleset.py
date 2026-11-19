@@ -53,6 +53,11 @@ class Rule:
             return None
         return c.groupdict() | m.groupdict() | (d.groupdict() if d is not None else {})
 
+    @property
+    def for_checker_errors(self) -> bool:
+        """A rule for checker crashes (the report's error section), never for ordinary findings."""
+        return self.extra.get("applies_to") == "checker_error"
+
     def resolve_params(self, groups: dict[str, str]) -> dict:
         return {k: v.format(**groups) if isinstance(v, str) else v for k, v in self.params.items()}
 
@@ -114,8 +119,11 @@ class RuleSet:
             load_file(p)
         return cls(rules, version or ",".join(Path(p).name for p in paths), digest.hexdigest())
 
-    def match(self, finding: Finding) -> RuleMatch | None:
+    def match(self, finding: Finding, *, checker_error: bool = False) -> RuleMatch | None:
+        """First matching rule; checker crashes only match rules with applies_to: checker_error, and back."""
         for rule in self.rules:
+            if rule.for_checker_errors != checker_error:
+                continue
             groups = rule.match(finding)
             if groups is not None:
                 return RuleMatch(rule, groups)

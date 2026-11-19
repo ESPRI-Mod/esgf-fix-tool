@@ -141,10 +141,17 @@ rejected. This does not change the separate handling of 79-level outputs.
 | 20 | `new_rule` | a finding has no rule, a `review` rule, or a rule whose fix is not written yet | write or review a rule ([CONTRIBUTING.md](CONTRIBUTING.md)) |
 | 21 | `blocked_upstream` | a finding must be fixed by the model/simulation side | report it upstream |
 | 30 | `no_change` | same fixable findings as `--previous`: a fix does not work | tool bug, investigate |
-| 40 | `checker_error` | the QA checker failed on some files | fix the QA run first |
+| 40 | `checker_error` | the QA checker crashed on some files, for a reason not known to be a checker bug | fix the QA run first |
 
 `--final` is the last gate before publication: deferred and other-step findings then block too.
-`--json` prints a machine-readable summary.
+`--json` prints a machine-readable summary. `classify` also writes it next to the report, as
+`<report>.classify.json` (decision, counts per severity and outcome, blocking findings and files per outcome,
+checker errors), so tools following the loop (e.g. `etb todo`) can show it without classifying again.
+
+Checker crashes known to come from a bug in the checker are listed apart and do not give 40: they are waived by
+rules in `rules/checker_errors.yaml` (`applies_to: checker_error`), which only ever match crashes. Today: E001,
+compliance-checker [#1374](https://github.com/ioos/compliance-checker/issues/1374), `check_geographic_region` on
+flag-encoded region variables (`basin`); the other checks of those files did run. Any other crash still gives 40.
 
 ### Choosing rules
 
