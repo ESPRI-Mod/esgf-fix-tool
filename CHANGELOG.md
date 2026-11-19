@@ -4,6 +4,14 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- `apply --resume` expands a quoted pattern itself (`--resume 'run/fixlog*.jsonl'`); a pattern that matches
+  nothing is refused. In 0.7.0, the documented `--resume run/fixlog*.jsonl` failed as soon as the shell
+  expanded it to several files ("unexpected extra argument").
+
 ## [0.7.0] - 2026-11-19
 
 ### Added
