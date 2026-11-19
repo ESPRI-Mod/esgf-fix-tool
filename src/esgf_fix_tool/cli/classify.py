@@ -28,14 +28,25 @@ def run(
     (0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)."""
     c = classification(report, rules or default_rule_paths(), previous, final)
     decision = c.decision()
+    blocking = c.blocking()
+    summary = {
+        "decision": decision.name.lower(), "exit_code": int(decision), "mode": "final" if c.final else "loop",
+        "report": str(c.report.source), "previous": str(previous) if previous else None,
+        "files": len(c.report.files), "rules_version": c.rules_version, "rules_digest": c.rules_digest,
+        "counts": {str(s): dict(cnt) for s, cnt in c.counts().items()},
+        "blocking": {"findings": len(blocking), "files": len({b.finding.path for b in blocking}),
+                     **Counter(str(b.outcome) for b in blocking)},
+        "checker_errors": len(c.report.errors),
+        "known_checker_errors": {rid: n for rid, n in Counter(m.rule.id for _, m in c.known_errors).items()},
+        "unknown_checker_errors": len(c.unknown_errors),
+    }
+    # Next to the report, for tools that follow the loop (etb todo): what this classification said.
+    try:
+        c.report.source.with_name(c.report.source.stem + ".classify.json").write_text(json.dumps(summary, indent=1))
+    except OSError:
+        pass
     if as_json:
-        print(json.dumps({
-            "decision": decision.name.lower(), "exit_code": int(decision),
-            "files": len(c.report.files), "rules_version": c.rules_version,
-            "rules_digest": c.rules_digest,
-            "counts": {str(s): dict(cnt) for s, cnt in c.counts().items()},
-            "checker_errors": len(c.report.errors),
-        }, indent=1))
+        print(json.dumps(summary, indent=1))
         raise typer.Exit(int(decision))
 
     print(f"report     : {c.report.source}")
@@ -43,9 +54,15 @@ def run(
     print(f"rules hash : sha256:{c.rules_digest[:16]}")
     for sev, cnt in c.counts().items():
         print(f"severity {sev} : " + ", ".join(f"{o} {n}" for o, n in cnt.most_common()))
-    if c.report.errors:
-        print(f"checker errors: {len(c.report.errors)} ({len({e.path for e in c.report.errors})} files not fully checked)")
-    blocking = c.blocking()
+    if c.unknown_errors:
+        print(f"checker errors: {len(c.unknown_errors)} ({len({e.path for e in c.unknown_errors})} files not fully "
+              "checked)")
+        for (check, message), n in Counter((e.check, e.message) for e in c.unknown_errors).most_common(show):
+            print(f"  {n:4d}  {check} | {message[:120]}")
+    if c.known_errors:
+        notes = Counter(m.rule.id for _, m in c.known_errors)
+        print(f"known checker errors (a checker bug, not the file): {len(c.known_errors)} "
+              f"({len({e.path for e, _ in c.known_errors})} files) {dict(notes)}")
     by_outcome = Counter(str(b.outcome) for b in blocking)
     print(f"blocking   : {len(blocking)} findings in {len({b.finding.path for b in blocking})} files {dict(by_outcome)}")
     by_rule = Counter((b.match.rule.id, b.outcome) if b.match else ("-", b.outcome) for b in blocking)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 
 from . import fixes
@@ -68,6 +68,9 @@ class Classification:
     items: list[Classified]
     final: bool
     previous: QAReport | None = None
+    # checker crashes waived by a checker_error rule (a known checker bug), and the others
+    known_errors: list[tuple[Finding, RuleMatch]] = field(default_factory=list)
+    unknown_errors: list[Finding] = field(default_factory=list)
 
     @property
     def rules_version(self) -> str:
@@ -82,7 +85,7 @@ class Classification:
         return [c for c in self.items if c.finding.severity >= BLOCKING_SEVERITY and c.outcome not in accepted]
 
     def decision(self) -> Decision:
-        if self.report.errors:
+        if self.unknown_errors:
             return Decision.CHECKER_ERROR
         outcomes = {c.outcome for c in self.blocking()}
         if outcomes & {Outcome.UNKNOWN, Outcome.REVIEW, Outcome.FIX_MISSING}:
@@ -118,4 +121,11 @@ def classify(report: QAReport, rules: RuleSet, *, final: bool = False,
     for f in report.findings:
         m = rules.match(f)
         items.append(Classified(f, outcome_of(m), m))
-    return Classification(report, rules, items, final, previous)
+    known, unknown = [], []
+    for e in report.errors:
+        m = rules.match(e, checker_error=True)
+        if m is not None and m.rule.action is Action.WAIVE:
+            known.append((e, m))
+        else:
+            unknown.append(e)
+    return Classification(report, rules, items, final, previous, known, unknown)
