@@ -4,6 +4,18 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `apply --resume FIXLOG...`: skip the files that earlier fixlogs of the plan record as done (the latest record
+  of a file wins); failed files are retried unless `--skip-failed`. For a plan cut by a job time limit.
+- `apply --shard k/K`: only share k of K of the plan's files (every K-th in path order, computed on the whole
+  plan), to split one plan over K jobs with their own fixlogs. Refused if plan entries share a file or a rename
+  target. No automatic ATM/SRF deduplication with `--shard`. Each fixlog line records the shard.
+- Before starting, `apply` removes the leftover temporary files (`.<name>.*.fixtmp`, `.linkbreak`) of
+  interrupted rewrites of the files it is about to fix; a dry run only counts them.
+
 ## [0.6.0] - 2026-11-18
 
 ### Added

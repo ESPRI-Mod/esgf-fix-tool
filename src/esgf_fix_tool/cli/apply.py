@@ -70,9 +70,29 @@ def run(
         int, typer.Option("--workers", "-j", min=1,
                           help="number of independent files processed concurrently")
     ] = 1,
+    resume: Annotated[
+        list[Path] | None,
+        typer.Option("--resume", help="fixlog of an earlier run of this plan: skip the files it records as done "
+                                      "(failed ones are retried); may be repeated, e.g. --resume run/fixlog*.jsonl"),
+    ] = None,
+    skip_failed: Annotated[
+        bool, typer.Option("--skip-failed", help="with --resume: also skip the files recorded as failed")
+    ] = False,
+    shard: Annotated[
+        str | None,
+        typer.Option("--shard", help="k/K: only share k of K of the plan's files, to split one plan over K jobs "
+                                     "(each with its own --fixlog); no automatic deduplication then"),
+    ] = None,
 ):
     """Apply a plan: update metadata directly or combine structural changes in one rewrite."""
-    from ..apply import apply_plan  # needs netCDF4
+    from ..apply import apply_plan, parse_shard  # needs netCDF4
+
+    try:
+        shard_k = parse_shard(shard) if shard is not None else None
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--shard") from None
+    if skip_failed and not resume:
+        raise typer.BadParameter("--skip-failed needs --resume", param_hint="--skip-failed")
 
     events_log = fixlog.with_name(f"{fixlog.stem}.events.jsonl")
     with ConsoleProgress(events_log, quiet=quiet, parallel=workers > 1) as display:
@@ -86,6 +106,9 @@ def run(
             continue_on_error=not fail_fast,
             break_hardlinks=break_hardlinks,
             workers=workers,
+            resume=resume,
+            skip_failed=skip_failed,
+            shard=shard_k,
         )
     if not display.interactive:
         print(stats, flush=True)

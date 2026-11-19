@@ -84,6 +84,37 @@ rename targets before applying fixes. More workers increase aggregate memory,
 temporary disk space and filesystem traffic; speedup depends on available I/O
 bandwidth and the fixes selected. No change to the fix plan is needed.
 
+### Resuming a plan, or splitting it over several jobs
+
+A batch job cut by its time limit (SIGKILL) leaves the files it had finished in the fixlog, and up to
+`--workers` files half-way. To finish the plan without redoing the rest:
+
+```bash
+esgf-fix-tool apply fixplan.json --only-under "$simulation_dir" --workers 16 \
+    --resume run/fixlog*.jsonl --fixlog run/fixlog.resume.jsonl
+```
+
+`--resume` skips the files that the given fixlogs record as done (the latest record of a file wins) and
+retries the failed ones, unless `--skip-failed`. Lines that are not fixlog records (events journals,
+deduplication logs) and dry-run lines are ignored, so a glob over the run directory is fine.
+
+A file interrupted during a structural rewrite is intact: the rewrite goes to a temporary
+`.<name>.*.fixtmp` that only replaces the file once verified. Before starting, `apply` removes such leftovers
+of the files it is about to fix (a dry run only counts them). A file interrupted during a direct metadata
+update may be partly updated: running its fixes again completes it.
+
+To go faster than one node allows, split one plan over K jobs, each with its own fixlog:
+
+```bash
+esgf-fix-tool apply fixplan.json --only-under "$simulation_dir" --workers 16 --shard 2/4 --fixlog run/fixlog.shard-2.jsonl
+```
+
+`--shard k/K` keeps every K-th file of the plan in path order, from the k-th. The shares are computed on the
+whole plan, never on what is left, so jobs started at different times, or resumed with `--resume`, never
+overlap; the plan is refused if two entries share a file or a rename target. The automatic ATM/SRF
+deduplication does not run with `--shard`, since shards run concurrently: run `deduplicate` once they are
+all done. `--resume` and `--shard` can be combined. The statistics and each fixlog line record the shard.
+
 ### Hybrid coefficient dimensions
 
 Rules and recipes do not filter by model, experiment or realization. They retain
