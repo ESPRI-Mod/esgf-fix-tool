@@ -112,3 +112,20 @@ def test_cli_resume_and_shard(tmp_path):
     bad = runner.invoke(app, [*base, "--shard", "3/2"])
     assert bad.exit_code == 2 and "k/K" in bad.output
     assert runner.invoke(app, [*base, "--skip-failed"]).exit_code == 2
+
+
+def test_cli_resume_expands_a_quoted_pattern_and_refuses_one_that_matches_nothing(tmp_path):
+    plan = make_plan(tmp_path / "sim", count=4)
+    plan_path = tmp_path / "plan.json"
+    plan.dump(plan_path)
+    runner = CliRunner()
+    base = ["apply", str(plan_path), "--only-under", str(tmp_path / "sim")]
+    for k in (1, 2):
+        result = runner.invoke(app, [*base, "--shard", f"{k}/3", "--fixlog", str(tmp_path / f"fixlog.shard-{k}.jsonl")])
+        assert result.exit_code == 0, result.output
+    rest = runner.invoke(app, [*base, "--resume", str(tmp_path / "fixlog*.jsonl"),
+                               "--fixlog", str(tmp_path / "rest.jsonl")])
+    assert rest.exit_code == 0, rest.output
+    assert "'skipped_done': 3" in rest.output and len(rows(tmp_path / "rest.jsonl")) == 1
+    nothing = runner.invoke(app, [*base, "--resume", str(tmp_path / "nope*.jsonl")])
+    assert nothing.exit_code == 2 and "no fixlog matches" in nothing.output

@@ -91,12 +91,13 @@ A batch job cut by its time limit (SIGKILL) leaves the files it had finished in 
 
 ```bash
 esgf-fix-tool apply fixplan.json --only-under "$simulation_dir" --workers 16 \
-    --resume run/fixlog*.jsonl --fixlog run/fixlog.resume.jsonl
+    --resume 'run/fixlog*.jsonl' --fixlog run/fixlog.resume.jsonl
 ```
 
 `--resume` skips the files that the given fixlogs record as done (the latest record of a file wins) and
 retries the failed ones, unless `--skip-failed`. Lines that are not fixlog records (events journals,
-deduplication logs) and dry-run lines are ignored, so a glob over the run directory is fine.
+deduplication logs) and dry-run lines are ignored, so a glob over the run directory is fine. Quote it, so the
+tool expands it (`--resume a.jsonl --resume b.jsonl` works too; `--resume a.jsonl b.jsonl` does not).
 
 A file interrupted during a structural rewrite is intact: the rewrite goes to a temporary
 `.<name>.*.fixtmp` that only replaces the file once verified. Before starting, `apply` removes such leftovers

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import glob
 from pathlib import Path
 from typing import Annotated
 
@@ -71,9 +72,10 @@ def run(
                           help="number of independent files processed concurrently")
     ] = 1,
     resume: Annotated[
-        list[Path] | None,
-        typer.Option("--resume", help="fixlog of an earlier run of this plan: skip the files it records as done "
-                                      "(failed ones are retried); may be repeated, e.g. --resume run/fixlog*.jsonl"),
+        list[str] | None,
+        typer.Option("--resume", help="fixlog(s) of earlier runs of this plan: skip the files they record as done "
+                                      "(failed ones are retried); a quoted pattern is expanded, e.g. "
+                                      "--resume 'run/fixlog*.jsonl'; may be repeated"),
     ] = None,
     skip_failed: Annotated[
         bool, typer.Option("--skip-failed", help="with --resume: also skip the files recorded as failed")
@@ -93,6 +95,12 @@ def run(
         raise typer.BadParameter(str(exc), param_hint="--shard") from None
     if skip_failed and not resume:
         raise typer.BadParameter("--skip-failed needs --resume", param_hint="--skip-failed")
+    logs = []
+    for pattern in resume or ():
+        matches = sorted(glob.glob(pattern)) if glob.has_magic(pattern) else [pattern] * Path(pattern).is_file()
+        if not matches:
+            raise typer.BadParameter(f"no fixlog matches {pattern}", param_hint="--resume")
+        logs += [m for m in matches if m not in logs]
 
     events_log = fixlog.with_name(f"{fixlog.stem}.events.jsonl")
     with ConsoleProgress(events_log, quiet=quiet, parallel=workers > 1) as display:
@@ -106,7 +114,7 @@ def run(
             continue_on_error=not fail_fast,
             break_hardlinks=break_hardlinks,
             workers=workers,
-            resume=resume,
+            resume=logs,
             skip_failed=skip_failed,
             shard=shard_k,
         )
