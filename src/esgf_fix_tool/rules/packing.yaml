@@ -1,0 +1,14 @@
+# Internal packing (FILE004 family): fixed by the repack step (cmip7repack), like FILE004a (S029).
+# other_step: not blocking in the QA -> fix loop, blocking again at the final gate if repacking missed it.
+
+- id: C117
+  check: '\[CMIP7\] \[FILE004b\] Internal packing : Time coordinate chunking'
+  message: .*
+  action: other_step
+  note: fixed by the repack step (cmip7repack), which rewrites the time coordinate in one chunk
+
+- id: C118
+  check: '\[CMIP7\] \[FILE004c\] Internal packing : Time bounds chunking'
+  message: .*
+  action: other_step
+  note: fixed by the repack step (cmip7repack), which rewrites the time bounds in one chunk
