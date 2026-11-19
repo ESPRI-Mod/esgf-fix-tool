@@ -13,7 +13,7 @@
   action: fix
   fix: add_basin_latitude_bounds
   params: {}
-  note: Latest user decision replaces the former exception. Add common conventional midpoint bounds on the nine reviewed NEMO products, with half-step outer extrapolation and the last non-degenerate north spacing. Keep lat or rlat and its metadata; harmonize the terminal value to 89.36999. No science-field edits.
+  note: Latest user decision replaces the former exception. Add common conventional midpoint bounds on the nine reviewed NEMO products, with half-step outer extrapolation and the last non-degenerate north spacing. Keep lat or rlat and its metadata; harmonize the legacy 332-point terminal value to 89.36999. The 331-point native profiles (lat for basin transports, rlat for msfty) must match their supplied T-column 97 reference; keep its terminal value and use the actual adjacent half-step at both ends. No science-field edits.
 
 - id: C103d
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
@@ -31,7 +31,7 @@
   action: fix
   fix: center_hybrid_interfaces
   params: {}
-  note: Same approved 80-interface to 79-center transformation as C104. Reuse the supplied reference and C074/C102 normalization, including lev_bnds and coefficient formula_terms. Replays on 79 levels never average again.
+  note: Same approved 80-to-79 or 96-to-95 interface-to-center transformation as C104. Reuse the supplied reference and C074/C102 normalization, including lev_bnds and coefficient formula_terms. Replays on 79 or 95 levels never average again.
 
 - id: C103r
   check: \[CMIP7\] \[COORD008\] Coordinate bounds$
@@ -138,9 +138,8 @@
   action: fix
   fix: normalize_regular_longitude
   params: {}
-  dataset: CMIP7\.(?:ATM|SRF)\.
-  note: Confirmed in shared chat turns 247–254. g111 only, 144 centers / 144x2 bounds, deviations <=1e-10 degree; accepts
-    lon_bnds after rename.
+  dataset: '(?:CMIP7\.(?:ATM|SRF)\.(?:[^.]+\.){4}|CMIP7\.(?:[^.]+\.){9})(?:g111|g245)(?:\.|$)'
+  note: Reviewed regular g111/g245 grids only, independently of model/experiment and nlon. Require lon(lon) and existing nlon-by-2 bounds. Rebuild one shared interface vector over 0..360 for CM7 midpoint-centered grids; permit only rounding differences <=1e-8 degree and preserve g245 centers. Retain the established CM6 g111 zero-centered/half-cell-offset geometry and its 1e-10 guard. Never apply to cell/vertex polygon grids or g243. Direct small-coordinate edit, no scientific rotation/copy.
 
 - id: C060
   check: \[CF-Conventions\] §3\.3 Standard Name$|\[CMIP7\] \[COORD008\] Coordinate bounds$
@@ -231,3 +230,21 @@
   params: {}
   note: One step per file normalizes active size-two bounds. Rename directly where possible, or replace only small reviewed
     auxiliaries when a bnds coordinate is already present. Other merges use a verified rewrite. Preserve size-four ocean vertices.
+
+- id: C118
+  check: \[CMIP7\] \[COORD005\] Coordinate monotonicity and stored direction$
+  message: "'lat' is strictly decreasing; the required stored_direction is strictly increasing\\.$"
+  dataset: CMIP7\.SRF\.(?:areacellr\.ti-u-hxy-u\.fx|(?:rivi|rivo)\.tavg-u-hxy-lnd\.day)\.glb\.g131\.
+  action: fix
+  fix: reverse_reviewed_latitude
+  params: {}
+  note: User-approved g131 reversal for areacellr, rivi and rivo. Keep the 360 half-degree centers from -89.75 to 89.75, reorder existing bounds endpoints, and reverse every array sharing lat in one streamed atomic rewrite. Preserve raw values, masks, attributes and compression.
+
+- id: C121
+  check: \[CMIP7\] \[COORD006\] Coordinate valid range$
+  message: "'lon' contains -179\\.75 below required valid_min=0\\.0\\. The comparison permits numerical tolerance=[0-9.eE+-]+\\.$"
+  dataset: '(?:CMIP7\.SRF\.(?:areacellr\.ti-u-hxy-u\.fx|(?:rivi|rivo)\.tavg-u-hxy-lnd\.day)\.glb\.g131\.|CMIP7\.(?:[^.]+\.){6}(?:fx\.areacellr\.ti-u-hxy-u|day\.(?:rivi|rivo)\.tavg-u-hxy-lnd)\.g131(?:\.|$))'
+  action: fix
+  fix: rotate_reviewed_longitude
+  params: {}
+  note: User-approved g131 river products only. Validate the existing 720 half-degree centers and their bounds, translate signed longitude cells by 360 degrees, and cyclically rotate all arrays carrying lon. Combine with C118 latitude reversal in a single streamed atomic rewrite; preserve raw values, masks, packing, attributes and compression. The terminal upper bound is 360, not zero. No model/experiment restriction; g111 rounding and atmospheric polygon grids are unchanged.

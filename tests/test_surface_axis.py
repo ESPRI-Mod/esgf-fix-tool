@@ -85,9 +85,9 @@ def test_latest_surface_decision_removes_axis_without_restoring_old_dr_marker(ca
     ]
     rules = RuleSet.load(*paths)
     c=classify(QAReport(Path('report'),{},findings),rules)
-    # The removed override no longer waives the old DR diagnostic. The generic
-    # fallback reports a missing recipe, but must never recreate axis=Z.
-    assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX,Outcome.FIX_MISSING]
+    # The user explicitly waived the inverse DR recommendation while keeping
+    # the CF repair. No selected recipe may recreate the axis=Z marker.
+    assert [i.outcome for i in c.items]==[Outcome.FIX,Outcome.FIX,Outcome.WAIVED]
     p=FixPlan.from_classification(c)
     assert len(p.files['file.nc'])==1 and p.files['file.nc'][0].fix=='drop_osurf_axis'
 

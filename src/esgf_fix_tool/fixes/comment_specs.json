@@ -475,5 +475,32 @@
       }
     ],
     "replace_expected": true
+  },
+  "fNleach_tavg-u-hxy-lnd": {
+    "var": "fNleach",
+    "variants": [
+      {
+        "observed": "In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics. The specification of a physical process by the phrase \"due\\_to\\_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. \"Leaching\" means the loss of water soluble chemical species from soil. Runoff is the liquid water which drains from land. If not specified, \"runoff\" refers to the sum of surface runoff and subsurface drainage.",
+        "value": "In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics. The specification of a physical process by the phrase \"due_to_\" process means that the quantity named is a single term in a sum of terms which together compose the general quantity named by omitting the phrase. \"Leaching\" means the loss of water soluble chemical species from soil. Runoff is the liquid water which drains from land. If not specified, \"runoff\" refers to the sum of surface runoff and subsurface drainage."
+      }
+    ]
+  },
+  "mrsow_tavg-u-hxy-lnd": {
+    "var": "mrsow",
+    "variants": [
+      {
+        "observed": "relative\\_soil\\_moisture\\_content\\_above\\_field\\_capacity",
+        "value": "relative_soil_moisture_content_above_field_capacity"
+      }
+    ]
+  },
+  "rivi_tavg-u-hxy-lnd": {
+    "var": "rivi",
+    "variants": [
+      {
+        "observed": "water\\_flux\\_to\\_downstream",
+        "value": "water_flux_to_downstream"
+      }
+    ]
   }
 }

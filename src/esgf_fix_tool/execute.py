@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import time
+import traceback
 from pathlib import Path
 
 import netCDF4
@@ -58,8 +59,7 @@ def final_checks(path, output, steps, entries, coefficient_baseline=None):
         # Unified verification covers composed dimension mappings, which the old
         # per-recipe profile verifier could not account for after another recipe.
         if s.fix == "fix_basin_profile_latitude":
-            with netCDF4.Dataset(output) as ds:
-                rectilinear._profile(ds, s.params["var"])
+            rectilinear.verify_profile_output(output, s.params["var"])
         elif s.fix == "normalize_hybrid_coordinate":
             with step_scope(s), activity("Contrôle final du correctif"):
                 method.verify_final(
@@ -70,7 +70,80 @@ def final_checks(path, output, steps, entries, coefficient_baseline=None):
                 method.verify_final(path, output, **s.params)
 
 
-def execute(path, steps, *, dry_run=False, allow_hardlinks=False):
+class PreparationFailure(Exception):
+    """A recipe failed while the source was still read-only."""
+
+    def __init__(self, index, step, error, trace):
+        self.index, self.step, self.error, self.trace = index, step, error, trace
+        super().__init__(str(error))
+
+
+def execute(path, steps, *, dry_run=False, allow_hardlinks=False, continue_on_fix_error=False):
+    """Discard failed previews and rebuild only the remaining independent fixes.
+
+    A failed recipe may already have mutated its private preview. Never reuse
+    that state. Retry preparation from the untouched source; commit at most once.
+    Write/verification errors are deliberately not caught or retried here.
+    """
+    active = list(range(len(steps)))
+    failures = {}
+    first_error = None
+    while active:
+        try:
+            result = _execute(path, [steps[i] for i in active], dry_run=dry_run,
+                              allow_hardlinks=allow_hardlinks)
+            combined = dict(zip(active, result)) | failures
+            mode = result[0]["write_mode"] if result else "none"
+            for entry in failures.values():
+                entry.update(write_mode=mode, rewrite_count=0, dry_run=dry_run,
+                             data_verified=False)
+            return [combined[i] for i in range(len(steps))]
+        except PreparationFailure as failure:
+            if not continue_on_fix_error:
+                raise failure.error.with_traceback(failure.error.__traceback__)
+            failed_index = active[failure.index]
+            first_error = first_error or failure.error
+            failures[failed_index] = dict(
+                rule=failure.step.rule, fix=failure.step.fix, params=failure.step.params,
+                changed=False, status="failed", error=str(failure.error),
+                traceback=failure.trace,
+            )
+            with step_scope(failure.step):
+                notify("error", "failed", traceback=failure.trace)
+            from .plan import STEP_DEPENDENCIES
+
+            blocked_methods = {failure.step.fix}
+            # Hybrid reconstruction and its metadata form a scientifically linked
+            # group. Do not declare an axis compliant after its coefficients fail.
+            failed_hybrid = hybrid.is_hybrid_step(failure.step) or (
+                failure.step.fix == "rename_coordinate" and failure.step.params.get("target") == "lev"
+            )
+            pending = [i for i in active if i != failed_index]
+            changed = True
+            while changed:
+                changed = False
+                for i in list(pending):
+                    step = steps[i]
+                    prerequisites = STEP_DEPENDENCIES.get(step.fix, set()) & blocked_methods
+                    if (prerequisites == {"promote_coordinate_to_double"}
+                            and step.params.get("coordinate") != failure.step.params.get("var")):
+                        prerequisites = set()  # Another coordinate's promotion is independent.
+                    if prerequisites or (
+                        failed_hybrid and (hybrid.is_hybrid_step(step) or step.params.get("var") in {"lev", "ap", "b", "ap_bnds", "b_bnds", "lev_bnds"})
+                    ):
+                        failures[i] = dict(rule=step.rule, fix=step.fix, params=step.params,
+                                           changed=False, status="blocked", error="Selected prerequisite failed")
+                        pending.remove(i)
+                        blocked_methods.add(step.fix)
+                        changed = True
+            active = pending
+    # If every recipe failed/was blocked, preserve the normal per-file failure.
+    if first_error is not None:
+        raise first_error.with_traceback(first_error.__traceback__)
+    return []
+
+
+def _execute(path, steps, *, dry_run=False, allow_hardlinks=False):
     path = Path(path)
     entries = []
     backups = {}
@@ -80,45 +153,48 @@ def execute(path, steps, *, dry_run=False, allow_hardlinks=False):
         with activity("Lecture du schéma sans écriture"):
             preview = Preview(source)
         try:
-            for s in steps:
-                method = fixes.REGISTRY[s.fix]
-                if (
-                    method.kind != "metadata"
-                    and not method.layout_change
-                    and not (method.data_targets and method.verify_final)
-                ):
-                    raise NotImplementedError(
-                        f"Structural fix is not supported: {s.fix}"
-                    )
-                with step_scope(s):
-                    notify("fix", "start")
-                    started = time.monotonic()
-                    before = data_state(preview)
-                    with activity("Préparation du correctif sans écriture"):
-                        prepared = False
-                        if s.fix == "normalize_hybrid_coordinate":
-                            # Bind approved reference coefficients in the metadata preview
-                            # before capturing the normalization preservation baseline.
-                            # This shared prerequisite also covers a C102-only QA finding.
-                            prepared = hybrid.prepare_normalization_inputs(preview)
-                            coefficient_baseline = hybrid.coefficient_snapshot(preview)
-                        changed = bool(method.func(preview, **s.params)) or prepared
-                        allowed = (
-                            method.data_targets(s.params)
-                            if method.data_targets is not None
-                            else set()
+            for preparation_index, s in enumerate(steps):
+                try:
+                    method = fixes.REGISTRY[s.fix]
+                    if (
+                        method.kind != "metadata"
+                        and not method.layout_change
+                        and not (method.data_targets and method.verify_final)
+                    ):
+                        raise NotImplementedError(
+                            f"Structural fix is not supported: {s.fix}"
                         )
-                        check_numeric_edits(preview, before, allowed)
-                    entries.append(
-                        dict(
-                            rule=s.rule,
-                            fix=s.fix,
-                            params=s.params,
-                            changed=changed,
-                            prepare_seconds=time.monotonic() - started,
+                    with step_scope(s):
+                        notify("fix", "start")
+                        started = time.monotonic()
+                        before = data_state(preview)
+                        with activity("Préparation du correctif sans écriture"):
+                            prepared = False
+                            if s.fix == "normalize_hybrid_coordinate":
+                                # Bind approved reference coefficients in the metadata preview
+                                # before capturing the normalization preservation baseline.
+                                # This shared prerequisite also covers a C102-only QA finding.
+                                prepared = hybrid.prepare_normalization_inputs(preview)
+                                coefficient_baseline = hybrid.coefficient_snapshot(preview)
+                            changed = bool(method.func(preview, **s.params)) or prepared
+                            allowed = (
+                                method.data_targets(s.params)
+                                if method.data_targets is not None
+                                else set()
+                            )
+                            check_numeric_edits(preview, before, allowed)
+                        entries.append(
+                            dict(
+                                rule=s.rule,
+                                fix=s.fix,
+                                params=s.params,
+                                changed=changed,
+                                prepare_seconds=time.monotonic() - started,
+                            )
                         )
-                    )
-                    notify("fix", "prepared", changed=changed)
+                        notify("fix", "prepared", changed=changed)
+                except Exception as exc:
+                    raise PreparationFailure(preparation_index, s, exc, traceback.format_exc()) from exc
             # C001 is a file-wide invariant, including variables created by later
             # recipes. Recognize legacy per-variable plans without changing their
             # generic drop_var_attr API or applying unselected corrections.

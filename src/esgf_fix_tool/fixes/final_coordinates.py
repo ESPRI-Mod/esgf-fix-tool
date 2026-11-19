@@ -69,27 +69,42 @@ def fix_ice_passage_sector(ds):
     """Write the four explicitly supplied labels at their original line indices."""
     main_name = getattr(ds, "variable_id", "")
     main = ds.variables.get(main_name)
-    dim = "line" if "line" in ds.dimensions else "siline"
+    dim = next((n for n in ("line", "siline", "section_ice") if n in getattr(main, "dimensions", ())), "siline")
     if (
         main_name not in ICE_PRODUCTS
         or main is None
         or main.dimensions != ("time", dim)
         or main.shape[1] != 4
-        or "sector" not in ds.variables
-        or ds["sector"].dtype != np.dtype("S1")
-        or ds["sector"].dimensions[:1] != (dim,)
-        or ds["sector"].ndim != 2
+        or ("sector" in ds.variables and (
+            ds["sector"].dtype != np.dtype("S1")
+            or ds["sector"].dimensions[:1] != (dim,)
+            or ds["sector"].ndim != 2
+        ))
     ):
         raise ValueError(
             "Expected one of the three reviewed four-passage sea-ice diagnostics"
         )
+    missing_sector = "sector" not in ds.variables
+    if missing_sector:
+        import re
+
+        # Creation is authorized only for the three reviewed products whose
+        # scientific comments confirm the same four passages at these indices.
+        comment = getattr(main, "comment", "")
+        passages = ("Fram Strait", "Canadian Arctic Archipelago", "Barents Sea Opening", "Bering Strait")
+        positions = [re.search(rf"{i}\.\s*{re.escape(label)}\s*:", comment) for i, label in enumerate(passages, 1)]
+        if (getattr(ds, "branded_variable", "") != main_name + "_tavg-u-ht-u"
+                or any(match is None for match in positions)
+                or [match.start() for match in positions] != sorted(match.start() for match in positions)
+                or getattr(main, "coordinates", "") not in ("", "sector", "line", "line_label")):
+            raise ValueError("Missing passage labels require the reviewed product and comment order")
     redundant = [n for n in ("line", "line_label") if n in ds.variables]
     for n in redundant:
         if ds[n].dtype != np.dtype("S1") or ds[n].ndim != 2 or ds[n].shape[0] != 4:
             raise ValueError("Unexpected variable on the passage index")
     # The string length may already have been renamed by C087. Resize only a
     # private dimension used by these known labels, never another text array.
-    old_length = ds["sector"].dimensions[-1]
+    old_length = ds["sector"].dimensions[-1] if not missing_sector else "strlen"
     changed = False
     if "strlen" in ds.dimensions and len(ds.dimensions["strlen"]) != 21:
         if any(
@@ -113,7 +128,11 @@ def fix_ice_passage_sector(ds):
     data = np.full((4, 21), b" ", dtype="S1")
     for row, label in zip(data, ICE_PASSAGES):
         row[: len(label)] = np.frombuffer(label.encode("ascii"), dtype="S1")
-    sector = ds["sector"]
+    sector = ds.variables.get("sector")
+    if sector is None:
+        sector = ds.createVariable("sector", "S1", ("line", "strlen"), fill_value=False)
+        sector[:] = data
+        changed = True
     _raw(sector)
     if sector.dimensions != ("line", "strlen") or sector.shape != data.shape:
         old = sector

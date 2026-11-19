@@ -66,6 +66,7 @@ def apply_file(
     *,
     dry_run: bool = False,
     allow_hardlinks: bool = False,
+    continue_on_fix_error: bool = False,
     events: Callable[[ProgressEvent], None] | None = None,
     file_index: int = 1,
     file_total: int = 1,
@@ -78,8 +79,11 @@ def apply_file(
             actual, target, rename_index = _rename_request(path, steps)
             _check_shared_rename(actual, target, allow_hardlinks)
             entries = _apply_file(
-                actual, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks
+                actual, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks,
+                continue_on_fix_error=continue_on_fix_error,
             )
+            if target is not None and entries[rename_index].get("status") in ("failed", "blocked"):
+                target = None
             if target is not None:
                 # Reserve the destination without ever overwriting an existing file.
                 # Both paths have the same parent, and all NetCDF handles are closed.
@@ -117,9 +121,12 @@ def apply_file(
         # dry-run preflight succeeded). Metadata preparation alone is not Done.
         for step, entry in zip(steps, entries):
             with step_scope(step):
-                notify("fix", "done", changed=entry["changed"], dry_run=dry_run)
+                notify("fix", entry.get("status", "done"), changed=entry["changed"],
+                       dry_run=dry_run, error=entry.get("error", ""))
         notify(
-            "file", "done", changed=any(e["changed"] for e in entries), dry_run=dry_run
+            "file", "failed" if any(e.get("status") in ("failed", "blocked") for e in entries) else "done",
+            changed=any(e["changed"] for e in entries), dry_run=dry_run,
+            error="Résultat partiel : les correctifs indépendants ont été conservés" if any(e.get("status") in ("failed", "blocked") for e in entries) else "",
         )
         return entries
 
@@ -130,13 +137,15 @@ def _apply_file(
     *,
     dry_run: bool = False,
     allow_hardlinks: bool = False,
+    continue_on_fix_error: bool = False,
 ) -> list[dict]:
     unknown = [s.fix for s in steps if s.fix not in fixes.REGISTRY]
-    if unknown:
+    if unknown and not continue_on_fix_error:
         raise KeyError(f"{Path(path).name}: fixes not implemented: {unknown}")
     from .execute import execute
 
-    return execute(path, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks)
+    return execute(path, steps, dry_run=dry_run, allow_hardlinks=allow_hardlinks,
+                   continue_on_fix_error=continue_on_fix_error)
 
 
 def _check_shared_rename(actual, target, allow_hardlinks):
@@ -287,6 +296,7 @@ def apply_plan(
     with open(fixlog, "a") as out, file_jobs(
         active_files, workers, dry_run, events, preflight_errors,
         stop_on_error=not continue_on_error, allow_hardlinks=allow_hardlinks,
+        continue_on_fix_error=continue_on_error,
     ) as jobs:
         for path, steps, result in jobs:
             started = time.monotonic() - (result["elapsed"] if result else 0)
@@ -310,6 +320,7 @@ def apply_plan(
                     steps,
                     dry_run=dry_run,
                     allow_hardlinks=allow_hardlinks,
+                    continue_on_fix_error=continue_on_error,
                     events=events,
                     file_index=stats["files"] + 1,
                     file_total=total,
@@ -376,6 +387,15 @@ def apply_plan(
                     )
                 continue
             changed = any(e["changed"] for e in entries)
+            partial = [e for e in entries if e.get("status") in ("failed", "blocked")]
+            if partial:
+                stats["failed"] = stats.get("failed", 0) + 1
+                stats["partial"] = stats.get("partial", 0) + 1
+                failed_paths.add(path)
+                failed_paths.update(hardlink_aliases.get(path, []))
+                for entry in partial:
+                    if entry.get("traceback"):
+                        print(entry["traceback"], file=sys.stderr, flush=True)
             stats["files"] += 1
             stats["changed" if changed else "unchanged"] += 1
             record = {
@@ -385,7 +405,7 @@ def apply_plan(
                 "rules_version": plan.rules_version,
                 "rules_digest": plan.rules_digest,
                 "dry_run": dry_run,
-                "status": "done",
+                "status": "partial" if partial else "done",
                 "steps": entries,
                 "write_mode": entries[0]["write_mode"] if entries else "none",
                 "rewrite_count": max(
@@ -406,7 +426,7 @@ def apply_plan(
             out.write(json.dumps(record) + "\n")
             out.flush()
             if progress:
-                progress(stats["files"], total, path, changed, time.monotonic() - start)
+                progress(stats["files"], total, path, None if partial else changed, time.monotonic() - start)
     if first_error is not None:
         raise first_error
     if deduplicate_root is not None:

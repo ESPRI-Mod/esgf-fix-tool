@@ -62,25 +62,57 @@ def drop_unrequested_horizontal_reference(
     return True
 
 
+def icosahedral_grid(ds):
+    """Validate the reviewed cell-indexed six-vertex grids without reading arrays."""
+    if getattr(ds, "grid_label", "") not in {"g243", "g245"}:
+        return False
+    if getattr(ds, "horizontal_label", "") != "hxy":
+        raise ValueError("Icosahedral horizontal renames require an hxy product")
+    data = _main_variable(ds, getattr(ds, "variable_id", ""))
+    if "cell" not in data.dimensions:
+        return False  # Some g245 products are stored on a rectilinear lat/lon grid.
+    for role, short in (("latitude", "lat"), ("longitude", "lon")):
+        names = [n for n in (short, role) if n in ds.variables]
+        if len(names) != 1:
+            raise ValueError(f"Missing or ambiguous icosahedral {role}")
+        coord = ds[names[0]]
+        if coord.dimensions != ("cell",) or getattr(coord, "standard_name", "") != role:
+            raise ValueError(f"Expected {role}(cell) auxiliary coordinate")
+        bound = getattr(coord, "bounds", "")
+        if bound not in {"bounds_" + short, short + "_bounds", "vertices_" + role} or bound not in ds.variables:
+            raise ValueError(f"Missing or unexpected {role} vertex reference")
+        vertices = ds[bound]
+        if (vertices.dimensions not in (("cell", "nvertex"), ("cell", "vertices"))
+                or vertices.shape[-1] != 6):
+            raise ValueError("Expected six stored vertices per icosahedral cell")
+    return True
+
+
 def _restore_horizontal(source_path, output_path, role):
+    import netCDF4
+
     spec = _specs()["coordinates"][role]
-    _restore_coordinate_values(
-        source_path, output_path, [spec["source"]], spec["target"], False
-    )
+    with netCDF4.Dataset(source_path) as source:
+        ico = getattr(source, "grid_label", "") in {"g243", "g245"}
+    old = ("lat" if role == "latitude" else "lon") if ico else spec["source"]
+    _restore_coordinate_values(source_path, output_path, [old], spec["target"], False)
 
 
 @fix("rename_horizontal_coordinate", verify_data=True, after_close=_restore_horizontal)
 def rename_horizontal_coordinate(ds, role: str) -> bool:
-    """Rename nav_lat/nav_lon variables on reviewed 2-D hxy grids; keep y/x and raw values."""
+    """Rename horizontal auxiliaries; preserve cell or y/x dimensions and values."""
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     specs = _specs()
     if role not in specs["coordinates"]:
         raise ValueError("Unreviewed horizontal coordinate role")
     spec = specs["coordinates"][role]
-    source, target = spec["source"], spec["target"]
+    ico = icosahedral_grid(ds)
+    cell_or_regular = getattr(ds, "grid_label", "") in {"g243", "g245"}
+    source = ("lat" if role == "latitude" else "lon") if cell_or_regular else spec["source"]
+    target = spec["target"]
     if (
         getattr(ds, "horizontal_label", "") != "hxy"
-        or getattr(ds, "grid_label", "") not in specs["curvilinear_grids"]
+        or not cell_or_regular and getattr(ds, "grid_label", "") not in specs["curvilinear_grids"]
     ):
         raise ValueError(
             "Horizontal rename is restricted to reviewed curvilinear hxy grids"
@@ -92,7 +124,8 @@ def rename_horizontal_coordinate(ds, role: str) -> bool:
         )
     v = ds[present[0]]
     data = _main_variable(ds, getattr(ds, "variable_id", ""))
-    if v.dimensions != ("y", "x") or not {"y", "x"}.issubset(data.dimensions):
+    rectilinear = cell_or_regular and v.dimensions == (source,) and source in data.dimensions
+    if not ico and not rectilinear and (v.dimensions != ("y", "x") or not {"y", "x"}.issubset(data.dimensions)):
         raise ValueError(
             "Horizontal rename requires a 2-D auxiliary coordinate on the data y/x grid"
         )
@@ -109,7 +142,7 @@ def rename_horizontal_coordinate(ds, role: str) -> bool:
     if target in ds.dimensions:
         raise ValueError("Horizontal target would collide with an existing dimension")
 
-    # 2. Rename only the auxiliary variable; y/x and all values are preserved.
+    # 2. Rename only the auxiliary variable; cell/y/x and all values are preserved.
     ds.renameVariable(source, target)
     if "name" in v.ncattrs() and v.getncattr("name") == source:
         v.setncattr("name", target)

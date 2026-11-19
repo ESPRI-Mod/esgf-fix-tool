@@ -13,6 +13,9 @@ from .coordinates import _main_variable, _restore_coordinate_values, rename_coor
 
 STANDARD_NAME = "atmosphere_hybrid_sigma_pressure_coordinate"
 FORMULA = "p = ap + b*ps"
+CENTER_INTERFACE_PAIRS = {79: 80, 95: 96}
+CM7_SIZES = (95, 96)
+REFERENCE_SIZES = (79, 80, 95, 96)
 BOUND_LONG_NAMES = {
     "ap_bnds": "vertical coordinate formula term: ap(k+1/2)",
     "b_bnds": "vertical coordinate formula term: b(k+1/2)",
@@ -53,7 +56,7 @@ def _without_bounds(ds):
         return label == "alh"
     # Retain the reviewed interface behavior for legacy, unlabelled files whose
     # complete coordinate vector is independently checked against the reference.
-    return ds[_coordinate(ds)].size == 80
+    return ds[_coordinate(ds)].size in CENTER_INTERFACE_PAIRS.values()
 
 
 def _term_long_name(ds, term):
@@ -73,6 +76,8 @@ def _attributes(ds, coordinate):
         None,
         "",
         "x",
+        "Pressure at interface of vertical levels",
+        "at interface of vertical levels",
         STANDARD_NAME,
     ]:
         raise ValueError(
@@ -307,10 +312,30 @@ def fix_hybrid_coordinate_metadata(ds, coordinate) -> bool:
 
 
 @lru_cache(maxsize=1)
+def _reference_document():
+    return json.loads(Path(__file__).with_name("hybrid_coefficients.json").read_text())
+
+
+def _matches_reference(actual, expected, size):
+    """Recognize decimal dumps and exact float32 reference encodings for CM7."""
+    actual = np.ma.asarray(actual)
+    if actual.shape != expected.shape or np.ma.getmaskarray(actual).any():
+        return False
+    if size in CM7_SIZES:
+        # Some CM7 files store lev or b in real precision. Recognize only the
+        # exact float32 rounding of the whole approved vector, also after a
+        # lossless promotion to double. Do not introduce a broad float32 tolerance.
+        return np.allclose(actual, expected, rtol=5e-14, atol=1e-14) or np.array_equal(
+            actual, expected.astype("f4").astype(actual.dtype)
+        )
+    return np.array_equal(actual, expected)
+
+
+@lru_cache(maxsize=1)
 def _coefficient_reference():
-    ref = json.loads(Path(__file__).with_name("hybrid_coefficients.json").read_text())
+    ref = _reference_document()
     result = {}
-    for size in (79, 80):
+    for size in REFERENCE_SIZES:
         result[size] = {
             n: np.asarray(ref[f"coefficients_{size}"][n], dtype="f8")
             for n in ("ap", "b")
@@ -320,12 +345,41 @@ def _coefficient_reference():
             for v in result[size].values()
         ):
             raise ValueError("Invalid bundled hybrid coefficient reference")
-    for n, interfaces in result[80].items():
-        if not np.array_equal(result[79][n], (interfaces[:-1] + interfaces[1:]) / 2):
-            raise ValueError(
-                "Hybrid centers do not match the adjacent reference interfaces"
-            )
+
+    # Validate each supplied center/interface pair independently. The CM7 dumps
+    # contain decimal rounding; retain their values rather than recomputing them.
+    for centers, interface_count in CENTER_INTERFACE_PAIRS.items():
+        for n, interfaces in result[interface_count].items():
+            midpoint = (interfaces[:-1] + interfaces[1:]) / 2
+            if not _matches_reference(result[centers][n], midpoint, centers):
+                raise ValueError(
+                    "Hybrid centers do not match the adjacent reference interfaces"
+                )
+    for size in CM7_SIZES:
+        for n in ("ap", "b"):
+            bounds = np.asarray(ref[f"coefficients_{size}"][n + "_bnds"], dtype="f8")
+            if bounds.shape != (size, 2) or not np.isfinite(bounds).all():
+                raise ValueError("Invalid bundled CM7 coefficient bounds")
+            if size == 95 and not np.array_equal(
+                bounds, np.column_stack((result[96][n][:-1], result[96][n][1:]))
+            ):
+                raise ValueError("CM7 center bounds differ from the supplied interfaces")
     return result
+
+
+def _reference_bounds(size, term):
+    """Use explicit CM7 bounds; keep the original CM6 interface-based reference."""
+    if size == 95:
+        return np.asarray(
+            _reference_document()["coefficients_95"][term + "_bnds"], dtype="f8"
+        )
+    interfaces = _coefficient_reference()[CENTER_INTERFACE_PAIRS[size]][term]
+    return np.column_stack((interfaces[:-1], interfaces[1:]))
+
+
+def _pressure_candidates(terms):
+    pressure = terms["ap"] + 101325.0 * terms["b"]
+    return [pressure, pressure / 101325.0, terms["ap"] / 101325.0 + terms["b"]]
 
 
 def _reference_values(ds, coordinate):
@@ -333,36 +387,31 @@ def _reference_values(ds, coordinate):
     name = _coordinate(ds)
     lev = ds[name]
     size = lev.size
-    if size != 79 and not (size == 80 and coordinate == "alevhalf"):
-        raise ValueError("Unreviewed lev length for this hybrid coordinate")
-    if size == 80 and _label(ds) == "al":
+    if size in CENTER_INTERFACE_PAIRS.values() and _label(ds) == "al":
         raise ValueError(
-            "The bundled 80-point reference describes interfaces, not 80 layer centers. "
-            "Select C103e/C104 first for the approved edt/evu 80-to-79 interpolation. "
-            "Other 80-center cases require approved ap_bnds/b_bnds and remain in review."
+            f"The bundled {size}-point reference describes interfaces, not {size} layer centers. "
+            "Only the separate edt/evu interface-to-center interpolation is approved. "
+            "Other center cases require their own approved reference and remain in review."
         )
     reference = _coefficient_reference()
     terms = reference[size]
-    # This reference pressure reproduces the original lev byte-for-byte in the
-    # individual QA reports. Match the complete axis, not just its length.
-    pressure = terms["ap"] + 101325.0 * terms["b"]
+    # Match the complete pressure-valued or normalized axis, not just its length.
+    # CM6 references are exact; CM7 dumps allow their decimal print rounding.
     actual = np.ma.asarray(lev[:])
-    if np.ma.getmaskarray(actual).any() or not any(
-        np.array_equal(actual, values.astype(lev.dtype))
-        for values in (
-            pressure,
-            pressure / 101325.0,
-            terms["ap"] / 101325.0 + terms["b"],
-        )
+    candidates = _pressure_candidates(terms)
+    if size in CM7_SIZES and all(
+        n in ds.variables and _matches_reference(ds[n][:], terms[n], size)
+        for n in ("ap", "b")
     ):
+        # Correctly sized real-precision coefficients retain their represented
+        # values. Their normalized lev need not equal a double-only reference.
+        candidates += _pressure_candidates({n: np.asarray(ds[n][:], dtype="f8") for n in ("ap", "b")})
+    if not any(_matches_reference(actual, v.astype(lev.dtype), size) for v in candidates):
         raise ValueError("lev values/order do not match the reviewed hybrid reference")
     wanted = {n: (("lev",), data) for n, data in terms.items()}
     if coordinate == "alevel" and not _without_bounds(ds):
-        for n, interfaces in reference[80].items():
-            wanted[n + "_bnds"] = (
-                ("lev", "bnds"),
-                np.column_stack((interfaces[:-1], interfaces[1:])),
-            )
+        for n in ("ap", "b"):
+            wanted[n + "_bnds"] = (("lev", "bnds"), _reference_bounds(size, n))
     return wanted
 
 
@@ -373,7 +422,9 @@ def _verify_coefficients(source, output, coordinate):
     with netCDF4.Dataset(output) as ds:
         for name, (dimensions, values) in _reference_values(ds, coordinate).items():
             v = ds[name]
-            if v.dimensions != dimensions or not np.array_equal(v[:], values):
+            if v.dimensions != dimensions or not _matches_reference(
+                v[:], values, ds["lev"].size
+            ):
                 raise ValueError(
                     f"Hybrid coefficient {name} differs from the reviewed reference"
                 )
@@ -417,6 +468,50 @@ def _check_interface_coefficients(ds, wanted):
     )
 
 
+def _check_cm7_coefficients(ds, wanted):
+    """Authorize only a paired 95/96 mismatch; never replace matching-size values."""
+    size = ds[_coordinate(ds)].size
+    other_size = 96 if size == 95 else 95
+    counts = []
+    for name in ("ap", "b"):
+        v = ds[name]
+        if (
+            v.dtype not in (np.dtype("f4"), np.dtype("f8"))
+            or v.shape not in ((size,), (other_size,))
+            or any(a in v.ncattrs() for a in ("scale_factor", "add_offset", "_Unsigned"))
+        ):
+            raise ValueError(f"Unexpected CM7 coefficient shape, type or packing: {name}")
+        counts.append(v.size)
+    if counts == [other_size, other_size]:
+        # The full lev vector was matched first. Both old terms belong to the
+        # wrong-sized axis: bind the explicitly supplied reference, without padding.
+        return
+    if counts != [size, size]:
+        raise ValueError(
+            "Mixed CM7 coefficient lengths; no value replacement is authorized"
+        )
+    for name, (_, values) in wanted.items():
+        v = ds.variables.get(name)
+        if v is None:
+            continue
+        actual = _aligned_values(v, values)
+        # A wrong-sized bounds array is replaced as a dimensional repair. An
+        # already matching-sized array must agree with the supplied reference.
+        if actual.shape == values.shape and not _matches_reference(actual, values, size):
+            raise ValueError(
+                f"CM7 coefficient {name} differs from the supplied reference; "
+                "no value replacement is authorized"
+            )
+
+
+def _aligned_values(variable, reference):
+    """Read small coefficient arrays in canonical order, preserving their bits."""
+    values = np.ma.asarray(variable[:])
+    if reference.ndim == 2 and values.shape == reference.T.shape:
+        values = values.T
+    return values
+
+
 @fix(
     "fix_hybrid_coefficients",
     verify_data=True,
@@ -429,21 +524,27 @@ def fix_hybrid_coefficients(ds, coordinate):
     coordinate = _resolved_coordinate(ds, coordinate)
     _attributes(ds, coordinate)
     wanted = _reference_values(ds, coordinate)
-    if coordinate == "alevhalf":
+    size = ds[_coordinate(ds)].size
+    if size in CM7_SIZES:
+        _check_cm7_coefficients(ds, wanted)
+    elif coordinate == "alevhalf":
         _check_interface_coefficients(ds, wanted)
+    allowed_sizes = CM7_SIZES if size in CM7_SIZES else (79, 80)
     for name in wanted:
         v = ds.variables.get(name)
         if v is None:
             continue
         shapes = (
-            ((79, 2), (80, 2), (2, 79), (2, 80))
+            tuple(
+                shape for count in allowed_sizes for shape in ((count, 2), (2, count))
+            )
             if name.endswith("_bnds")
-            else ((79,), (80,))
+            else tuple((count,) for count in allowed_sizes)
         )
         if (
             v.shape not in shapes
-            or v.dtype != np.dtype("f8")
-            or any(a in v.ncattrs() for a in ("scale_factor", "add_offset"))
+            or v.dtype not in ((np.dtype("f4"), np.dtype("f8")) if size in CM7_SIZES else (np.dtype("f8"),))
+            or any(a in v.ncattrs() for a in ("scale_factor", "add_offset", "_Unsigned"))
         ):
             raise ValueError(
                 f"Unexpected hybrid coefficient shape, type or packing for {name}"
@@ -459,7 +560,13 @@ def fix_hybrid_coefficients(ds, coordinate):
 
     for name, (dimensions, values) in wanted.items():
         v = ds.variables.get(name)
-        if v is None or v.dimensions != dimensions:
+        if v is not None and size in CM7_SIZES:
+            actual = _aligned_values(v, values)
+            if _matches_reference(actual, values, size):
+                # Decimal reference equality must not cause needless replacement
+                # of existing, correctly sized binary coefficient values.
+                values = np.asarray(actual).copy()
+        if v is None or v.dimensions != dimensions or v.dtype != np.dtype("f8"):
             v = replace_auxiliary(
                 ds, name, dimensions, values, dtype="f8", keep_original=False
             )
@@ -502,22 +609,27 @@ def _resolved_coordinate(ds, requested="auto"):
     if requested not in ("auto", "alevel", "alevhalf"):
         raise ValueError("Unreviewed hybrid coordinate family")
     size = ds[_coordinate(ds)].size
-    if size not in (79, 80):
+    if size not in REFERENCE_SIZES:
         raise ValueError(
-            "Only the supplied 79-center and 80-interface references are approved"
+            "Only the supplied 79/95-center and 80/96-interface references are approved"
         )
-    return "alevel" if size == 79 else "alevhalf"
+    return "alevel" if size in CENTER_INTERFACE_PAIRS else "alevhalf"
 
 
 def prepare_normalization_inputs(ds):
     """Reuse C074 reference binding before C102, even without a separate QA finding.
 
     No synthetic interfaces: the complete lev vector must match the supplied
-    reference. Bind matching 80-interface coefficients, or replace both wrongly
-    dimensioned 79-entry arrays, before capturing the C102 baseline.
+    reference. Bind the corresponding supplied 79/80 or 95/96 coefficient arrays
+    before capturing the C102 baseline; never interpolate the main field.
     """
     coordinate = _resolved_coordinate(ds)
-    changed = fix_hybrid_coefficients(ds, coordinate)
+    changed = False
+    if ds[_coordinate(ds)].dtype == np.dtype("f4"):
+        from .coordinates import promote_coordinate_to_double
+
+        changed = promote_coordinate_to_double(ds, "lev")
+    changed = fix_hybrid_coefficients(ds, coordinate) or changed
     # An empty coordinates string on this ancillary conveys no association.
     if "b_bnds" in ds.variables and getattr(ds["b_bnds"], "coordinates", None) == "":
         ds["b_bnds"].delncattr("coordinates")
@@ -531,7 +643,7 @@ def _normalization_values(ds):
     # Require the existing coefficients and surface pressure; never synthesize them.
     name = _coordinate(ds)
     lev = ds[name]
-    interfaces = lev.size == 80
+    interfaces = lev.size in CENTER_INTERFACE_PAIRS.values()
     without_bounds = _without_bounds(ds)
     terms = ("ap", "b") if without_bounds else ("ap", "b", "ap_bnds", "b_bnds")
     if (
@@ -586,18 +698,28 @@ def _normalization_values(ds):
     values = arrays["ap"] / P_REF + arrays["b"]
     bounds = None if without_bounds else arrays["ap_bnds"] / P_REF + arrays["b_bnds"]
     if interfaces:
-        reference = _coefficient_reference()[80]
-        if any(not np.array_equal(arrays[n], reference[n]) for n in ("ap", "b")):
+        reference = _coefficient_reference()[lev.size]
+        if any(
+            not _matches_reference(arrays[n], reference[n], lev.size)
+            for n in ("ap", "b")
+        ):
             raise ValueError(
-                "The 80 interfaces must match the complete supplied coefficients"
+                f"The {lev.size} interfaces must match the complete supplied coefficients"
             )
 
     # Accept the original pressure-valued axis or an already normalized axis on replay.
     current = np.ma.asarray(lev[:])
     pressure = arrays["ap"] + P_REF * arrays["b"]
+    candidates = [pressure, values, pressure / P_REF]
+    if lev.size in CM7_SIZES:
+        candidates += _pressure_candidates(_coefficient_reference()[lev.size])
     if np.ma.getmaskarray(current).any() or not any(
-        np.allclose(current, candidate, rtol=1e-14, atol=1e-14)
-        for candidate in (pressure, values, pressure / P_REF)
+        (
+            _matches_reference(current, candidate, lev.size)
+            if lev.size in CM7_SIZES
+            else np.allclose(current, candidate, rtol=1e-14, atol=1e-14)
+        )
+        for candidate in candidates
     ):
         raise ValueError(
             "Existing lev is neither its coefficient pressure nor the approved normalization"

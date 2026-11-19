@@ -110,67 +110,84 @@ def fix_scalar_label(ds, var: str, expected: str, value: str) -> bool:
 
 
 def _longitude(ds):
-    if getattr(ds, "grid_label", None) != "g111" or "lon" not in ds.variables:
-        raise ValueError("Longitude normalization is restricted to reviewed g111 files")
-    lon = ds["lon"]
+    """Recognize approved regular grids; never infer bounds for polygon cells."""
+    grid = getattr(ds, "grid_label", None)
+    if grid not in ("g111", "g245"):
+        raise ValueError("Longitude precision correction requires a reviewed g111/g245 regular grid")
+    names = [n for n in ("lon", "longitude") if n in ds.variables]
+    if len(names) != 1:
+        raise ValueError("Missing or ambiguous longitude coordinate")
+    lon = ds[names[0]]
     bound_name = getattr(lon, "bounds", "")
-    if bound_name not in ["bounds_lon", "lon_bnds"] or bound_name not in ds.variables:
+    if bound_name not in ("bounds_lon", "lon_bnds") or bound_name not in ds.variables:
         raise ValueError("Cannot identify the reviewed longitude bounds")
     bounds = ds[bound_name]
+    nlon = lon.size
     if (
         lon.dimensions != ("lon",)
-        or lon.shape != (144,)
-        or bounds.shape != (144, 2)
+        or nlon < 2
+        or bounds.shape != (nlon, 2)
         or bounds.dimensions[0] != "lon"
     ):
-        raise ValueError(
-            "Longitude normalization requires 144 longitudes and 144x2 bounds"
-        )
-    if getattr(lon, "units", "") not in ["degrees_east", "degree_east", "degrees_E"]:
+        raise ValueError("Longitude precision correction requires lon(lon) and two bounds per cell")
+    if getattr(lon, "units", "") not in ("degrees_east", "degree_east", "degrees_E"):
         raise ValueError("Unexpected longitude units")
-    for v in [lon, bounds]:
-        if v.dtype.kind != "f" or any(
-            a in v.ncattrs() for a in ["scale_factor", "add_offset"]
+    for variable in (lon, bounds):
+        if variable.dtype.kind != "f" or any(
+            a in variable.ncattrs() for a in ("scale_factor", "add_offset")
         ):
-            raise ValueError(
-                "Longitude normalization requires unpacked floating-point coordinates"
-            )
-    centers = np.arange(144, dtype="f8") * 2.5
-    edges = np.column_stack([centers - 1.25, centers + 1.25])
-    for v, wanted in [(lon, centers), (bounds, edges)]:
-        if not np.allclose(_numeric(v), wanted, rtol=0, atol=1.0e-10):
-            raise ValueError(
-                "Coordinates differ from the reviewed regular g111 grid by more than 1e-10 degree"
-            )
+            raise ValueError("Longitude precision correction requires unpacked floating-point coordinates")
+
+    values = _numeric(lon)
+    old_bounds = _numeric(bounds)
+    tolerance = 1e-8
+    step = 360.0 / nlon
+
+    # Most CM7 regular cells tile [0, 360], with centers halfway between edges.
+    # Compute one edge vector so neighboring cells share bitwise equal endpoints.
+    interfaces = np.linspace(0.0, 360.0, nlon + 1)
+    centers = (interfaces[:-1] + interfaces[1:]) / 2
+    if grid == "g111" and np.allclose(values, np.arange(nlon) * step, rtol=0, atol=1e-10):
+        # The established CM6 convention places the first center at zero. Keep
+        # its half-cell offset instead of silently moving that geographic grid.
+        interfaces = np.linspace(-step / 2, 360.0 - step / 2, nlon + 1)
+        centers = (interfaces[:-1] + interfaces[1:]) / 2
+        tolerance = 1e-10
+    edges = np.column_stack((interfaces[:-1], interfaces[1:]))
+    if not np.allclose(values, centers, rtol=0, atol=tolerance):
+        raise ValueError("Longitude centers differ from the reviewed regular global geometry")
+    if not np.allclose(old_bounds, edges, rtol=0, atol=tolerance):
+        raise ValueError(f"Longitude bounds differ by more than the rounding tolerance {tolerance:g} degree")
+
+    # C059 historically rounded the CM6 centers too. For CM7, the user approved
+    # a bounds-only correction: retain every stored longitude center verbatim.
+    if grid == "g245":
+        centers = values
     return lon, bounds, centers, edges
 
 
 def _verify_longitude(source, output):
     with netCDF4.Dataset(source) as src, netCDF4.Dataset(output) as dst:
-        _longitude(src)
-        lon, bounds, centers, edges = _longitude(dst)
-        for v, wanted in [(lon, centers), (bounds, edges)]:
-            if not np.array_equal(_numeric(v), wanted):
-                raise ValueError(
-                    "Normalized longitude values did not survive the other fixes"
-                )
+        _, _, expected_centers, _ = _longitude(src)
+        lon, bounds, _, edges = _longitude(dst)
+        for variable, wanted in ((lon, expected_centers), (bounds, edges)):
+            if not np.array_equal(_numeric(variable), wanted):
+                raise ValueError("Normalized longitude values did not survive the other fixes")
 
 
 @fix(
     "normalize_regular_longitude",
     verify_data=True,
-    data_targets=lambda p: {"lon", "bounds_lon", "lon_bnds"},
+    data_targets=lambda p: {"lon", "longitude", "bounds_lon", "lon_bnds"},
     verify_final=_verify_longitude,
 )
 def normalize_regular_longitude(ds) -> bool:
-    # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
+    """Correct tiny regular-grid rounding errors without moving scientific data."""
     lon, bounds, centers, edges = _longitude(ds)
-
-    # 2. Correct only the reviewed tiny rounding differences, including stored bounds.
     changed = False
-    for v, wanted in [(lon, centers), (bounds, edges)]:
-        if not np.array_equal(_numeric(v), wanted):
-            v[...] = wanted
+    for variable, wanted in ((lon, centers), (bounds, edges)):
+        if not np.array_equal(_numeric(variable), wanted):
+            variable[...] = wanted
             changed = True
     return changed
 
@@ -613,6 +630,26 @@ def rename_bounds_variable(ds, coordinate: str, source: str, target: str) -> boo
         "plev": "plev_bnds",
         "lev": "lev_bnds",
     }
+    from .horizontal import icosahedral_grid
+
+    ico = icosahedral_grid(ds) if coordinate in {"lat", "lon", "latitude", "longitude"} else False
+    if ico:
+        # Polygon vertices are not the two endpoints of a rectilinear axis.
+        for short, role in (("lat", "latitude"), ("lon", "longitude")):
+            for name in (short, role):
+                allowed[name] = {"bounds_" + short, short + "_bounds"}
+                targets[name] = "vertices_" + role
+    # A previously renamed geographic auxiliary can still describe a regular
+    # axis. Keep its two-endpoint bounds separate from polygon vertices.
+    regular_aliases = {}
+    if not ico:
+        for short, role in (("lat", "latitude"), ("lon", "longitude")):
+            if coordinate in (short, role) and target == short + "_bnds":
+                names = [n for n in (short, role) if n in ds.variables]
+                if len(names) == 1 and ds[names[0]].dimensions == (short,):
+                    allowed[coordinate] = {"bounds_" + short, short + "_bounds"}
+                    targets[coordinate] = target
+                    regular_aliases[coordinate] = (short, role)
     if (
         source not in allowed.get(coordinate, set())
         or targets.get(coordinate) != target
@@ -625,6 +662,10 @@ def rename_bounds_variable(ds, coordinate: str, source: str, target: str) -> boo
         "nav_lon": ("nav_lon", "longitude"),
         "longitude": ("nav_lon", "longitude"),
     }
+    if ico:
+        for short, role in (("lat", "latitude"), ("lon", "longitude")):
+            aliases[short] = aliases[role] = (short, role)
+    aliases.update(regular_aliases)
     if coordinate in aliases:
         present = [n for n in aliases[coordinate] if n in ds.variables]
         if len(present) != 1:

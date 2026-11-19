@@ -83,6 +83,10 @@ from . import (
     hybrid,  # noqa: F401
     hybrid_centering,  # noqa: F401
     layouts,  # noqa: F401
+    latitude_order,  # noqa: F401
+    longitude_order,  # noqa: F401
+    nemo_coordinates,  # noqa: F401
+    nemo_vertices,  # noqa: F401
     qa_metadata,  # noqa: F401
     rectilinear,  # noqa: F401
     reviewed_structures,  # noqa: F401

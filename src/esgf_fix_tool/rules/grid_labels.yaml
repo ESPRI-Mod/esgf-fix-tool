@@ -81,3 +81,11 @@
   fix: set_reduced_grid_label
   params: {source: g112, horizontal: hm, region: glb, target: g010}
   note: User approved g010 for both zostoga files. The full spatial payload remains unchanged pending the C050 decision.
+
+- id: C120
+  check: \[CMIP7\] \[ATTR004\] Global attribute 'nominal_resolution' vocabulary check$
+  message: "'150 km' not found in collection 'nominal_resolution' for NetCDF attribute 'nominal_resolution'"
+  action: fix
+  fix: set_global_attr_if_matches
+  params: {attr: nominal_resolution, expected: '150 km', value: '100 km'}
+  note: User decision on 2026-11-19. Replace only nominal_resolution=150 km with 100 km as a direct global-attribute edit. Preserve other values, grid_label, filenames and all scientific arrays. No model or experiment restriction.
