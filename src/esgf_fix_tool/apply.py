@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import glob
 import json
 import os
+import re
 import sys
 import time
 import traceback
@@ -142,6 +144,63 @@ def check_under(plan: FixPlan, root: str | Path) -> None:
         )
 
 
+def parse_shard(text: str) -> tuple[int, int]:
+    """'k/K' -> (k, K), 1 <= k <= K."""
+    m = re.fullmatch(r"\s*(\d+)\s*/\s*(\d+)\s*", text or "")
+    if not m or not 1 <= int(m.group(1)) <= int(m.group(2)):
+        raise ValueError(f"--shard expects k/K with 1 <= k <= K, got {text!r}")
+    return int(m.group(1)), int(m.group(2))
+
+
+def shard_files(files, shard: tuple[int, int]) -> set[str]:
+    """Share k of K of the plan's files: every K-th file in path order, from the k-th.
+
+    Computed on the whole plan, never on what is left, so jobs started at different times
+    (or resumed) always get disjoint shares. Balanced by count: sizes change as files are fixed.
+    """
+    k, total = shard
+    return {path for i, path in enumerate(sorted(files)) if i % total == k - 1}
+
+
+def recorded_results(logs) -> tuple[set[str], set[str]]:
+    """Plan paths that earlier fixlogs record as done / failed; the latest record of a file wins.
+
+    Lines without a ``file`` and ``status`` (events journals, deduplication logs) and dry-run lines are
+    ignored, so a shell glob such as ``fixlog*.jsonl`` is fine.
+    """
+    latest = {}
+    for log in logs:
+        for line in Path(log).read_text().splitlines():
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            if (not isinstance(record, dict) or "file" not in record or record.get("dry_run")
+                    or record.get("status") not in ("done", "failed")):
+                continue
+            key = (record.get("time") or "", record["status"] == "done")
+            if record["file"] not in latest or key >= latest[record["file"]][0]:
+                latest[record["file"]] = (key, record["status"])
+    done = {f for f, (_, status) in latest.items() if status == "done"}
+    return done, set(latest) - done
+
+
+def remove_leftovers(paths, dry_run: bool = False) -> list[str]:
+    """Temporary files of interrupted writes of these files (``.<name>.*.fixtmp`` / ``.linkbreak``).
+
+    A killed rewrite never replaced its file, so the original is intact and the temporary file is
+    debris. Only the files this run is about to fix are looked at: no other run writes them.
+    """
+    found = []
+    for path in map(Path, paths):
+        for leftover in path.parent.glob(f".{glob.escape(path.name)}.*"):
+            if leftover.suffix in (".fixtmp", ".linkbreak") and leftover.is_file():
+                found.append(str(leftover))
+                if not dry_run:
+                    leftover.unlink()
+    return found
+
+
 def apply_plan(
     plan: FixPlan,
     fixlog: str | Path,
@@ -153,6 +212,9 @@ def apply_plan(
     continue_on_error: bool = False,
     break_hardlinks: bool = False,
     workers: int = 1,
+    resume: list[str | Path] | None = None,
+    skip_failed: bool = False,
+    shard: tuple[int, int] | None = None,
 ) -> dict[str, int]:
     """Apply every file of the plan. ``progress(done, total, path, changed, elapsed_s)`` is called after each file;
     each fixlog line is flushed at once, so the log can be followed while a long run goes on.
@@ -160,6 +222,11 @@ def apply_plan(
     The Python API stays fail-fast unless continue_on_error is requested. In that
     mode ordinary per-file exceptions are recorded and printed, while cancellation
     and global plan validation still abort. A failed progress callback uses changed=None.
+
+    ``shard=(k, K)`` keeps share k of K of the plan's files (several jobs, one plan); the automatic ATM/SRF
+    deduplication is then skipped, since shards run concurrently. ``resume`` lists fixlogs of earlier runs of
+    this plan: the files they record as done are skipped, failed ones retried unless ``skip_failed``.
+    Leftover temporary files of interrupted rewrites of the remaining files are removed first.
     """
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise ValueError("workers must be a positive integer")
@@ -167,13 +234,40 @@ def apply_plan(
         check_under(plan, only_under)
     from .deduplicate import apply_root, completed_discard, deduplicate
 
+    active_files = dict(plan.files)
+    selection = {}
+    if shard is not None:
+        if shard[1] > 1:
+            # Shards never coordinate: refuse a plan whose entries share a file or a target, as --workers does.
+            whole = {}
+            for path, steps in plan.files.items():
+                try:
+                    whole[path] = _rename_request(path, steps)
+                except Exception:  # noqa: BLE001, S112 - reported by the shard that owns the file
+                    continue
+            from .parallel import check_independent
+
+            check_independent(whole)
+        mine = shard_files(plan.files, shard)
+        active_files = {p: s for p, s in active_files.items() if p in mine}
+        selection["shard"] = f"{shard[0]}/{shard[1]}"
+    if resume:
+        done, failed = recorded_results(resume)
+        selection["skipped_done"] = len(active_files.keys() & done)
+        if skip_failed:
+            selection["skipped_failed"] = len(active_files.keys() & failed)
+        skip = done | failed if skip_failed else done
+        active_files = {p: s for p, s in active_files.items() if p not in skip}
+    leftovers = remove_leftovers(active_files, dry_run)
+    if leftovers:
+        selection["leftovers_found" if dry_run else "leftovers_removed"] = len(leftovers)
+
     # Resolve the simulation boundary before modifying any planned file. The
     # deduplication itself runs after the workers have closed all NetCDF handles.
-    deduplicate_root = apply_root(plan, only_under)
-    active_files = dict(plan.files)
+    deduplicate_root = None if shard is not None else apply_root(plan, only_under)
     removed_duplicates = {}
     if deduplicate_root is not None:
-        for path in plan.files:
+        for path in list(active_files):
             keep = completed_discard(deduplicate_root, path)
             if keep is not None:
                 removed_duplicates[path] = str(keep)
@@ -218,7 +312,7 @@ def apply_plan(
                 continue
             if target is not None:
                 drs_targets[path] = str(target)
-    stats = {"files": 0, "changed": 0, "unchanged": 0}
+    stats = {"files": 0, "changed": 0, "unchanged": 0, **selection}
     if continue_on_error:
         stats["failed"] = 0
     total, start = len(active_files), time.monotonic()
@@ -284,6 +378,7 @@ def apply_plan(
                     "rules_version": plan.rules_version,
                     "rules_digest": plan.rules_digest,
                     "etb_run_id": etb_run_id,
+                    **({"shard": selection["shard"]} if shard is not None else {}),
                     "dry_run": dry_run,
                     "status": "failed",
                     "error": {
@@ -328,6 +423,7 @@ def apply_plan(
                 "rules_version": plan.rules_version,
                 "rules_digest": plan.rules_digest,
                 "etb_run_id": etb_run_id,
+                **({"shard": selection["shard"]} if shard is not None else {}),
                 "dry_run": dry_run,
                 "status": "done",
                 "steps": entries,
