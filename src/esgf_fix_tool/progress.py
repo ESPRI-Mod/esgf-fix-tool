@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 
 TITLES = {
+    'inject_nemo_vertices': 'Ajout des vertices NEMO U/V/T existants',
+    'inject_nemo_u_coordinates': 'Ajout des coordonnées NEMO U/V/T de référence',
+    "rotate_reviewed_longitude": "Rotation des longitudes de -180–180 vers 0–360 degrés",
+    'set_global_attr_if_matches': 'Correction conditionnelle d’un attribut global',
     'drop_variable_histories': 'Suppression de history sur toutes les variables, auxiliaires compris',
     'reorder_climatology_cell_methods': 'Ordre de cell_methods prescrit par la DR',
     'drop_basin_latitude_bounds': 'Bornes latitude conventionnelles (ancien plan)',
@@ -27,6 +31,8 @@ TITLES = {
     'normalize_text_padding': 'Normalisation du remplissage des chaînes',
     'fix_registry_comment': 'Retrait des échappements Markdown du commentaire',
     'drop_unused_horizontal_bounds': 'Retrait des bornes de coordonnée inutilisée',
+    'promote_coordinate_to_double': 'Conversion de coordonnée en double',
+    'rename_category_dimension': 'Renommage de la dimension catégorielle',
     'drop_var_attr': "Suppression d'un attribut de variable",
     'rename_var_attr': "Renommage d'un attribut de variable",
     'set_var_attr': "Correction d'un attribut de variable",
@@ -51,7 +57,7 @@ TITLES = {
     'set_reviewed_time_long_name': 'Libellé du temps selon la DR',
     'set_reviewed_coordinate_long_name': 'Libellé de la coordonnée selon la DR',
     'rename_scalar_strlen': 'Renommage de la dimension des chaînes',
-    'rename_ocean_vertices_dimension': 'Renommage de la dimension des sommets océaniques',
+    'rename_ocean_vertices_dimension': 'Renommage de la dimension des sommets',
     'set_reduced_grid_label': 'Identifiant de grille de la sortie réduite',
     'fix_iceband': 'Classes et bornes d’épaisseur de la glace',
     'fix_climatology_reference': 'Référence aux bornes climatologiques',

@@ -65,3 +65,15 @@
   fix: fix_invalid_standard_names
   params: {"expected": ["scatratio"], "replacement": "backscattering_ratio", "units": "1", "var": "scatratio"}
   note: "Same reviewed coordinate metadata as the corresponding CF diagnostic; no data change."
+
+- id: C117
+  check: \[CMIP7\] \[COORD(?:001|008|011)\] (?:Coordinate identity and structure|Coordinate
+    bounds|Horizontal grid coordinates)$
+  message: '''(?P<var>lev|depth|lat|lon|lat_bnds|lon_bnds)'' has storage type ''real'';
+    the required storage type is ''double''\.$'
+  action: fix
+  fix: promote_coordinate_to_double
+  params:
+    var: '{var}'
+  note: Lossless float32 to float64 promotion of coordinate arrays only. One grouped
+    rewrite; preserve science values, masks and filters.

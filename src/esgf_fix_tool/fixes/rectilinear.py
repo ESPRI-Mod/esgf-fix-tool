@@ -1,4 +1,4 @@
-"""Reviewed basin profiles: squeeze x=1, expose lat(lat), correct only the approved endpoint."""
+"""Reviewed basin profiles: squeeze x=1, retain the approved 331/332-point lat coordinate."""
 
 import os
 import tempfile
@@ -34,6 +34,8 @@ def _profile(ds, var):
             "Rectilinear conversion is restricted to the eight reviewed basin profiles"
         )
     main = _main_variable(ds, var)
+    if any(n in ds.dimensions and len(ds.dimensions[n]) == 331 for n in ("y", "lat", "rlat")):
+        return _profile_331(ds, var)
     if main.dimensions == ("time", "basin", "y", "x"):
         if len(ds.dimensions["x"]) != 1 or len(ds.dimensions["y"]) != ROWS:
             raise ValueError(
@@ -108,6 +110,128 @@ def _profile(ds, var):
             "Approved endpoint did not produce a strictly increasing latitude"
         )
     return name, values
+
+
+
+def _profile_331(ds, var):
+    """Validate all retained rows and only restore a verified empty southern prefix."""
+    from .msfty_latitude import reference_331, restore_empty_prefix
+    from .reviewed_structures import finite
+
+    main = _main_variable(ds, var)
+    axes = [n for n in ("y", "lat", "rlat") if n in main.dimensions]
+    if len(axes) != 1 or len(ds.dimensions[axes[0]]) != 331:
+        raise ValueError("Expected exactly 331 meridional rows")
+    dimension = axes[0]
+    expected = ("time", "basin", dimension)
+    if main.dimensions not in (expected, expected + ("x",)) or len(ds.dimensions["basin"]) != 3:
+        raise ValueError("Expected time,basin,meridional-row with an optional trailing singleton x")
+    if "x" in ds.dimensions and len(ds.dimensions["x"]) != 1:
+        raise ValueError("Cannot remove non-singleton x from a basin profile")
+    names = [n for n in ("nav_lat", "latitude", "lat", "rlat") if n in ds.variables]
+    if len(names) != 1:
+        raise ValueError("Missing or ambiguous profile latitude")
+    name = names[0]
+    coordinate = ds[name]
+    if (coordinate.dimensions not in ((dimension,), (dimension, "x"))
+            or coordinate.size != 331 or coordinate.dtype != np.dtype("f8")
+            or (getattr(coordinate, "standard_name", ""), getattr(coordinate, "units", ""))
+            not in (("latitude", "degrees_north"), ("grid_latitude", "degrees"))
+            or any(a in coordinate.ncattrs() for a in ("scale_factor", "add_offset"))):
+        raise ValueError("Expected an unpacked double latitude or grid_latitude coordinate")
+    if dimension != "lat" and "lat" in ds.dimensions:
+        raise ValueError("Existing lat dimension would collide with the source row axis")
+    values = finite(coordinate).reshape(-1)
+    restored = restore_empty_prefix(ds, values, var)
+    wanted = values if restored is None else restored
+    if not np.array_equal(wanted, reference_331()):
+        raise ValueError("The 331-point basin profile differs from the supplied T-column 97 reference")
+
+    # Retain zero-longitude auxiliaries as unreferenced arrays, as in the old
+    # C070 recipe. Never erase a different longitude or an unknown spatial field.
+    spatial = {n for n, v in ds.variables.items() if {dimension, "x"}.intersection(v.dimensions)}
+    allowed = {var, name, "nav_lon", "longitude", "lat_bnds", "rlat_bnds"}
+    if spatial - allowed:
+        raise ValueError("Additional profile spatial arrays require an explicit review")
+    for longitude in ("nav_lon", "longitude"):
+        if longitude in ds.variables:
+            v = ds[longitude]
+            if v.dimensions not in ((dimension,), (dimension, "x")) or not np.all(finite(v) == 0):
+                raise ValueError("Only an all-zero profile longitude may be detached")
+    ref = getattr(coordinate, "bounds", "")
+    if ref not in ("", "lat_bnds", "rlat_bnds"):
+        raise ValueError("Unexpected profile latitude bounds reference")
+    if ref:
+        if ref not in ds.variables or ds[ref].dimensions[0] != dimension or ds[ref].shape != (331, 2):
+            raise ValueError("Unexpected profile latitude bounds geometry")
+        finite(ds[ref])
+    return name, wanted
+
+
+def _prepare_profile_331(ds, var):
+    """Prepare names, CF attributes and conventional bounds; defer the science squeeze."""
+    from .auxiliary import replace_auxiliary
+    from .basin_latitude_bounds import add_basin_latitude_bounds
+    from .reviewed_structures import finite, set_attrs
+
+    name, wanted = _profile(ds, var)
+    dimension = next(n for n in ("y", "lat", "rlat") if n in ds[var].dimensions)
+    changed = False
+    if name != "lat":
+        ds.renameVariable(name, "lat")
+        _replace_references(ds, name, "lat")
+        changed = True
+    if dimension != "lat":
+        ds.renameDimension(dimension, "lat")
+        changed = True
+    coordinate = ds["lat"]
+    if coordinate.dimensions != ("lat",):
+        coordinate = replace_auxiliary(ds, "lat", ("lat",), wanted, dtype="f8")
+        changed = True
+    elif not np.array_equal(finite(coordinate), wanted):
+        coordinate[:] = wanted
+        changed = True
+    changed = set_attrs(coordinate, dict(
+        standard_name="latitude", units="degrees_north", axis="Y", long_name="Latitude"
+    )) or changed
+    if "name" in coordinate.ncattrs():
+        changed = set_attrs(coordinate, {"name": "lat"}) or changed
+    if "rlat_bnds" in ds.variables:
+        if "lat_bnds" in ds.variables:
+            raise ValueError("Ambiguous latitude bounds: both lat_bnds and rlat_bnds exist")
+        ds.renameVariable("rlat_bnds", "lat_bnds")
+        _replace_references(ds, "rlat_bnds", "lat_bnds")
+        changed = True
+
+    # Mark only x=1 for the shared writer. All other dimensions, including basin,
+    # retain their identities, lengths and raw values. Nothing is averaged.
+    if "x" in ds.dimensions:
+        pending = getattr(ds, "_pending_shared_singletons", set()) | {"x"}
+        object.__setattr__(ds, "_pending_shared_singletons", pending)
+        changed = True
+    for variable in ds.variables.values():
+        text = getattr(variable, "coordinates", "")
+        if isinstance(text, str):
+            kept = " ".join(n for n in text.split() if n not in ("nav_lon", "longitude"))
+            if kept != text:
+                variable.setncattr("coordinates", kept)
+                changed = True
+    return add_basin_latitude_bounds(ds) or changed
+
+
+def verify_profile_output(output, var):
+    """Verify the product-specific final axis, including 331-point conventional bounds."""
+    with netCDF4.Dataset(output) as ds:
+        _, values = _profile(ds, var)
+        if values.size == 331:
+            from .basin_latitude_bounds import _verify
+
+            if (ds[var].dimensions != ("time", "basin", "lat")
+                    or ds["lat"].dimensions != ("lat",) or "x" in ds.dimensions
+                    or "y" in ds.dimensions or "rlat" in ds.dimensions
+                    or ds["lat"].axis != "Y" or ds["lat"].long_name != "Latitude"):
+                raise ValueError("The 331-point profile did not retain its approved lat structure")
+            _verify(None, output)
 
 
 def _dimensions(dimensions):
@@ -306,15 +430,19 @@ def _profile_is_correct(ds, var):
     verify_data=True,
     after_close=_finish_profile,
     verify_final=_verify_arrays,
-    data_targets=lambda p: {p["var"], "nav_lat", "lat", "nav_lon", "longitude"},
+    data_targets=lambda p: {p["var"], "nav_lat", "latitude", "lat", "rlat", "rlat_bnds", "lat_bnds", "nav_lon", "longitude"},
 )
 def fix_basin_profile_latitude(ds, var) -> bool:
-    """Preserve all 332 rows and raw field values; only the final latitude value may change.
+    """Keep every science row/value on either approved native profile.
 
-    nav_lon is retained as an unreferenced auxiliary, with its singleton x squeezed.
-    No latitude bounds, regridding, grid_label or global metadata are invented.
+    The 331-point variant prepares lat and conventional bounds, including
+    files previously renamed to rlat by an older plan. The legacy
+    332-point variant keeps lat and its reviewed terminal-value correction.
+    Only the singleton x is squeezed; basin, times and data remain intact.
     """
-    # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
-
-    # 2. Preflight only; the after-close hook rewrites and verifies the exact squeeze.
+    # Reuse this recipe for the approved 331-point grid. The old 332-point
+    # convention remains unchanged; these two native profiles are not interchangeable.
+    _, values = _profile(ds, var)
+    if values.size == 331:
+        return _prepare_profile_331(ds, var)
     return not _profile_is_correct(ds, var)

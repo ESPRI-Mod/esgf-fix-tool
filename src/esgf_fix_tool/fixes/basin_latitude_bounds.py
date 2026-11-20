@@ -41,22 +41,26 @@ def canonical_latitude():
 def conventional_bounds(values):
     """Midpoints and half-step extrapolation, with an explicit northern rule.
 
-    The nearly duplicated last center must not define the outer half-step.
-    Use the preceding, non-degenerate spacing instead. Do not force pole limits.
+    For the legacy 332-point axis, its nearly duplicated last center must not
+    define the outer half-step: use the preceding spacing. The 331-point axis
+    uses its actual adjacent steps at both ends. Do not force pole limits.
     These are conventional 1-D bands, not native NEMO transport sections.
     """
     values = np.asarray(values, dtype="f8")
     if (
-        values.shape != (332,)
+        values.shape not in ((331,), (332,))
         or not np.isfinite(values).all()
         or not np.all(np.diff(values) > 0)
         or np.any(np.abs(values) > 90)
     ):
-        raise ValueError("Conventional bounds require 332 increasing latitudes")
-    edges = np.empty(333, dtype="f8")
+        raise ValueError("Conventional bounds require 331 or 332 increasing latitudes")
+    edges = np.empty(values.size + 1, dtype="f8")
     edges[1:-1] = 0.5 * values[:-1] + 0.5 * values[1:]
     edges[0] = values[0] - 0.5 * (values[1] - values[0])
-    edges[-1] = values[-1] + 0.5 * (values[-2] - values[-3])
+    # The 331-point profile has no duplicated terminal center. Use its actual
+    # last half-step; retain the separately approved legacy 332-point rule.
+    north_step = values[-1] - values[-2] if values.size == 331 else values[-2] - values[-3]
+    edges[-1] = values[-1] + 0.5 * north_step
     pairs = np.column_stack((edges[:-1], edges[1:]))
     if (
         not np.all(np.diff(edges) > 0)
@@ -71,9 +75,19 @@ def conventional_bounds(values):
 def _inspect(ds):
     name = getattr(ds, "variable_id", "")
     msfty = name == "msfty"
+    # Basin transports use true latitude at both native sizes. Only msfty
+    # uses the grid_latitude rlat representation.
+    grid_latitude = msfty
     coordinate = "rlat" if msfty else "lat"
     main = ds.variables.get(name)
     lat = ds.variables.get(coordinate)
+    profile331 = lat is not None and lat.size == 331
+    pending_x = "x" in getattr(ds, "_pending_shared_singletons", set())
+    main_dims = (("time", "basin", "lev", "rlat"),) if msfty else (("time", "basin", coordinate),)
+    lat_dims = ((coordinate,),)
+    if profile331 and pending_x and len(ds.dimensions["x"]) == 1:
+        main_dims += tuple(dims + ("x",) for dims in main_dims)
+        lat_dims += ((coordinate, "x"),)
     if (
         name not in BASIN_PRODUCTS
         or getattr(ds, "branded_variable", "")
@@ -81,32 +95,41 @@ def _inspect(ds):
         or getattr(ds, "grid_label", "") != "g112"
         or getattr(ds, "horizontal_label", "") != ("ht" if msfty else "hyb")
         or main is None
-        or main.dimensions != (
-            ("time", "basin", "lev", "rlat") if msfty else ("time", "basin", "lat")
-        )
+        or main.dimensions not in main_dims
         or lat is None
-        or lat.dimensions != (coordinate,)
-        or lat.shape != (332,)
+        or lat.dimensions not in lat_dims
+        or (not profile331 and lat.shape != (332,))
+        or (profile331 and msfty and main.shape[1:3] != (3, 75))
+        or (profile331 and not msfty and main.shape[1] != 3)
         or lat.dtype != np.dtype("f8")
-        or getattr(lat, "standard_name", "") != ("grid_latitude" if msfty else "latitude")
-        or getattr(lat, "units", "") != ("degrees" if msfty else "degrees_north")
-        or "sector" not in ds.variables
-        or ds["sector"].dimensions != ("basin", "strlen")
-        or ds["sector"].shape != (3, 21)
+        or getattr(lat, "standard_name", "") != ("grid_latitude" if grid_latitude else "latitude")
+        or getattr(lat, "units", "") != ("degrees" if grid_latitude else "degrees_north")
+        or (not profile331 and (
+            "sector" not in ds.variables
+            or ds["sector"].dimensions != ("basin", "strlen")
+            or ds["sector"].shape != (3, 21)
+        ))
         or any(a in lat.ncattrs() for a in ("scale_factor", "add_offset"))
     ):
         raise ValueError(
             "Conventional bounds are approved only for the eight reviewed basin profiles and msfty"
         )
 
-    # Check all positions. Only the known terminal duplicate, its former
-    # one-ULP repair, or 89.36999 may differ from the supplied reference.
-    actual = finite(lat)
-    wanted = canonical_latitude()
-    native = reference()[0]
-    endings = (native[-1], np.nextafter(native[-1], np.inf), NEW_END)
-    if not np.array_equal(actual[:-1], wanted[:-1]) or actual[-1] not in endings:
-        raise ValueError("Latitude profile does not match the supplied T-column 97 reference")
+    # Check every position against the separate reference for this grid size.
+    # Only the legacy 332-point profile permits its approved terminal variants.
+    actual = finite(lat).reshape(-1)
+    if profile331:
+        from .msfty_latitude import reference_331
+
+        wanted = reference_331()
+        if not np.array_equal(actual, wanted):
+            raise ValueError("331-point NEMO profile must match its supplied T-column 97 reference before adding bounds")
+    else:
+        wanted = canonical_latitude()
+        native = reference()[0]
+        endings = (native[-1], np.nextafter(native[-1], np.inf), NEW_END)
+        if not np.array_equal(actual[:-1], wanted[:-1]) or actual[-1] not in endings:
+            raise ValueError("Latitude profile does not match the supplied T-column 97 reference")
     target = coordinate + "_bnds"
     if getattr(lat, "bounds", "") not in ("", target):
         raise ValueError("Unexpected bounds reference on the reviewed latitude profile")
@@ -117,7 +140,7 @@ def _inspect(ds):
     if target in ds.variables:
         v = ds[target]
         if (
-            v.shape != (332, 2)
+            v.shape != (wanted.size, 2)
             or v.dimensions[0] != coordinate
             or any(a in v.ncattrs() for a in ("scale_factor", "add_offset"))
         ):
@@ -182,8 +205,8 @@ def add_basin_latitude_bounds(ds):
 
     # Harmonize only the terminal value. Keep lat/rlat identifiers and all
     # coordinate attributes, including grid_latitude/degrees for msfty.
-    if not np.array_equal(finite(lat), wanted):
-        lat[:] = wanted
+    if not np.array_equal(finite(lat).reshape(-1), wanted):
+        lat[:] = wanted.reshape(lat.shape)
         changed = True
     if "bnds" not in ds.dimensions:
         ds.createDimension("bnds", 2)
@@ -200,14 +223,22 @@ def add_basin_latitude_bounds(ds):
         v[:] = pairs
         changed = True
     changed = set_attrs(lat, {"bounds": target}) or changed
-    changed = set_attrs(v, {"comment": CONVENTION}) or changed
+    comment = CONVENTION
+    if wanted.size == 331:
+        label = "grid-latitude" if name == "rlat" else "latitude"
+        comment = (
+            f"Conventional 1-D {label} bounds from adjacent coordinate midpoints. "
+            "Both outer limits use the adjacent half-step without forcing pole values. "
+            "These are not native NEMO transport-section boundaries."
+        )
+    changed = set_attrs(v, {"comment": comment}) or changed
     # Bounds inherit these properties from their coordinate; avoid duplicate
     # units/standard_name/axis warnings on the rebuilt boundary variable.
     for attr in ("units", "standard_name", "axis", "positive"):
         if attr in v.ncattrs():
             v.delncattr(attr)
             changed = True
-    if name == "lat":
+    if name == "lat" and wanted.size == 332:
         return _clean_aliases(ds) or changed
     return changed
 

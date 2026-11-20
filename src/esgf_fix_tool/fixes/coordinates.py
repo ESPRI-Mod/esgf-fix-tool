@@ -297,6 +297,8 @@ def add_text_coordinate_alias(ds, source: str, target: str = "sector") -> bool:
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     if target in ds.variables:
         return False
+    if source not in ds.variables and source == "line" and "section_ice" in ds.variables:
+        source = "section_ice"
     if source not in ds.variables:
         raise ValueError(f"Text source coordinate {source} is absent")
     v = ds.variables[source]
@@ -390,3 +392,58 @@ def fix_ocean_vertical_metadata(ds):
         ds[bound].delncattr("units")
         changed = True
     return changed
+
+
+@fix("promote_coordinate_to_double", verify_data=True)
+def promote_coordinate_to_double(ds, var):
+    """Widen an explicitly requested coordinate/bounds array, never science data."""
+    from .auxiliary import replace_auxiliary
+
+    aliases = {
+        "lat": ("lat", "latitude"), "lon": ("lon", "longitude"),
+        "lat_bnds": ("lat_bnds", "bounds_lat", "vertices_latitude"),
+        "lon_bnds": ("lon_bnds", "bounds_lon", "vertices_longitude"),
+        "depth": ("depth",),
+        "lev": ("lev", "presinter", "presniv"),
+    }
+    if var not in aliases:
+        raise ValueError("Unreviewed coordinate precision conversion")
+    names = [n for n in aliases[var] if n in ds.variables]
+    if len(names) != 1:
+        raise ValueError("Missing or ambiguous coordinate for double conversion")
+    v = ds[names[0]]
+    if v.dtype == np.dtype("f8"):
+        return False
+    if v.dtype != np.dtype("f4") or any(a in v.ncattrs() for a in ("scale_factor", "add_offset", "_Unsigned")):
+        raise ValueError("Only unpacked real coordinates may be widened to double")
+    if v.name == getattr(ds, "variable_id", "") or any(d == "time" for d in v.dimensions):
+        raise ValueError("Refusing a scientific-field precision conversion")
+    v.set_auto_maskandscale(False)
+    values = np.asarray(v[:], dtype="f8")
+    out = replace_auxiliary(ds, v.name, v.dimensions, values, dtype="f8")
+    if "missing_value" in out.ncattrs():
+        out.setncattr("missing_value", np.asarray(out.missing_value, dtype="f8"))
+    return True
+
+
+@fix("rename_category_dimension")
+def rename_category_dimension(ds, source, target):
+    """Rename an index shared by data and text labels without changing ordering."""
+    approved = {("vegtype", "type"): ("landCoverFrac", None),
+                ("section_ice", "line"): (None, 4)}
+    if (source, target) not in approved:
+        raise ValueError("Unreviewed category dimension rename")
+    variable, size = approved[(source, target)]
+    main = _main_variable(ds, getattr(ds, "variable_id", ""))
+    if variable and main.name != variable:
+        raise ValueError("Unexpected vegetation product")
+    if source == "section_ice" and main.name not in {"siareaacrossline", "simassacrossline", "sisnmassacrossline"}:
+        raise ValueError("Unexpected ice passage product")
+    if source not in ds.dimensions and target in main.dimensions:
+        return False
+    if source not in main.dimensions or target in ds.dimensions:
+        raise ValueError("Missing source index or target/category variable collision")
+    if size is not None and len(ds.dimensions[source]) != size:
+        raise ValueError("Expected the four approved ice passages")
+    ds.renameDimension(source, target)
+    return True

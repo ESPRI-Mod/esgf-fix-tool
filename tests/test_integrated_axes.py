@@ -245,7 +245,7 @@ def test_longitude_overlap_matches_both_original_and_renamed_bounds():
             3,
             "[CMIP7] [COORD008] Coordinate bounds",
             f"Adjacent cells in '{name}' have overlapping bounds.",
-            "CMIP7.ATM.ta",
+            "CMIP7.ATM.ta.tavg-al-hxy-u.mon.glb.g111.AnyModel.historical.r1i1p1f1",
             "file.nc",
         )
         match = rules.match(finding)
