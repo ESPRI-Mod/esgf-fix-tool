@@ -10,7 +10,8 @@ import netCDF4
 import numpy as np
 
 from . import fix
-from .nemo_coordinates import ALIASES, _scope, reference as center_reference
+from .nemo_coordinates import ALIASES, _scope
+from .nemo_coordinates import reference as center_reference
 
 SHAPE = (331, 360)
 DONORS = {'U': ('hfx', 'g168'), 'V': ('hfy', 'g169'), 'T': ('areacello', 'g112')}
@@ -123,9 +124,8 @@ def extract_reference(sources, output):
     # Gzip keeps the exact JSON doubles portable without shipping the donor matrices.
     # Exclusive creation protects an existing reference from accidental overwrite.
     encoded = json.dumps(document, allow_nan=False, separators=(',', ':')).encode('utf-8')
-    with output.open('xb') as raw:
-        with gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as stream:
-            stream.write(encoded)
+    with output.open('xb') as raw, gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=0) as stream:
+        stream.write(encoded)
     return output
 
 

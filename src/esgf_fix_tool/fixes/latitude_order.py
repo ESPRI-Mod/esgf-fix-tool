@@ -61,7 +61,7 @@ def _geometry(ds):
 
 def _verify(source, output):
     with netCDF4.Dataset(source) as src, netCDF4.Dataset(output) as dst:
-        name, bound, reverse, raw, ordered = _geometry(src)
+        name, bound, reverse, _raw, ordered = _geometry(src)
         output_name, output_bound, still_reversed, _, _ = _geometry(dst)
         if still_reversed or name != output_name or bound != output_bound:
             raise ValueError("Latitude ordering did not survive the grouped rewrite")

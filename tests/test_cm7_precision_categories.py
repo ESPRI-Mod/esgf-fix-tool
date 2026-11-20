@@ -1,13 +1,15 @@
 """CM7 real/double conversions and category-index variants preserve values."""
 import json
+
 import netCDF4
 import numpy as np
 import pytest
+
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.classify import classify
 from esgf_fix_tool.cli.catalogues import default_rule_paths
-from esgf_fix_tool.report import QAReport, Finding
+from esgf_fix_tool.plan import FixPlan, Step
+from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
 

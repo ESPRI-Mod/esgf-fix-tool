@@ -52,7 +52,7 @@ def make(path, var, fmt='NETCDF4', present=False, canonical=False):
 
 
 def plan(path, var):
-    grid, label, _ = SPECS[var]
+    _grid, label, _ = SPECS[var]
     dataset=f'CMIP7.OCE.{var}.tavg-u-hxy-sea.mon.glb.{label}.AnyModel.any_experiment.r1i1p1f1'
     findings=[Finding(3, '[CMIP7] [COORD011] Horizontal grid coordinates',
                       "The required horizontal coordinate(s) are absent: ['longitude', 'latitude'].", dataset, str(path))]

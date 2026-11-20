@@ -15,8 +15,8 @@ from .fixes import (
     horizontal,
     hybrid,
     hybrid_centering,
-    layouts,
     latitude_order,
+    layouts,
     longitude_order,
     rectilinear,
 )

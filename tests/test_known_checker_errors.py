@@ -50,8 +50,8 @@ def test_a_checker_error_rule_never_matches_an_ordinary_finding(tmp_path, rules)
     ("[CMIP7] [FILE004c] Internal packing : Time bounds chunking ('time_bnds')",
      "Time bounds variable 'time_bnds' has 864 chunks (expected 1 chunk or contiguous). It is required to repack this variable"),
     ("[CMIP7] [FILE004d] Internal packing : Data variable chunking ('tas')",
-     "Data variable 'tas': uncompressed chunk size 82368 B (expected at least 4111936 B, or 1 chunk, or contiguous). "
-     "It is required to repack this variable"),
+     ("Data variable 'tas': uncompressed chunk size 82368 B (expected at least 4111936 B, or 1 chunk, or contiguous). "
+     "It is required to repack this variable")),
 ])
 def test_time_chunking_goes_to_the_repack_step(tmp_path, rules, check, message):
     (item,) = classify(QAReport.load(report(tmp_path, fail={"3": {check: {message: {"ds1": ["/sim/a.nc"]}}}})),

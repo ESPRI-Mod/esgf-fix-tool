@@ -333,22 +333,21 @@ def set_reviewed_coordinate_long_name(ds, coordinate, value):
     # Resolve either identifier so C086 composes with C071/C072 in both orders.
     roles = {"lat": "latitude", "latitude": "latitude",
              "lon": "longitude", "longitude": "longitude"}
-    if coordinate in roles:
-        if value == roles[coordinate]:
-            role = roles[coordinate]
-            if value != role:
-                raise ValueError(f"Unexpected icosahedral long_name for {coordinate}: {value!r}")
-            short = "lat" if role == "latitude" else "lon"
-            names = [n for n in (short, role) if n in ds.variables]
-            if len(names) != 1 or getattr(ds[names[0]], "standard_name", "") != role:
-                raise ValueError("Missing or ambiguous geographic coordinate for long_name")
-            name = names[0]
-            current = getattr(ds[name], "long_name", "")
-            if current == value:
-                return False
-            if current not in ("", role.title()):
-                raise ValueError(f"Unreviewed existing long_name on {name}: {current!r}")
-            return set_var_attr_if_matches(ds, name, "long_name", current, value)
+    if coordinate in roles and value == roles[coordinate]:
+        role = roles[coordinate]
+        if value != role:
+            raise ValueError(f"Unexpected icosahedral long_name for {coordinate}: {value!r}")
+        short = "lat" if role == "latitude" else "lon"
+        names = [n for n in (short, role) if n in ds.variables]
+        if len(names) != 1 or getattr(ds[names[0]], "standard_name", "") != role:
+            raise ValueError("Missing or ambiguous geographic coordinate for long_name")
+        name = names[0]
+        current = getattr(ds[name], "long_name", "")
+        if current == value:
+            return False
+        if current not in ("", role.title()):
+            raise ValueError(f"Unreviewed existing long_name on {name}: {current!r}")
+        return set_var_attr_if_matches(ds, name, "long_name", current, value)
     coordinate = {"latitude": "nav_lat", "longitude": "nav_lon"}.get(coordinate, coordinate)
     observed = COORDINATE_LONG_NAMES.get(coordinate)
     if observed is None or observed[1] != value:
@@ -421,7 +420,7 @@ def rename_ocean_vertices_dimension(ds):
         # The atmospheric mesh stores up to six vertices, including any existing
         # padding for pentagons. Rename the index only; never rebuild polygons.
         dimensions = {
-            ds[getattr(ds[n], "bounds")].dimensions[-1]
+            ds[ds[n].bounds].dimensions[-1]
             for n in ("lat", "latitude", "lon", "longitude") if n in ds.variables
         }
         if dimensions == {"vertices"}:

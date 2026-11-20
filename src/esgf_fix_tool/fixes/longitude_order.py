@@ -5,7 +5,6 @@ import numpy as np
 
 from . import fix
 
-
 PRODUCTS = ("areacellr", "rivi", "rivo")
 
 

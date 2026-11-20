@@ -17,7 +17,6 @@ from esgf_fix_tool.preview import Variable
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 CHECK = "[CMIP7] [ATTR004] Global attribute 'nominal_resolution' vocabulary check"
 MESSAGE = "'150 km' not found in collection 'nominal_resolution' for NetCDF attribute 'nominal_resolution'"
 

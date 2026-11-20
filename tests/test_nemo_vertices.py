@@ -13,13 +13,13 @@ from esgf_fix_tool.apply import apply_plan
 from esgf_fix_tool.batch_write import Batch
 from esgf_fix_tool.classify import classify
 from esgf_fix_tool.cli.catalogues import default_rule_paths
-from esgf_fix_tool.fixes.nemo_coordinates import PRODUCTS, reference as center_reference
-from esgf_fix_tool.fixes.nemo_vertices import NAMES, reference
+from esgf_fix_tool.fixes.nemo_coordinates import PRODUCTS
+from esgf_fix_tool.fixes.nemo_coordinates import reference as center_reference
+from esgf_fix_tool.fixes.nemo_vertices import reference
 from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.preview import Variable
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
-
 
 MESSAGE = "It is required for horizontal auxiliary coordinate '{name}' to have a bounds attribute naming its vertex variable; dependent vertex checks could not be evaluated."
 
@@ -53,7 +53,7 @@ def make(path,var,fmt='NETCDF4',canonical=True,present=False):
 
 
 def plan(path,var,canonical=True):
-    grid,label,_=PRODUCTS[var]
+    _grid,label,_=PRODUCTS[var]
     dataset=f'CMIP7.OCE.{var}.tavg-u-hxy-sea.mon.glb.{label}.AnotherModel.an_experiment.r1i1p1f1'
     names=('latitude','longitude') if canonical else ('nav_lat','nav_lon')
     findings=[Finding(3,'[CMIP7] [COORD011] Horizontal grid coordinates',MESSAGE.format(name=name),dataset,str(path)) for name in names]

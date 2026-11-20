@@ -108,7 +108,7 @@ def test_packed_msfty_missing_mask_and_raw_values_are_preserved(tmp_path):
 
 
 def test_existing_rlat_prefix_and_c103_compose_in_one_rewrite(tmp_path):
-    path=tmp_path/'msfty.nc';raw,filters,dtype=make(path,'NETCDF4')
+    path=tmp_path/'msfty.nc';raw,_filters,_dtype=make(path,'NETCDF4')
     with netCDF4.Dataset(path,'a') as ds:
         ds.renameVariable('nav_lat','rlat');ds.renameDimension('y','rlat')
         ds['msfty'].coordinates='rlat nav_lon'

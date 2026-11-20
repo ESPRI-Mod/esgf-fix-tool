@@ -313,8 +313,8 @@ def _verify_msfty_coordinates(source, output):
             )
 
         if lat.size == 331:
-            from .msfty_latitude import reference_331
             from .basin_latitude_bounds import _verify as verify_bounds
+            from .msfty_latitude import reference_331
 
             if np.array_equal(finite(lat), reference_331()):
                 verify_bounds(source, output)
@@ -417,8 +417,8 @@ def fix_msfty_coordinates(ds):
     # The new native profile has a separate approved midpoint convention.
     # Reuse the existing bounds recipe; never resize or reorder the field.
     if ds["rlat"].size == 331:
-        from .msfty_latitude import reference_331
         from .basin_latitude_bounds import add_basin_latitude_bounds
+        from .msfty_latitude import reference_331
 
         if np.array_equal(finite(ds["rlat"]).reshape(-1), reference_331()):
             changed = add_basin_latitude_bounds(ds) or changed

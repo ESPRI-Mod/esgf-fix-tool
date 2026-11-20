@@ -16,7 +16,6 @@ from esgf_fix_tool.preview import Variable
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 MESSAGE = "'lon' contains -179.75 below required valid_min=0.0. The comparison permits numerical tolerance=0.00035999999999999997."
 
 

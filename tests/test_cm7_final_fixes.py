@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from esgf_fix_tool.apply import apply_plan
-from esgf_fix_tool.batch_write import Batch
 from esgf_fix_tool.classify import classify
 from esgf_fix_tool.cli.catalogues import default_rule_paths
 from esgf_fix_tool.fixes.hybrid import _coefficient_reference

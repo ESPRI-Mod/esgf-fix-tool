@@ -2,8 +2,8 @@
 """Extract reviewed hfx/hfy/areacello vertices without copying scientific fields."""
 
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from esgf_fix_tool.fixes.nemo_vertices import extract_reference

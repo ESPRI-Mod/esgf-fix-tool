@@ -12,7 +12,6 @@ from esgf_fix_tool.plan import FixPlan, Step
 from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
-
 MAPPING = dict(lat="latitude", lon="longitude", bounds_lat="vertices_latitude", bounds_lon="vertices_longitude")
 
 
