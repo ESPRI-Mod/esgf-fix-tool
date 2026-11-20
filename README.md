@@ -130,6 +130,207 @@ or required to match the 79-center reference. The main field and `ps` retain
 their values and compression. Already 80-entry coefficients with different
 values, mixed 79/80 coefficient pairs, and unknown vertical references remain
 rejected. This does not change the separate handling of 79-level outputs.
+
+The bundled `hybrid_coefficients.json` also contains the user-supplied CM7
+95-center and 96-interface coefficient dumps, including both sets of explicit
+coefficient bounds and source-dump hashes. The donor `airmass` file's `lev=95`
+does not determine its reference family: its coefficients have 96 entries.
+
+The existing C074/C074a and C102 recipes select the reference from the target
+`lev` length. For CM7, a paired 95/96 coefficient-size mismatch is repaired from
+the corresponding supplied reference after validating the complete `lev` vector.
+Already correctly sized coefficients must agree with that reference; their binary
+values are preserved, allowing decimal dump rounding (`rtol=5e-14`,
+`atol=1e-14`) or the exact float32 rounding of the complete reference vector.
+Real-precision CM7 coordinates/coefficients are widened losslessly before their
+normalization; unrelated values still fail the reference checks. Mixed coefficient
+lengths and unrelated vertical grids are refused.
+
+For `al` with 95 levels, explicit coefficient bounds are aligned to `(lev,bnds)`;
+C102 computes `lev=ap/101325+b` and `lev_bnds=ap_bnds/101325+b_bnds`, validates
+containment and supplies the formula attributes. For `alh`, optional vertical
+bounds are removed when unreferenced, independently of the level count. A 96-level
+product labelled `al` remains rejected by ordinary normalization: the supplied
+96-entry coefficients describe interfaces. The existing edt/evu-specific C104/C103e
+recipe handles the approved exception, selecting 80-to-79 or 96-to-95 adjacent
+interface means from the supplied references. It propagates a missing value if
+either interface is missing, rebuilds the corresponding center coordinate and
+bounds, preserves science metadata and compression, and never averages a replay
+already on 79/95 centers.
+Coefficient binding/normalization preserve the main field and `ps`, including
+their masks and compression. The edt/evu-specific interpolation is the explicit
+scientific-data transformation described above. All structural changes for a file
+share one atomic rewrite; replaying a conforming file does not
+rewrite it.
+
+### Reviewed g131 latitude reversal and longitude rotation
+
+C118 selects only `areacellr` fixed fields and daily `rivi`/`rivo` on g131.
+It validates the complete 360-point half-degree axis, then makes latitude increase
+from -89.75 to 89.75 degrees by reversing every array using the `lat` dimension.
+Existing latitude bounds are reordered by rows and by endpoint columns; no edges
+are reconstructed. The grouped writer streams this transformation once, preserves
+raw missing/packed values and compression, verifies every output tile, and only
+then replaces the original file. A conforming replay does not rewrite the file.
+
+C121 rotates the same three river products from signed longitudes
+(-179.75..179.75) to 0.25..359.75 degrees. Validate all 720 centers and their
+existing half-degree bounds first, then translate and rotate every array using
+`lon`, including packed/masked auxiliaries. Translate both bounds by the cell's
+longitude offset: the last upper edge is 360, not zero. Combine the rotation with
+C118 in one bounded-memory rewrite; validate the output before replacing the
+source. Replaying the plan is a no-op.
+
+C059 remains a separate precision correction for regular g111/g245 grids. Detect
+`nlon` from `lon(lon)`, verify existing two-endpoint bounds, and build a shared
+`linspace(0,360,nlon+1)` interface vector for midpoint-centered CM7 cells. Retain
+g245 longitude centers exactly and reject deviations above 1e-8 degree. Keep the
+established CM6 g111 zero-centered convention (bounds offset by half a cell,
+1e-10 tolerance). Polygon `cell/nvertex` grids are excluded. This correction
+writes only the small coordinate arrays directly; no scientific field is copied.
+
+C002a also covers the audited `fNleach`, `mrsow` and `rivi` comment variants.
+C117 includes `lev` precision promotion. The shared msfty coordinate recipe accepts
+331 or 332 existing meridional positions without changing their number.
+The DR recommendation to add `seasurface:axis=Z` is explicitly waived under C073b;
+C073 continues removing that marker when the CF vertical-coordinate diagnostic
+selects it.
+
+### Basin-transport latitude at 331 or 332 positions
+
+C070 handles only the eight g112/hyb transport products hfbasin, hfbasinpmadv,
+hfbasinpmdiff, htovgyre, htovovrt, sltbasin, sltovgyre and sltovovrt. Their target
+is `lat(lat)`, `lat_bnds(lat,bnds)` and science `(time,basin,lat)`, with
+`lat:standard_name="latitude"`, `lat:units="degrees_north"`, `lat:axis="Y"` and
+`lat:long_name="Latitude"`. Only msfty retains `rlat`/`grid_latitude`/`degrees`.
+Keep the native size: 331 for the reviewed CM7 profile, 332 for the legacy profile.
+
+For the original 331-row y/x representation, validate all 299 retained latitude
+values against the supplied native T-column 97 reference. Restore the 32 initial
+zero placeholders only when every science value on those rows is masked across
+all times/basins. Retain every row and use conventional midpoint bounds with
+adjacent half-step outer limits, without extending to the poles. Squeeze only
+x=1 in one verified atomic rewrite. Keep the 332-point endpoint convention.
+
+Files produced by the former 331-point rlat correction are also accepted. Select
+C070 on the exact missing-latitude diagnostic; rename rlat/rlat_bnds to lat/lat_bnds
+and correct CF attributes in place when x is already absent. Preserve the existing
+native centers, conventional bounds, zero-longitude auxiliary, science, basin/sector,
+packing, compression and chunking. No science read or full-file rewrite is needed
+for this metadata-only recovery. Replaying C070/C103 on a conforming result is a no-op.
+
+### Missing horizontal coordinates on reviewed NEMO grids
+
+C119 uses one offline JSON extracted from the supplied eORCA1.4.2 domain,
+with independent exact arrays and checksums for each grid:
+
+| Product | grid_label | NEMO points | Latitude source | Longitude source |
+|---|---|---|---|---|
+| sfx_tavg-u-hxy-sea | g168 | U | gphiu[0] | glamu[0] |
+| sfy_tavg-u-hxy-sea | g169 | V | gphiv[0] | glamv[0] |
+| sob_tavg-u-hxy-sea, tob_tavg-u-hxy-sea | g112 | T | gphit[0] | glamt[0] |
+
+Require `time,y,x` with `y=331,x=360`, matching scientific identity and a
+latitude/longitude reference in the field's `coordinates` attribute. For sob/tob,
+create canonical `latitude(y,x)`/`longitude(y,x)` directly and set
+`coordinates="latitude longitude"`. Existing matching nav_lat/nav_lon aliases
+are renamed; conflicting arrays are refused before writing. Sfx/sfy retain the
+requested nav_* or canonical aliases. U, V and T coordinates are never interchanged.
+
+The shared writer appends/renames the small coordinate arrays in place, preserving
+science values, masks, packing, compression and chunking without reading/copying
+the main matrix. The JSON is about 11 MiB; the 502 MiB domain NetCDF is not needed
+at runtime. The extraction script retains its original filename and CLI:
+`scripts/extract_nemo_u_reference.py SOURCE.nc NEW_OUTPUT.json`. C119 retains the
+legacy internal fix name `inject_nemo_u_coordinates` so existing plans still load.
+
+### Missing XIOS vertices on sfx, sfy, sob and tob
+
+C119v copies the existing XIOS vertex arrays from the reviewed local donor files:
+`sfx <- hfx` (U/g168), `sfy <- hfy` (V/g169), and `sob/tob <- areacello` (T/g112).
+It adds `vertices_latitude(y,x,vertices)` and `vertices_longitude(y,x,vertices)`,
+with fixed `vertices=4`, then sets latitude:bounds="vertices_latitude" and
+longitude:bounds="vertices_longitude" on the existing geographic coordinates.
+Both nav_* and canonical coordinate names are accepted; selected horizontal
+renames run first. Central coordinates, scientific values/masks, attributes and
+compression/chunking are preserved. New vertex arrays are appended directly;
+conforming replays do not write anything.
+
+`fixes/nemo_vertices_reference.json.gz` is a portable JSON reference (~5 MiB),
+containing exact donor centers/vertices, per-array checksums and provenance.
+Donor NetCDF files are not opened during parallel application. The extractor
+`scripts/extract_nemo_vertices_reference.py --hfx HFX.nc --hfy HFY.nc
+--areacello AREACELLO.nc --output NEW_REFERENCE.json.gz` reproduces it without
+copying science fields. It reads only the 14 exceptional hfy cells at every time.
+
+Before copying vertices, compare centers on every donor cell with usable nonzero
+coordinates (90074 U cells; 90075 V/T cells), using a 1e-4-degree absolute tolerance
+and periodic longitude differences. Reject other mismatches. The sole exception
+is sfy at y=330,x=196..209: require the exact native V centers on these cells and
+missing scientific data at every target time. Extraction already verified all
+120 donor hfy records there. No general masked-cell exception is allowed.
+
+The source vertex arrays contain 29085 zero quadruplets per grid. They are copied
+verbatim, without altering centers or constructing missing polygons. Adding the
+bounds links does not establish complete geometric CF/CMIP7 conformity; subsequent
+QA can still flag center/bounds inconsistencies inherited from this representation.
+
+### The 331-row msfty profile with empty southern rows
+
+C025 now handles the reviewed CM7 profile whose first 32 `nav_lat` values are
+zero placeholders. It retains all 331 rows and every scientific value/mask.
+The small `fixes/msfty_latitude_reference_331.json` stores the full supplied
+`gphit[0,:,97]` profile, with provenance and a SHA-256 checksum. This is a separate
+reference from the older 332-row profile.
+
+Before restoring any latitude, the recipe requires the remaining 299 coordinates
+to match that reference exactly and checks that rows 0–31 are missing for every
+time, basin and depth. It reads only those rows, one time record at a time, and
+refuses the correction if any valid value is found. Only the 32 placeholders are
+replaced. The genuine equatorial zero and all other coordinates are preserved.
+The resulting `rlat(rlat)` has `standard_name="grid_latitude"`, `units="degrees"`,
+`axis="Y"` and `long_name="Grid Latitude"`; its last value remains
+`88.94849723000922`, without the legacy 89.36999 terminal adjustment.
+
+C025 reuses C103's bounds method to add `rlat_bnds(rlat,bnds)`: internal midpoints
+and the adjacent half-step at each end, without forcing pole values. These are
+conventional one-dimensional bands, not native NEMO transport-section boundaries.
+C103 also accepts this exact 331-row reference if only the bounds are missing in
+a later iteration. Other 331-point grids are not inferred or extrapolated.
+The previous 332-point branch and its approved terminal convention remain intact.
+
+### Missing categorical coordinates for four ice passages
+
+C035 reuses the existing C105 `fix_ice_passage_sector` method for the three
+reviewed `siareaacrossline`, `simassacrossline` and `sisnmassacrossline` products.
+When only the `line=4` dimension exists, there is no text variable to copy.
+The method now creates `char sector(line,strlen)` with `strlen=21`,
+`sector:standard_name="region"`, `sector:long_name="ocean passage"`, and sets
+the main variable's `coordinates="sector"`.
+
+The supplied order is retained: `fram_strait`, `canadian_archipelego`,
+`barents_opening`, `bering_strait`. Creation requires the scientific comment to
+confirm those four numbered passages in that order. `canadian_archipelego`
+retains the spelling requested by the CMIP7 vocabulary. All raw scientific values,
+masks, attributes other than `coordinates`, and compression remain unchanged.
+The labels and string dimension are appended directly; the `line=4` dimension
+is neither renamed nor resized. Replaying is a no-op.
+
+The current WCRP checker requests `sector` for `siline`, although the coordinate
+table's `out_name` is `line`. Using the auxiliary `sector` avoids recreating
+`char line(line,strlen)` and its CF shared-name diagnostic, and remains consistent
+with the existing duplicate-label cleanup. No latitude coordinate is invented for
+these categorical passages. Reference: CMIP7_coordinate.json `siline` at
+https://github.com/WCRP-CMIP/cmip7-cmor-tables/blob/main/tables/CMIP7_coordinate.json
+and CF 1.11 section 5 at
+https://cfconventions.org/Data/cf-documents/requirements-recommendations/conformance-1.11.html .
+
+C120 corrects the exact vocabulary diagnostic for global
+`nominal_resolution="150 km"` by setting `nominal_resolution="100 km"`.
+This is a direct metadata edit; grid labels, filenames, coordinates and scientific
+arrays are preserved. A conforming replay is a no-op, while a different or missing
+current attribute is refused rather than silently overwritten.
+
 ### Decision and exit codes
 
 `classify` looks only at severity-3 findings to decide what the loop does next:
@@ -305,3 +506,17 @@ decision logs, TGCC procedures and test recipes from that pilot are kept at the
 [`pilot-2026-11`](https://github.com/ESPRI-Mod/esgf-fix-tool/tree/pilot-2026-11) tag; the later decision logs
 (2026-11-09 to 2026-11-12) at commit
 [`3efff8e`](https://github.com/ESPRI-Mod/esgf-fix-tool/tree/3efff8e/docs).
+
+### Continuing after a recipe preparation error
+
+The CLI's normal continuation mode now also preserves independent corrections
+within a file. If a recipe fails in the read-only preparation phase, its entire
+private preview is discarded. The remaining fixes are prepared again from the
+original file; declared dependants and coupled hybrid corrections are blocked.
+Only the validated remainder is committed, with at most one grouped rewrite.
+
+The fixlog marks the file `partial`, lists failed/blocked steps and their
+tracebacks, and the command exits with an error status so unresolved work stays
+visible. Failures during writing or final verification are never retried this
+way. `--fail-fast` retains the original whole-file refusal. The Python API uses
+this behavior when `continue_on_error=True` is requested.

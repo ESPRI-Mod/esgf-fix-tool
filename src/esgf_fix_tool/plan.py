@@ -16,26 +16,34 @@ class Step:
     params: dict
 
 
+STEP_DEPENDENCIES = {
+    "inject_nemo_vertices": {"inject_nemo_u_coordinates", "rename_horizontal_coordinate"},
+    "rename_horizontal_coordinate": {"inject_nemo_u_coordinates"},
+    "add_reviewed_coordinate_bounds": {"promote_coordinate_to_double"},
+    "add_text_coordinate_alias": {"rename_category_dimension"},
+    "fix_ice_passage_sector": {"rename_category_dimension"},
+    "center_hybrid_interfaces": {"promote_coordinate_to_double"},
+    "fix_hybrid_coefficients": {"center_hybrid_interfaces", "promote_coordinate_to_double"},
+    "fix_hybrid_coordinate_metadata": {"center_hybrid_interfaces"},
+    "normalize_hybrid_coordinate": {"fix_hybrid_coefficients", "center_hybrid_interfaces", "promote_coordinate_to_double"},
+    "drop_unused_horizontal_bounds": {"reduce_replicated_zostoga"},
+    "fix_msfty_coordinates": {"fix_data_layout", "fix_ocean_vertical_metadata"},
+    "add_basin_latitude_bounds": {"fix_msfty_coordinates", "fix_basin_profile_latitude"},
+    "drop_basin_latitude_bounds": {"fix_msfty_coordinates"},
+    "sync_filename_grid_label": {"set_reduced_grid_label", "reduce_replicated_zostoga"},
+}
+
+
 def order_steps(steps: list[Step]) -> list[Step]:
     """Keep a stable order while enforcing dependencies among selected methods.
 
     Do not silently add an excluded rule: an absent prerequisite must either be
     satisfied by the file already or fail during read-only preflight.
     """
-    dependencies = {
-        "fix_hybrid_coefficients": {"center_hybrid_interfaces"},
-        "fix_hybrid_coordinate_metadata": {"center_hybrid_interfaces"},
-        "normalize_hybrid_coordinate": {"fix_hybrid_coefficients", "center_hybrid_interfaces"},
-        "drop_unused_horizontal_bounds": {"reduce_replicated_zostoga"},
-        "fix_msfty_coordinates": {"fix_data_layout", "fix_ocean_vertical_metadata"},
-        "add_basin_latitude_bounds": {"fix_msfty_coordinates"},
-        "drop_basin_latitude_bounds": {"fix_msfty_coordinates"},
-        "sync_filename_grid_label": {"set_reduced_grid_label", "reduce_replicated_zostoga"},
-    }
     pending, ordered = list(steps), []
     while pending:
         for index, step in enumerate(pending):
-            if not any(s.fix in dependencies.get(step.fix, ()) for s in pending):
+            if not any(s.fix in STEP_DEPENDENCIES.get(step.fix, ()) for s in pending):
                 ordered.append(pending.pop(index))
                 break
         else:

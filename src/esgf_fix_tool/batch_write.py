@@ -15,7 +15,9 @@ from .fixes import (
     horizontal,
     hybrid,
     hybrid_centering,
+    latitude_order,
     layouts,
+    longitude_order,
     rectilinear,
 )
 from .preview import MAX_AUX_BYTES
@@ -61,6 +63,8 @@ class VariableSpec:
     filters: object
     chunks: object
     creation_options: object = None
+    reverse_dims: tuple = ()
+    cyclic_shifts: tuple = ()
 
 
 KNOWN_FINALIZERS={None,coordinates._restore_coordinate_values,coordinates._restore_auxiliary_values,
@@ -89,7 +93,10 @@ class Batch:
         # All metadata recipes have already run on the preview. Combine the remaining
         # axis operations instead of calling each old whole-file after-close rewriter.
         desired={}
-        shared_singletons = set()
+        shared_singletons = set(getattr(preview, '_pending_shared_singletons', ()))
+        for dimension in shared_singletons:
+            if dimension not in preview.dimensions or len(preview.dimensions[dimension]) != 1:
+                raise ValueError(f'Cannot remove non-singleton shared dimension {dimension}')
         for s in steps:
             if s.fix!='fix_data_layout':
                 continue
@@ -143,9 +150,15 @@ class Batch:
         climatology.configure(self, preview)
         heat_transport.configure(self, preview)
         hybrid_centering.configure(self, preview)
+        latitude_order.configure(self, preview)
+        longitude_order.configure(self, preview)
 
     def _profile(self,preview,var):
         name,_values=rectilinear._profile(preview,var)
+        if _values.size == 331:
+            # C070 already prepared its lat metadata/bounds. The common
+            # singleton mapping above squeezes only x from every source array.
+            return
         lat=self.variables.pop(name)
         lat.name='lat'
         if name=='nav_lat':
@@ -182,6 +195,8 @@ class Batch:
     def rewrite(self):
         if self.climatology is not None or self.heat_fields or self.hybrid_center_fields:
             return True
+        if any(v.reverse_dims or v.cyclic_shifts for v in self.variables.values()):
+            return True
         if self.custom_hooks:
             return True
         # A replaced storage type has a new buffered variable and no surviving
@@ -217,8 +232,52 @@ class Batch:
                 return True
         return False
 
-    def transform(self, data, spec):
-        return layouts._transform(np.asarray(data),tuple(range(len(spec.source_dimensions))),spec.order)
+    def transform(self, data, spec, *, buffered=False):
+        values = layouts._transform(np.asarray(data), tuple(range(len(spec.source_dimensions))), spec.order)
+        if spec.reverse_dims:
+            values = np.flip(values, axis=tuple(spec.dimensions.index(d) for d in spec.reverse_dims))
+        # Complete auxiliary buffers can be rolled in RAM. Streamed science
+        # tiles are instead relocated, splitting a tile at the longitude seam.
+        if buffered:
+            for dimension, offset in spec.cyclic_shifts:
+                values = np.roll(values, offset, axis=spec.dimensions.index(dimension))
+        return values
+
+    def mapped_blocks(self, source, spec, operation):
+        """Split source tiles at cyclic seams so every target stays contiguous."""
+        for slab in data_blocks(source, operation):
+            pieces = [slab]
+            for dimension, offset in spec.cyclic_shifts:
+                axis = spec.order[spec.dimensions.index(dimension)]
+                seam = self.dimensions[dimension][1] - offset
+                split = []
+                for piece in pieces:
+                    index = piece[axis]
+                    if index.start < seam < index.stop:
+                        for start, stop in ((index.start, seam), (seam, index.stop)):
+                            part = list(piece)
+                            part[axis] = slice(start, stop)
+                            split.append(tuple(part))
+                    else:
+                        split.append(piece)
+                pieces = split
+            yield from pieces
+
+    def target_slab(self, slab, spec):
+        """Map a bounded source tile to its final position, including row reversal."""
+        target = [slab[i] for i in spec.order]
+        for dimension in spec.reverse_dims:
+            axis = spec.dimensions.index(dimension)
+            length = self.dimensions[dimension][1]
+            old = target[axis]
+            target[axis] = slice(length - old.stop, length - old.start)
+        for dimension, offset in spec.cyclic_shifts:
+            axis = spec.dimensions.index(dimension)
+            length = self.dimensions[dimension][1]
+            old = target[axis]
+            start = (old.start + offset) % length
+            target[axis] = slice(start, start + old.stop - old.start)
+        return tuple(target)
 
     def _create(self,dst,spec):
         if spec.origin is not None:
@@ -255,15 +314,15 @@ class Batch:
                     for slab, values in climatology.averages(self.source[spec.origin],spec):
                         write_array(out,slab,values)
                 elif spec.data is not None:
-                    write_array(out,Ellipsis,self.transform(spec.data,spec))
+                    write_array(out,Ellipsis,self.transform(spec.data,spec,buffered=True))
                 elif spec.origin is not None:
                     source=self.source[spec.origin]
                     layouts._raw(source)
                     # Record the expected output bytes while the source block is in memory.
                     # Variable-length strings still use the element-by-element comparison.
                     digest = sha256() if source.dtype is not str else None
-                    for slab in data_blocks(source,'Réécriture regroupée'):
-                        target=tuple(slab[i] for i in spec.order)
+                    for slab in self.mapped_blocks(source,spec,'Réécriture regroupée'):
+                        target=self.target_slab(slab, spec)
                         values = self.transform(source[slab], spec)
                         if digest is not None:
                             values = np.ascontiguousarray(values) if values.ndim else values
@@ -296,7 +355,7 @@ class Batch:
                         if not raw_equal(out[slab],expected):
                             raise ValueError(f'Climatological mean differs for {spec.name}')
                 elif spec.data is not None:
-                    if not raw_equal(out[...],self.transform(spec.data,spec)):
+                    if not raw_equal(out[...],self.transform(spec.data,spec,buffered=True)):
                         raise ValueError(f'Raw values differ for {spec.name}')
                 elif spec.origin is not None:
                     source=self.source[spec.origin]
@@ -304,8 +363,8 @@ class Batch:
                     if expected_digest is not None:
                         digest = sha256()
                         # Traverse the same mapped slabs using source metadata only.
-                        for slab in data_blocks(source, 'Vérification de la sortie regroupée'):
-                            target = tuple(slab[i] for i in spec.order)
+                        for slab in self.mapped_blocks(source, spec, 'Vérification de la sortie regroupée'):
+                            target = self.target_slab(slab, spec)
                             values = np.asarray(out[target])
                             if values.ndim:
                                 values = np.ascontiguousarray(values)
@@ -315,8 +374,8 @@ class Batch:
                         continue
                     # External NCO output and strings have no digest from the Python copy.
                     layouts._raw(source)
-                    for slab in data_blocks(source,'Vérification de la sortie regroupée'):
-                        target=tuple(slab[i] for i in spec.order)
+                    for slab in self.mapped_blocks(source,spec,'Vérification de la sortie regroupée'):
+                        target=self.target_slab(slab, spec)
                         if not raw_equal(out[target],self.transform(source[slab],spec)):
                             raise ValueError(f'Raw values differ for {spec.name}')
 
@@ -364,7 +423,7 @@ class Batch:
             layouts._raw(out)
             set_attributes(out,spec.attrs)
             if spec.data is not None:
-                wanted=self.transform(spec.data,spec)
+                wanted=self.transform(spec.data,spec,buffered=True)
                 # A newly allocated no-fill variable does not have defined data
                 # to compare. Always initialize it before it can be read back.
                 if spec.origin is None or not raw_equal(out[...],wanted):
@@ -379,7 +438,7 @@ class Batch:
                 out=ds[spec.name]
                 layouts._raw(out)
                 if spec.data is not None:
-                    if not raw_equal(out[...],self.transform(spec.data,spec)):
+                    if not raw_equal(out[...],self.transform(spec.data,spec,buffered=True)):
                         raise ValueError(f'Raw values differ for patched auxiliary {spec.name}')
                 elif spec.name in backups:
                     backups[spec.name].verify(out)
@@ -407,7 +466,7 @@ class Batch:
     def nco(self):
         """Retain NCO for a standalone permutation; compound transforms use one Python pass."""
         explicit=[s for s in self.layouts if s.params.get('backend')=='nco']
-        eligible=(len(self.layouts)==1 and not self.custom_hooks and self.climatology is None and not self.heat_fields and not self.hybrid_center_fields)
+        eligible=(len(self.layouts)==1 and not self.custom_hooks and self.climatology is None and not self.heat_fields and not self.hybrid_center_fields and not any(v.reverse_dims or v.cyclic_shifts for v in self.variables.values()))
         if {v.origin for v in self.variables.values() if v.origin is not None} != set(self.source.variables):
             eligible=False
         if eligible:

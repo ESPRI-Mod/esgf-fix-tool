@@ -52,7 +52,7 @@
     'y'\]; coordinate IDs \['gridlatitude', 'olevel', 'basin', 'time'\] require \['time', 'basin', 'lev', 'rlat'\] as their
     required order\.|Coordinate variable "rlat" must be strictly monotonic)$
   action: fix
-  note: Keep rlat and its grid_latitude/degrees metadata. Use the shared transport endpoint 89.36999, replacing a duplicate or the former nextafter repair. Drop only zero nav_lon and complete lev metadata. Other non-monotonic cases are refused.
+  note: Keep rlat and its grid_latitude/degrees metadata. Use the shared transport endpoint 89.36999, replacing a duplicate or the former nextafter repair. Drop only zero nav_lon and complete lev metadata. For the reviewed 331-point profile, restore only the first 32 zero latitudes from the supplied T-column 97 reference after matching all 299 retained positions and checking that those rows are missing across every time/basin/depth. Keep all rows and the existing final latitude; add conventional rlat_bnds from midpoints with adjacent half-step outer limits, without pole forcing. Other non-monotonic cases are refused.
   fix: fix_msfty_coordinates
   params: {}
   dataset: CMIP7\.OCE\.msfty\.
@@ -145,9 +145,7 @@
   message: The required text auxiliary coordinate 'sector' for coordinate ID 'siline' is absent, so its configured dependent
     coordinate checks could not be evaluated\.$
   action: fix
-  fix: add_text_coordinate_alias
-  params:
-    source: line
-    target: sector
-  note: Checker b3 expects sector while registry retains original out_name; copy existing text, retain original coordinate
-    and order.
+  fix: fix_ice_passage_sector
+  params: {}
+  dataset: CMIP7\.(?:OCE|SRF)\.(?:siareaacrossline|simassacrossline|sisnmassacrossline)\.tavg-u-ht-u\.
+  note: Checker b3 requires sector for siline. Reuse C105 to create missing labels or repair existing ones in the user-confirmed four-passage order, after validating the scientific comment when no labels exist. Keep the index dimension line=4 and all scientific data; use char sector(line,strlen), strlen=21, standard_name=region and coordinates=sector. Do not recreate a line(line,strlen) alias.

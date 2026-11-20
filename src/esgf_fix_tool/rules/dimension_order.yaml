@@ -216,3 +216,84 @@
     drop_shared: true
   note: Remove only singleton x, including from auxiliary variables. Keep all 332 y positions. The verified rlat coordinate
     remains a separate review under C025.
+
+- id: C040a
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''jpdftaureicemodis'' dimensions in netCDF/C order are \[''time'', ''effectRadIc'',
+    ''tau'', ''cell''\]; coordinate IDs .* require \[''time'', ''tau'', ''effectRadIc'',
+    ''cell''\] as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: jpdftaureicemodis
+    target_order:
+    - time
+    - tau
+    - effectRadIc
+    - cell
+  note: Same verified permutation as the rectilinear histogram; preserve cell and
+    all values.
+- id: C041a
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''jpdftaureliqmodis'' dimensions in netCDF/C order are \[''time'', ''effectRadLi'',
+    ''tau'', ''cell''\]; coordinate IDs .* require \[''time'', ''tau'', ''effectRadLi'',
+    ''cell''\] as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: jpdftaureliqmodis
+    target_order:
+    - time
+    - tau
+    - effectRadLi
+    - cell
+  note: Same verified permutation as the rectilinear histogram; preserve cell and
+    all values.
+- id: C042a
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''clisccp'' dimensions in netCDF/C order are \[''time'', ''plev'', ''tau'',
+    ''cell''\]; coordinate IDs .* require \[''time'', ''tau'', ''plev'', ''cell''\]
+    as their required order\.$'
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: clisccp
+    target_order:
+    - time
+    - tau
+    - plev
+    - cell
+  note: Same verified permutation as the rectilinear histogram; preserve cell and
+    all values.
+- id: C047a
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>siareaacrossline|simassacrossline|sisnmassacrossline)'' dimensions
+    in netCDF/C order are \[''time'', ''section_ice''(?:, ''cell'')?\]; coordinate
+    IDs .* require \[''time'', ''line''(?:, ''cell'')?\] as their required order\.$'
+  action: fix
+  fix: rename_category_dimension
+  params:
+    source: section_ice
+    target: line
+  note: Rename the category index only; preserve every data value and label order.
+- id: C048a
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>landCoverFrac)'' dimensions in netCDF/C order are \[''time'',
+    ''vegtype''(?:, ''cell'')?\]; coordinate IDs .* require \[''time'', ''type''(?:,
+    ''cell'')?\] as their required order\.$'
+  action: fix
+  fix: rename_category_dimension
+  params:
+    source: vegtype
+    target: type
+  note: Rename the category index only; preserve every data value and label order.
+- id: C048b
+  check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
+  message: It is required for 'sector' to be a character array whose first dimension
+    is 'type'; found \['vegtype', 'str_len'\]\.$
+  action: fix
+  fix: rename_category_dimension
+  params:
+    source: vegtype
+    target: type
+  note: Same vegetation index rename as C048a.

@@ -216,6 +216,8 @@ class ConsoleProgress:
             if event.status == 'done':
                 suffix = ' (simulation)' if event.details['dry_run'] else ' (déjà conforme)' if not event.details['changed'] else ''
                 status = 'Done'+suffix
+            elif event.status in ('failed', 'blocked'):
+                status = ('Échec' if event.status == 'failed' else 'Bloqué par un prérequis') + ': ' + event.details.get('error', '')
             elif event.status == 'prepared':
                 status = 'Préparé — vérifications en attente'
             else:

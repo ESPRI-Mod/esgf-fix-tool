@@ -204,3 +204,25 @@ def set_var_attr_if_matches(ds, var: str, attr: str, expected: str, value: str) 
     # 2. Replace the observed attribute value without touching the underlying data.
     v.setncattr(attr, value)
     return True
+
+
+@fix("set_global_attr_if_matches")
+def set_global_attr_if_matches(ds, attr: str, expected: str, value: str) -> bool:
+    """Replace only the exact reviewed global text; preserve all variable arrays."""
+    current = ds.getncattr(attr) if attr in ds.ncattrs() else None
+    if not isinstance(current, str):
+        raise ValueError(f"Expected a global text attribute {attr}")
+    if current == value:
+        return False
+    if current != expected:
+        raise ValueError(f"Global attribute {attr} differs from the reviewed value {expected!r}")
+
+    # Keep the original NetCDF string storage type; update only its content.
+    from .layouts import _attribute_type
+
+    header = getattr(ds, "_header", ds)
+    if _attribute_type(header, attr) == 12:
+        ds.setncattr_string(attr, value)
+    else:
+        ds.setncattr(attr, value)
+    return True

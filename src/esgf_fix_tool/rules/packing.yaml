@@ -1,14 +1,21 @@
 # Internal packing (FILE004 family): fixed by the repack step (cmip7repack), like FILE004a (S029).
 # other_step: not blocking in the QA -> fix loop, blocking again at the final gate if repacking missed it.
+# P001/P002 were released in 0.8.0 as C117/C118; renumbered so the C ids stay with reviewed recipes.
 
-- id: C117
+- id: P001
   check: '\[CMIP7\] \[FILE004b\] Internal packing : Time coordinate chunking'
   message: .*
   action: other_step
   note: fixed by the repack step (cmip7repack), which rewrites the time coordinate in one chunk
 
-- id: C118
+- id: P002
   check: '\[CMIP7\] \[FILE004c\] Internal packing : Time bounds chunking'
   message: .*
   action: other_step
   note: fixed by the repack step (cmip7repack), which rewrites the time bounds in one chunk
+
+- id: P003
+  check: '\[CMIP7\] \[FILE004d\] Internal packing : Data variable chunking'
+  message: .*
+  action: other_step
+  note: fixed by the repack step (cmip7repack, -d chunk size, 4 MiB by default), which rechunks the data variables

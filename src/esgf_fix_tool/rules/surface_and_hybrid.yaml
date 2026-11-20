@@ -1,3 +1,9 @@
+- id: C073b
+  check: \[CMIP7\] \[COORD003\] Coordinate metadata$
+  message: "'seasurface' axis=''; the required value is 'Z'\\.$"
+  action: waive
+  note: User confirmation on 2026-11-18. Keep seasurface without axis=Z pending the DR update; C073 removes the inappropriate vertical-axis marker. Do not add units or positive.
+
 - id: C074b
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
   message: "'lev_bnds' formula_terms=.*selected model-level entry 'alternate_hybrid_sigma_half'.*"
@@ -47,12 +53,12 @@
 
 - id: C104
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
-  message: Coordinate 'alevel' could not be verified\..*Variable 'lev' has no standard_name,.*
+  message: Coordinate 'alevel' could not be verified\..*(?:Variable 'lev' has no standard_name,|No model_level_coordinate .*standard_name='Pressure at interface of vertical levels';).*
   dataset: CMIP7\.ATM\.(edt|evu)\.
   action: fix
   fix: center_hybrid_interfaces
   params: {}
-  note: LMDZ method confirmed on 2026-11-12. Average adjacent interfaces for edt/evu, 80 to 79 levels, and use the supplied 79-center coefficients/bounds. Preserve science metadata and compression; mask a pair if either interface is missing. One atomic rewrite with numerical verification.
+  note: LMDZ method confirmed on 2026-11-12. Average adjacent interfaces for edt/evu, 80 to 79 or 96 to 95 levels, and use the corresponding supplied center coefficients/bounds. Preserve science metadata and compression; mask a pair if either interface is missing. One atomic rewrite with numerical verification.
 
 - id: C107
   check: \[CF-Conventions\] §4\.3 Vertical Coordinate$
@@ -83,7 +89,7 @@
   check: \[CMIP7\] \[COORD012\] Parametric vertical coordinate$
   message: (?=.*'(?P<coordinate>alevel|alevhalf)')(?:Coordinate '(?P=coordinate)' could not be verified\. Expected is a generic
     vertical coordinate with out_name 'lev'\. No model_level_coordinate marked for generic_level_name='(?P=coordinate)' has
-    standard_name='x'; available standard names are \['atmosphere_hybrid_height_coordinate', 'atmosphere_hybrid_sigma_ln_pressure_coordinate',
+    standard_name='(?:x|Pressure at interface of vertical levels|at interface of vertical levels)'; available standard names are \['atmosphere_hybrid_height_coordinate', 'atmosphere_hybrid_sigma_ln_pressure_coordinate',
     'atmosphere_hybrid_sigma_pressure_coordinate', 'atmosphere_sigma_coordinate', 'model_level_number'\]\.|Formula term '(?:ap|b)'
     has dimensions \['(?:klev|klevp1)'\]; its coordinate definition describes \['(?P=coordinate)'\]; the (?:required|recommended)
     netCDF/C dimensions are \['lev'\]\.|Coordinate '(?P=coordinate)' could not be verified\. Expected is a generic vertical

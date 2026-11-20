@@ -272,7 +272,7 @@ def _approved_rlat(values):
     values = np.asarray(values).copy()
     delta = np.diff(values)
     if (
-        values.shape == (332,)
+        values.shape in ((331,), (332,))
         and np.isfinite(values).all()
         and np.all(delta[:-1] > 0)
         and abs(float(values[-2]) - OLD_END) <= 2.0e-7
@@ -293,21 +293,37 @@ def _approved_rlat(values):
     raise ValueError("Only a duplicated terminal msfty latitude is approved for repair")
 
 
+def _msfty_latitude_values(ds, name):
+    """Restore only the verified missing prefix; keep the legacy terminal repair."""
+    from .msfty_latitude import restore_empty_prefix
+
+    values = finite(ds[name]).reshape(-1)
+    recovered = restore_empty_prefix(ds, values)
+    return _approved_rlat(values if recovered is None else recovered)
+
+
 def _verify_msfty_coordinates(source, output):
     with netCDF4.Dataset(source) as src, netCDF4.Dataset(output) as dst:
         name = next(n for n in ("rlat", "nav_lat", "latitude") if n in src.variables)
-        expected = _approved_rlat(finite(src[name]).reshape(332))
+        expected = _msfty_latitude_values(src, name)
         lat = dst["rlat"]
         if lat.dimensions != ("rlat",) or not np.array_equal(finite(lat), expected):
             raise ValueError(
-                "msfty latitude changed beyond the approved terminal adjustment"
+                "msfty latitude differs from the approved native-profile or terminal repair"
             )
+
+        if lat.size == 331:
+            from .basin_latitude_bounds import _verify as verify_bounds
+            from .msfty_latitude import reference_331
+
+            if np.array_equal(finite(lat), reference_331()):
+                verify_bounds(source, output)
 
 
 @fix(
     "fix_msfty_coordinates",
     verify_data=True,
-    data_targets=lambda p: {"rlat", "nav_lat", "latitude"},
+    data_targets=lambda p: {"rlat", "nav_lat", "latitude", "rlat_bnds"},
     verify_final=_verify_msfty_coordinates,
 )
 def fix_msfty_coordinates(ds):
@@ -330,14 +346,14 @@ def fix_msfty_coordinates(ds):
     dim = "rlat" if "rlat" in ds.dimensions else "y"
     lat = ds.variables.get(name)
     horizontal_dims = ((dim,), (dim, "x")) if pending_x else ((dim,),)
-    if lat is None or lat.dimensions not in horizontal_dims or lat.size != 332:
-        raise ValueError("Expected the existing 332 meridional positions")
+    if lat is None or lat.dimensions not in horizontal_dims or lat.size not in (331, 332):
+        raise ValueError("Expected the existing 331 or 332 meridional positions")
     if lat.dtype.kind != "f" or any(
         a in lat.ncattrs() for a in ("scale_factor", "add_offset")
     ):
         raise ValueError("Expected an unpacked floating msfty latitude")
-    original_lat = finite(lat).reshape(332)
-    wanted_lat = _approved_rlat(original_lat)
+    original_lat = finite(lat).reshape(-1)
+    wanted_lat = _msfty_latitude_values(ds, name)
 
     # Only discard longitude auxiliaries whose values are all zero.
     lons = [n for n in ("nav_lon", "longitude") if n in ds.variables]
@@ -365,7 +381,8 @@ def fix_msfty_coordinates(ds):
         ds.renameDimension(dim, "rlat")
         changed = True
     if not np.array_equal(original_lat, wanted_lat):
-        # The shared 89.36999 endpoint replaces the old one-ULP convention.
+        # Restore the approved 331-point empty prefix or apply the separate
+        # legacy terminal repair. Keep every data row and every valid latitude.
         ds["rlat"][:] = wanted_lat.reshape(ds["rlat"].shape)
         changed = True
     changed = (
@@ -397,6 +414,14 @@ def fix_msfty_coordinates(ds):
                     "coordinates", " ".join(t for t in v.coordinates.split() if t != n)
                 )
         changed = delete_variables(ds, [n]) or changed
+    # The new native profile has a separate approved midpoint convention.
+    # Reuse the existing bounds recipe; never resize or reorder the field.
+    if ds["rlat"].size == 331:
+        from .basin_latitude_bounds import add_basin_latitude_bounds
+        from .msfty_latitude import reference_331
+
+        if np.array_equal(finite(ds["rlat"]).reshape(-1), reference_331()):
+            changed = add_basin_latitude_bounds(ds) or changed
     return changed
 
 

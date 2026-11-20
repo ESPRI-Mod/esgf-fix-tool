@@ -17,7 +17,7 @@ def _initialize(events):
     _events = events
 
 
-def _run(path, steps, dry_run, index, total, error, break_hardlinks):
+def _run(path, steps, dry_run, index, total, error, break_hardlinks, continue_on_fix_error=False):
     from .apply import apply_file
     from .progress import notify, reporting
 
@@ -42,7 +42,7 @@ def _run(path, steps, dry_run, index, total, error, break_hardlinks):
             raise error
         entries = apply_file(path, steps, dry_run=dry_run, events=report,
                              file_index=index, file_total=total,
-                             break_hardlinks=break_hardlinks)
+                             break_hardlinks=break_hardlinks, continue_on_fix_error=continue_on_fix_error)
         return dict(entries=entries, error=None, elapsed=time.monotonic() - started,
                     worker_pid=os.getpid())
     except Exception as exc:  # noqa: BLE001 - sent back to the parent, which logs it like a serial failure
@@ -72,7 +72,8 @@ def check_independent(effective):
 
 
 @contextmanager
-def file_jobs(files, workers, dry_run, events, errors, break_hardlinks=False, stop_on_error=False):
+def file_jobs(files, workers, dry_run, events, errors, break_hardlinks=False, stop_on_error=False,
+              continue_on_fix_error=False):
     """Keep at most workers files in flight, yielding in completion order.
 
     On failure/cancellation stop dispatching. Already running files finish their
@@ -95,7 +96,7 @@ def file_jobs(files, workers, dry_run, events, errors, break_hardlinks=False, st
         except StopIteration:
             return
         future = pool.submit(_run, path, steps, dry_run, index, len(files), errors.get(path),
-                             break_hardlinks)
+                             break_hardlinks, continue_on_fix_error)
         pending[future] = (path, steps)
 
     def drain():

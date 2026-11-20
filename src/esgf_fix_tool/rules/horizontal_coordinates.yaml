@@ -1,3 +1,21 @@
+- id: C119
+  check: (?:\[CF-Conventions\] §5 Coordinate Systems|\[CMIP7\] \[ATTR004\] Variable '(?:sfx|sfy|sob|tob)' attribute 'coordinates' as-variable check|\[CMIP7\] \[COORD011\] Horizontal grid coordinates)$
+  message: '(?:The ''coordinates'' attribute of variable ''(?:sfx|sfy|sob|tob)'' references non-existent variable ''(?:nav_lat|nav_lon)''\.|(?:sfx|sfy|sob|tob)''s auxiliary coordinate specified by the coordinates attribute, (?:nav_lat|nav_lon), is not a variable in this dataset|Referenced variables not found: \[''(?:nav_lat|nav_lon)''(?:, ''(?:nav_lat|nav_lon)'')?\]|The required horizontal coordinate\(s\) are absent: \[''longitude'', ''latitude''\]\.)$'
+  dataset: CMIP7\.(?:OCE|SRF)\.(?:sfx\.tavg-u-hxy-sea\.mon\.glb\.g168|sfy\.tavg-u-hxy-sea\.mon\.glb\.g169|(?:sob|tob)\.tavg-u-hxy-sea\.mon\.glb\.g112)\.
+  action: fix
+  fix: inject_nemo_u_coordinates
+  params: {}
+  note: User-approved injection from the supplied eORCA1.4.2 domain, selected by product and geometry. sfx/g168 uses gphiu/glamu (U); sfy/g169 uses gphiv/glamv (V); sob,tob/g112 use gphit/glamt (T). Store exact doubles in the same offline JSON with checksums. For bottom diagnostics create canonical latitude/longitude and update coordinates in the same pass. Require y=331,x=360 and the reviewed standard_name; never copy U coordinates to V/T. Preserve science, masks, packing, compression and matching existing arrays. Keep the legacy C119 fix name for existing plans.
+
+- id: C119v
+  check: \[CMIP7\] \[COORD011\] Horizontal grid coordinates$
+  message: 'It is required for horizontal auxiliary coordinate ''(?:latitude|longitude|nav_lat|nav_lon)'' to have a bounds attribute naming its vertex variable; dependent vertex checks could not be evaluated\.$'
+  dataset: CMIP7\.(?:OCE|SRF)\.(?:sfx\.tavg-u-hxy-sea\.mon\.glb\.g168|sfy\.tavg-u-hxy-sea\.mon\.glb\.g169|(?:sob|tob)\.tavg-u-hxy-sea\.mon\.glb\.g112)\.
+  action: fix
+  fix: inject_nemo_vertices
+  params: {}
+  note: Copy existing XIOS vertices from hfx/U for sfx, hfy/V for sfy and areacello/T for sob/tob. Use the bundled compressed JSON with exact doubles and per-array checksums. Validate central-coordinate compatibility before appending vertices(y,x,vertices=4) and bounds attributes. Only the 14 approved sfy cells at y=330,x=196..209 may differ, with exact native V centers and all scientific records masked in both donor and target. Preserve centers, science, masks and storage; never reconstruct vertices or read donor files during parallel application.
+
 - id: C098
   check: \[CF-Conventions\] (?:§7\.1 Cell Boundaries|§3\.3 Standard Name)$
   message: '(?:\[Appendix A\] Attribute "bounds" should not be present in non-coordinate data \(D\) variable "|Attribute long_name or/and standard_name is highly recommended for variable )(?P<var>nav_lat|nav_lon|bounds_nav_lat|bounds_nav_lon)(?:"\. This attribute may only appear in coordinate data \(C\)\.)?$'
@@ -18,25 +36,25 @@
 
 - id: C070
   check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
-  message: '(?:It is required for ''lat'' on the configured rectilinear grid to be a 1-D coordinate variable; found ''nav_lat'' with dimensions \[''y'', ''x''\]\. Dependent horizontal-grid checks could not be evaluated\.|The required coordinate for the configured rectilinear grid is ''lat\(lat\)'' for latitude; standard_name=''latitude'' identified ''nav_lat''\.)$'
+  message: '(?:It is required for ''lat'' on the configured rectilinear grid to be a 1-D coordinate variable; found ''nav_lat'' with dimensions \[''y'', ''x''\]\. Dependent horizontal-grid checks could not be evaluated\.|The required coordinate for the configured rectilinear grid is ''lat\(lat\)'' for latitude; standard_name=''latitude'' identified ''nav_lat''\.|The required horizontal coordinate\(s\) are absent: \[''latitude''\]\.)$'
   dataset: 'CMIP7\.OCE\.(?P<var>hfbasin|hfbasinpmadv|hfbasinpmdiff|htovgyre|htovovrt|sltbasin|sltovgyre|sltovovrt)\.tavg-u-hyb-sea\.'
   action: fix
   fix: fix_basin_profile_latitude
   params: {var: "{var}"}
-  note: User relayed model-engineer approval for final latitude 89.36999 instead of the repeated 89.36998. Convert nav_lat(y,1) to lat(lat), squeeze singleton x without deleting any of the 332 rows, preserve all field values and the unreferenced longitude auxiliary. Do not invent latitude bounds or change grid metadata.
+  note: The eight g112/hyb basin transports use true latitude lat(lat), standard_name=latitude, units=degrees_north and lat_bnds at both 331 and 332 native sizes. Only msfty uses rlat. Accept former rlat/rlat_bnds as source aliases to repair files from an older plan; select the exact missing-latitude diagnostic as well. Keep 331 rows and restore the 32 placeholders only after every retained latitude matches the supplied T-column 97 reference and all affected science rows are masked. Preserve existing centers/bounds on already-restored files, basin/sector, all scientific values and storage. Rename in place when x is already absent; otherwise squeeze only x=1 in one grouped rewrite. Legacy 332-point endpoint convention remains unchanged.
 
 - id: C071
   check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
-  message: 'Latitude grid variable ''nav_lat'' was identified by standard_name=''latitude'', but its required variable name is ''latitude''\.$'
+  message: 'Latitude grid variable ''(?:nav_lat|lat)'' was identified by standard_name=''latitude'', but its required variable name is ''latitude''\.$'
   action: fix
   fix: rename_horizontal_coordinate
   params: {role: latitude}
-  note: Rename only the 2-D auxiliary variable, update CF references, retain y/x, and restore/verify values after close.
+  note: Rename the reviewed 2-D ocean or 1-D cell-indexed g243/g245 auxiliary, update CF references and preserve every array and dimension.
 
 - id: C072
   check: '\[CMIP7\] \[COORD011\] Horizontal grid coordinates$'
-  message: 'Longitude grid variable ''nav_lon'' was identified by standard_name=''longitude'', but its required variable name is ''longitude''\.$'
+  message: 'Longitude grid variable ''(?:nav_lon|lon)'' was identified by standard_name=''longitude'', but its required variable name is ''longitude''\.$'
   action: fix
   fix: rename_horizontal_coordinate
   params: {role: longitude}
-  note: Rename only the 2-D auxiliary variable, update CF references, retain y/x, and restore/verify values after close.
+  note: Rename the reviewed 2-D ocean or 1-D cell-indexed g243/g245 auxiliary, update CF references and preserve every array and dimension.
