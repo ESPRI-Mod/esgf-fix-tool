@@ -80,7 +80,10 @@ def add_temperature_units_metadata(ds, var):
     methods = getattr(v, "cell_methods", "")
     if current != expected:
         raise ValueError(f"Unreviewed temperature semantics for {var}: {current!r} (reviewed: {expected!r})")
-    if methods not in OBSERVED_TEMPERATURE_METHODS:
+    # tslsi is an absolute surface temperature for both means and instantaneous
+    # samples. Its verified standard_name/units determine the qualifier; the
+    # historical tpt output must not depend on a sampled cell_methods whitelist.
+    if var != "tslsi" and methods not in OBSERVED_TEMPERATURE_METHODS:
         raise ValueError(f"Unreviewed cell_methods for temperature {var}: {methods!r}; add it to "
                          "OBSERVED_TEMPERATURE_METHODS once checked to be an absolute temperature")
 
@@ -150,7 +153,7 @@ def _basin_mask_values(ds):
         or getattr(ds, "grid_label", "") != "g112"
         or v is None
         or v.dimensions != ("y", "x")
-        or v.shape != (332, 362)
+        or v.shape not in ((332, 362), (331, 360))
         or v.dtype.kind not in "fiu"
         or getattr(v, "standard_name", "") != "region"
         or getattr(v, "long_name", "") != "Region Selection Index"
@@ -160,8 +163,22 @@ def _basin_mask_values(ds):
             for a in ("scale_factor", "add_offset", "_Unsigned", "flag_masks")
         )
     ):
-        raise ValueError("Expected the reviewed 2-D basin region selection mask")
+        raise ValueError(
+            "Expected the reviewed 2-D basin region selection mask on g112: "
+            "basin(y,x), shape (332,362) or (331,360), standard_name='region', "
+            "long_name='Region Selection Index', units absent or '1', unpacked numeric codes; "
+            f"got branded_variable={getattr(ds, 'branded_variable', '')!r}, "
+            f"grid_label={getattr(ds, 'grid_label', '')!r}, "
+            f"dimensions={getattr(v, 'dimensions', None)!r}, "
+            f"shape={getattr(v, 'shape', None)!r}, "
+            f"dtype={getattr(v, 'dtype', None)!s}, "
+            f"standard_name={getattr(v, 'standard_name', None)!r}, "
+            f"long_name={getattr(v, 'long_name', None)!r}, "
+            f"units={getattr(v, 'units', None)!r}"
+        )
 
+    # CM6 and CM7 use different native g112 sizes. Keep each grid unchanged;
+    # the categorical 0..10 mapping is validated below for both representations.
     # Preserve the missing-point mask even if an earlier recipe disabled automatic
     # masking. In particular, float fill=1e20 must never be cast straight to int32.
     a = np.ma.asarray(v[:])
@@ -331,6 +348,27 @@ COORDINATE_LONG_NAMES = {
 
 @fix("set_reviewed_coordinate_long_name")
 def set_reviewed_coordinate_long_name(ds, coordinate, value):
+    # Repair the old injected domain captions only on their matching NEMO grid.
+    from .nemo_coordinates import ALIASES, PRODUCTS
+
+    role = {"lat": "latitude", "nav_lat": "latitude", "latitude": "latitude",
+            "lon": "longitude", "nav_lon": "longitude", "longitude": "longitude"}.get(coordinate)
+    if role and value == role:
+        aliases = ALIASES["nav_lat" if role == "latitude" else "nav_lon"]
+        names = [n for n in (*aliases, "lat" if role == "latitude" else "lon") if n in ds.variables]
+        if len(names) == 1:
+            v = ds[names[0]]
+            current = getattr(v, "long_name", "")
+            if " at NEMO " in current:
+                spec = PRODUCTS.get(getattr(ds, "variable_id", ""))
+                if (spec is None or getattr(ds, "grid_label", "") != spec[1]
+                        or current != f"{role.title()} at NEMO {spec[0]} points"
+                        or v.dimensions != ("y", "x") or v.shape != (331, 360)
+                        or getattr(v, "standard_name", "") != role
+                        or getattr(v, "units", "") != ("degrees_north" if role == "latitude" else "degrees_east")):
+                    raise ValueError("Unreviewed NEMO coordinate long_name or grid")
+                return set_var_attr_if_matches(ds, v.name, "long_name", current, value)
+
     # Cell-indexed horizontal coordinates use lowercase vocabulary names.
     # Resolve either identifier so C086 composes with C071/C072 in both orders.
     roles = {"lat": "latitude", "latitude": "latitude",

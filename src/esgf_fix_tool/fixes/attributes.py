@@ -37,11 +37,15 @@ def drop_variable_histories(ds):
 
 
 @fix("drop_var_attr")
-def drop_var_attr(ds, var: str, attr: str) -> bool:
+def drop_var_attr(ds, var: str, attr: str, expected: str | None = None) -> bool:
     """Remove ``attr`` from variable ``var`` (e.g. CF appendix A: no 'history' on data variables)."""
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     v = ds.variables.get(var)
     if v is None or attr not in v.ncattrs():
+        return False
+
+    # An optional exact-value guard protects valid replacements from stale QA.
+    if expected is not None and v.getncattr(attr) != expected:
         return False
 
     # 2. Delete only this variable attribute; global history and all arrays stay intact.
@@ -186,7 +190,7 @@ def fix_invalid_standard_names(
 
 
 @fix("set_var_attr_if_matches")
-def set_var_attr_if_matches(ds, var: str, attr: str, expected: str, value: str) -> bool:
+def set_var_attr_if_matches(ds, var: str, attr: str, expected: str | list[str], value: str) -> bool:
     """Set a guarded attribute, or the explicitly approved deltasigt title."""
     # The user approved this exact deltasigt title independently of the old
     # verbose description. Checker formatting can hide whitespace differences,
@@ -198,7 +202,10 @@ def set_var_attr_if_matches(ds, var: str, attr: str, expected: str, value: str) 
 
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     v = ds.variables.get(var)
-    if v is None or getattr(v, attr, "") != expected:
+    # A rule may approve several exact source values, including an absent/empty
+    # attribute. Keep the original single-value API for all existing recipes.
+    allowed = expected if isinstance(expected, list) else [expected]
+    if v is None or getattr(v, attr, "") not in allowed:
         return False
 
     # 2. Replace the observed attribute value without touching the underlying data.

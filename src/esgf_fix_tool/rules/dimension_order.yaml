@@ -128,7 +128,7 @@
 - id: C048
   check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
   message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''vegtype'', ''lat'', ''lon''\]; coordinate IDs
-    \[''longitude'', ''latitude'', ''modelvegtype'', ''time''\] require \[''time'', ''type'', ''lat'', ''lon''\] as their
+    \[''longitude'', ''latitude'', ''(?:modelvegtype|vegtype)'', ''time''\] require \[''time'', ''type'', ''lat'', ''lon''\] as their
     required order\.$'
   action: fix
   fix: rename_auxiliary_dimension
@@ -297,3 +297,11 @@
     source: vegtype
     target: type
   note: Same vegetation index rename as C048a.
+
+
+- id: C048r
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: "'(?P<var>gppVgt|laiVgt)' dimensions in netCDF/C order are \\['time', 'lat', 'lon'\\]; coordinate IDs \\['longitude', 'latitude', 'vegtype', 'time'\\] require \\['time', 'type', 'lat', 'lon'\\] as their required order\\.$"
+  dataset: CMIP7\.SRF\.(?:gppVgt|laiVgt)\.tavg-u-hxy-multi\.
+  action: review
+  note: The reported scientific field has no vegetation-category dimension. Inspect the file header and existing labels before choosing a representation; a permutation or dimension rename cannot supply missing category data. Do not broadcast or duplicate the field to invent vegetation types.
