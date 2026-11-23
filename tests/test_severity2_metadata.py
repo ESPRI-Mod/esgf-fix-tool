@@ -353,3 +353,32 @@ def test_rlat_recommendation_uses_existing_metadata_method_in_place(
         assert ds["rlat"].long_name == "Grid Latitude"
         np.testing.assert_array_equal(ds["rlat"][:], np.linspace(-84, 89, 332))
     assert apply_plan(q, tmp_path / "again")["changed"] == 0
+
+
+def tslsi_file(path, cell_methods):
+    with netCDF4.Dataset(path, "w") as ds:
+        ds.createDimension("time", 2)
+        v = ds.createVariable("tslsi", "f4", ("time",))
+        v[:] = [250.5, 281.0]
+        v.standard_name, v.units, v.cell_methods = "surface_temperature", "K", cell_methods
+
+
+def test_instantaneous_tslsi_over_land_and_sea_ice_is_an_absolute_temperature(tmp_path):
+    p = tmp_path / "tslsi_tpt-u-hxy-lsi_3hr.nc"
+    tslsi_file(p, "area: mean (over land and sea ice) time: point")
+    q = FixPlan("test", "s", {str(p): [Step("C075", "add_temperature_units_metadata", {"var": "tslsi"})]})
+    apply_plan(q, tmp_path / "log")
+    with netCDF4.Dataset(p) as ds:
+        assert ds["tslsi"].units_metadata == "temperature: on_scale"
+        np.testing.assert_array_equal(ds["tslsi"][:], np.array([250.5, 281.0], dtype="f4"))
+    assert apply_plan(q, tmp_path / "again")["changed"] == 0
+
+
+def test_an_unreviewed_cell_methods_is_named_in_the_error(tmp_path):
+    p = tmp_path / "tslsi.nc"
+    tslsi_file(p, "area: mean time: difference")
+    q = FixPlan("test", "s", {str(p): [Step("C075", "add_temperature_units_metadata", {"var": "tslsi"})]})
+    with pytest.raises(ValueError, match="Unreviewed cell_methods for temperature tslsi: 'area: mean time: difference'"):
+        apply_plan(q, tmp_path / "log")
+    with netCDF4.Dataset(p) as ds:
+        assert "units_metadata" not in ds["tslsi"].ncattrs()
