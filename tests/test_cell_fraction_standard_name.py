@@ -1,4 +1,4 @@
-"""The invalid auxiliary name is deleted in place, with no inferred replacement."""
+"""Both diagnostics set the user-approved auxiliary name in place."""
 
 import json
 
@@ -14,8 +14,9 @@ from esgf_fix_tool.plan import FixPlan
 
 
 @pytest.mark.parametrize('fmt', ['NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_64BIT_OFFSET'])
-@pytest.mark.parametrize('current', ['cell_fraction', 'area_fraction', None])
-def test_stale_qa_only_deletes_the_exact_invalid_attribute(tmp_path, monkeypatch, fmt, current):
+@pytest.mark.parametrize('current', ['cell_fraction', 'area_fraction', None, '', 'another_name'])
+@pytest.mark.parametrize('diagnostic', ['invalid', 'missing'])
+def test_both_diagnostics_set_only_the_approved_standard_name(tmp_path, monkeypatch, fmt, current, diagnostic):
     path=tmp_path/'field.nc'
     with netCDF4.Dataset(path,'w',format=fmt) as ds:
         ds.createDimension('cell',3)
@@ -26,7 +27,8 @@ def test_stale_qa_only_deletes_the_exact_invalid_attribute(tmp_path, monkeypatch
         ds['science'].standard_name='air_temperature'
         ds['other'].standard_name='cell_fraction'  # another variable is outside this recipe
         v=ds['cell_fraction']
-        v.long_name='Keep the existing descriptive name'
+        if diagnostic=='invalid':
+            v.long_name='Keep the existing descriptive name'
         v.units='1'
         if current is not None:
             v.standard_name=current
@@ -36,12 +38,14 @@ def test_stale_qa_only_deletes_the_exact_invalid_attribute(tmp_path, monkeypatch
     report=tmp_path/'qa.json'
     message=("standard_name cell_fraction is not defined in Standard Name Table v95. "
              "Possible close match(es): ['area_fraction', 'ocean_volume_fraction', 'cloud_area_fraction']")
+    if diagnostic=='missing':
+        message='Attribute long_name or/and standard_name is highly recommended for variable cell_fraction'
     report.write_text(json.dumps({'fail':{'3':{'[CF-Conventions] §3.3 Standard Name':{
         message:{'CMIP7.ATM.va.tpt-al-hxy-u.6hr.glb.g245.AnyModel.historical.r1i1p1f1':[str(path)]}}}}}))
     out=tmp_path/'plan.json'
 
     def refuse(*args,**kwargs):
-        raise AssertionError('Deleting standard_name must never rewrite the NetCDF')
+        raise AssertionError('Setting standard_name must never rewrite the NetCDF')
 
     monkeypatch.setattr(Batch,'write',refuse)
     original,inode=path.read_bytes(),path.stat().st_ino
@@ -49,7 +53,7 @@ def test_stale_qa_only_deletes_the_exact_invalid_attribute(tmp_path, monkeypatch
     assert result.exit_code==0,result.output
     assert path.read_bytes()==original
     plan=FixPlan.read(out)
-    if current!='cell_fraction':
+    if current not in (None, '', 'cell_fraction'):
         assert not plan.files
         assert '0 fixes à appliquer sur 0 fichiers' in result.output
         return
@@ -58,7 +62,7 @@ def test_stale_qa_only_deletes_the_exact_invalid_attribute(tmp_path, monkeypatch
     assert path.stat().st_ino==inode
     with netCDF4.Dataset(path) as ds:
         assert ds.history=='Keep global history'
-        assert 'standard_name' not in ds['cell_fraction'].ncattrs()
+        assert ds['cell_fraction'].standard_name=='area_fraction'
         assert ds['other'].standard_name=='cell_fraction'
         assert ds['science'].standard_name=='air_temperature'
         for name,(raw,filters,chunks,attrs) in before.items():

@@ -8,9 +8,11 @@ A new or changed rule is at least a minor version: it changes what the tool does
 
 ### Fixed
 
-- C011a removes only cell_fraction:standard_name="cell_fraction", reusing
-  drop_var_attr with an optional exact-value guard. Preserve every other
-  attribute and all arrays; do not invent a replacement standard_name.
+- C011a: set cell_fraction:standard_name to
+  area_fraction when absent, empty or still cell_fraction. The invalid-name and
+  missing-name diagnostics now select the same guarded attribute recipe, instead
+  of deleting the attribute. Preserve other values and all numerical arrays.
+
 
 - Plan now prepares current NetCDF files read-only using apply's dry-run pipeline,
   after path mapping. Count confirmed changed steps/files; remove fully conforming
