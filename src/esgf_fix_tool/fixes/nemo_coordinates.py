@@ -46,7 +46,9 @@ def reference(grid="U"):
     ]:
         spec = document['coordinates'][name]
         values = np.asarray(spec['values'], dtype='<f8')
-        attrs = spec['attributes']
+        attrs = dict(spec['attributes'])
+        # Use CMIP7 long_names rather than the domain file's grid-point captions.
+        attrs['long_name'] = role
         if (spec['source_variable'] != origin or spec['source_record'] != 0
                 or spec['dimensions'] != ['y', 'x'] or spec['dtype'] != 'float64'
                 or values.shape != (331, 360) or not np.isfinite(values).all()
@@ -153,7 +155,8 @@ def inject_nemo_u_coordinates(ds):
             changed = True
         v = ds[name]
         for attr, value in attrs.items():
-            if attr == 'long_name' and getattr(v, attr, '').strip():
+            if (attr == 'long_name' and getattr(v, attr, '').strip()
+                    and getattr(v, attr) != f"{value.title()} at NEMO {grid} points"):
                 continue  # Keep an existing reviewed/CV long_name after a rename.
             if getattr(v, attr, None) != value:
                 v.setncattr(attr, value)

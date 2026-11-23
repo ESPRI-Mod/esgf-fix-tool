@@ -4,6 +4,43 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- Plan now prepares current NetCDF files read-only using apply's dry-run pipeline,
+  after path mapping. Count confirmed changed steps/files; remove fully conforming
+  files while retaining selected no-op prerequisites in changed files. Record
+  preparation in plan JSON; retain and label failures/inaccessible files instead
+  of counting them as conforming. Add --report-only for explicit offline candidate
+  planning and --break-hardlinks to match apply's preparation policy.
+
+- C086 repairs the former NEMO U/V/T long_name captions on the matching injected
+  coordinate grids. C119 now assigns lowercase latitude/longitude captions when
+  injecting coordinates, preserving all coordinate and scientific values.
+
+- Extend C083 to rsus land products on g243 and g245 as well as g111, using
+  the same exact guarded cell_methods replacement without changing arrays.
+
+- Make the plan summary explicit: selected automatic fixes and affected files,
+  distinct ignored QA diagnostics, pending/external-work diagnostics with status
+  counts, and automatic steps omitted by filters. Keep waived/review-only files
+  out of the executable count and retain read-only, report-based planning.
+
+- C101/C101w accept both reviewed g112 basin-mask sizes: CM6 (332,362) and
+  CM7 (331,360). Preserve each native grid, codes and missing-point mask;
+  keep one-dimensional basin coordinates outside this conversion. Report the
+  observed dimensions and metadata when preflight rejects a mask.
+
+- C033 also recognizes the vegtype coordinate ID; C048 accepts both vegtype and
+  modelvegtype and runs the existing category-dimension rename before sector
+  alias creation. Keep gppVgt/laiVgt fields reported as (time,lat,lon) in review:
+  missing vegetation-category data cannot be repaired by a permutation.
+- C075 accepts instantaneous tslsi surface temperatures after validating their
+  standard_name and units, without depending on a sampled cell_methods list.
+- C002a includes the exact reviewed fVegLitter comment and normalizes only its
+  escaped underscores, preserving the complete scientific text.
+
 ## [0.9.0] - 2026-11-20
 
 ### Added

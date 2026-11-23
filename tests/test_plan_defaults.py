@@ -23,7 +23,7 @@ def report(tmp):
 
 def run(tmp,args):
     source,nc=report(tmp);output=tmp/'plan.json'
-    result=CliRunner().invoke(app,['plan',str(source),*args,'-o',str(output)])
+    result=CliRunner().invoke(app,['plan',str(source),'--report-only',*args,'-o',str(output)])
     assert result.exit_code==0,result.output
     assert nc.read_bytes()==b'Plan must not open or modify a NetCDF'
     return FixPlan.read(output)

@@ -20,7 +20,7 @@ STEP_DEPENDENCIES = {
     "inject_nemo_vertices": {"inject_nemo_u_coordinates", "rename_horizontal_coordinate"},
     "rename_horizontal_coordinate": {"inject_nemo_u_coordinates"},
     "add_reviewed_coordinate_bounds": {"promote_coordinate_to_double"},
-    "add_text_coordinate_alias": {"rename_category_dimension"},
+    "add_text_coordinate_alias": {"rename_category_dimension", "rename_auxiliary_dimension"},
     "fix_ice_passage_sector": {"rename_category_dimension"},
     "center_hybrid_interfaces": {"promote_coordinate_to_double"},
     "fix_hybrid_coefficients": {"center_hybrid_interfaces", "promote_coordinate_to_double"},
@@ -58,6 +58,7 @@ class FixPlan:
     files: dict[str, list[Step]] = field(default_factory=dict)
     rules_digest: str = ""  # absent from plans written before 0.1.0
     deduplicate_root: str | None = None  # report scope, including files without QA failures
+    preflight: dict = field(default_factory=dict)  # read-only check of current files, when requested by the CLI
 
     @classmethod
     def from_classification(
