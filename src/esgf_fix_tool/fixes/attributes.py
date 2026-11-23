@@ -37,11 +37,15 @@ def drop_variable_histories(ds):
 
 
 @fix("drop_var_attr")
-def drop_var_attr(ds, var: str, attr: str) -> bool:
+def drop_var_attr(ds, var: str, attr: str, expected: str | None = None) -> bool:
     """Remove ``attr`` from variable ``var`` (e.g. CF appendix A: no 'history' on data variables)."""
     # 1. Inspect current identifiers/attributes and enforce the reviewed preconditions.
     v = ds.variables.get(var)
     if v is None or attr not in v.ncattrs():
+        return False
+
+    # An optional exact-value guard protects valid replacements from stale QA.
+    if expected is not None and v.getncattr(attr) != expected:
         return False
 
     # 2. Delete only this variable attribute; global history and all arrays stay intact.

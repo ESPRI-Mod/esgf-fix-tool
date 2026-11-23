@@ -8,6 +8,10 @@ A new or changed rule is at least a minor version: it changes what the tool does
 
 ### Fixed
 
+- C011a removes only cell_fraction:standard_name="cell_fraction", reusing
+  drop_var_attr with an optional exact-value guard. Preserve every other
+  attribute and all arrays; do not invent a replacement standard_name.
+
 - Plan now prepares current NetCDF files read-only using apply's dry-run pipeline,
   after path mapping. Count confirmed changed steps/files; remove fully conforming
   files while retaining selected no-op prerequisites in changed files. Record
