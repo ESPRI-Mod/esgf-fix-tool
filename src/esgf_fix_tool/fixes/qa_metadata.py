@@ -54,6 +54,7 @@ OBSERVED_TEMPERATURE_METHODS = {
     "area: mean where sea time: point",
     "area: time: mean",
     "area: time: mean (over land and sea ice)",
+    "area: mean (over land and sea ice) time: point",  # tslsi 3hr (tpt): instantaneous, ~250 K, an absolute temperature
     "area: time: mean where air",
     "area: time: mean where ice_sheet",
     "area: time: mean where sea_ice (mask=siconc)",
@@ -76,11 +77,12 @@ def add_temperature_units_metadata(ds, var):
         expected = TEMPERATURES.get(var)
         value = "temperature: on_scale"
     current = (getattr(v, "standard_name", None), getattr(v, "units", None))
-    if (
-        current != expected
-        or getattr(v, "cell_methods", "") not in OBSERVED_TEMPERATURE_METHODS
-    ):
-        raise ValueError(f"Unreviewed temperature semantics for {var}: {current!r}")
+    methods = getattr(v, "cell_methods", "")
+    if current != expected:
+        raise ValueError(f"Unreviewed temperature semantics for {var}: {current!r} (reviewed: {expected!r})")
+    if methods not in OBSERVED_TEMPERATURE_METHODS:
+        raise ValueError(f"Unreviewed cell_methods for temperature {var}: {methods!r}; add it to "
+                         "OBSERVED_TEMPERATURE_METHODS once checked to be an absolute temperature")
 
     # Add the qualifier only; do not convert or rewrite temperature values.
     v.setncattr("units_metadata", value)

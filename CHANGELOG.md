@@ -4,6 +4,16 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- C075 (`add_temperature_units_metadata`) accepts the instantaneous `tslsi` profile, `cell_methods = "area: mean
+  (over land and sea ice) time: point"` (3hr `tpt` files, values around 250 K: an absolute temperature), and writes
+  `units_metadata = "temperature: on_scale"`. Its refusal blocked these 8 files at every iteration.
+- C075 says which check refused a variable: an unreviewed standard_name/units pair (with the reviewed one), or an
+  unreviewed `cell_methods` (shown). The former message only showed the standard_name and units, which were fine.
+
 ## [0.9.0] - 2026-11-20
 
 ### Added
