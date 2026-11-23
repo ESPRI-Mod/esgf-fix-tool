@@ -32,7 +32,7 @@ Work on an **independent staging copy** of the files, never on the simulation ou
 # 1. What does this report need? Prints a summary and exits with the decision code.
 esgf-fix-tool classify qa_result_XXX.json
 
-# 2. Which fixes would be applied, per file? Never opens the netCDF files.
+# 2. Check current NetCDFs in read-only mode and plan only needed changes.
 esgf-fix-tool plan qa_result_XXX.json -o fixplan.json \
   --map-path "$source_root=$staging_root"      # the report was made on the source, fixes go to staging
 
@@ -44,6 +44,38 @@ esgf-fix-tool apply fixplan.json --only-under "$staging_root" --fixlog fixlog.js
 ```
 
 Always use the full report, not `qa_result_*.cluster.json`.
+
+The `plan` summary separates automatic corrections from non-automatic QA findings:
+`N fixes à appliquer sur M fichiers` counts only distinct selected executable
+steps and their file paths. Waived-only and review-only files are excluded.
+A separate line counts distinct ignored (`waive`) diagnostics and pending or
+external-work diagnostics across the **full QA report**, with a status breakdown
+(`review`, `deferred`, `other_step`, `upstream`, `fix_missing`, `unknown`, checker
+errors). A repeated check/message/path is counted once, including dataset aliases.
+A file can occur in several groups, so their file totals must not be added.
+Rule filters are reported separately as unselected automatic steps.
+
+By default, planning opens candidate NetCDFs read-only, **after** path mapping,
+using the same preparation pipeline as `apply --dry-run`. It removes fully
+conforming files from the plan and counts changed steps/files rather than stale
+QA candidates. This may read scientific arrays for recipes that need numerical
+validation, but it never updates a NetCDF, renames a file, breaks hardlinks or
+runs the output rewrite/verification phase. Pass `--break-hardlinks` at plan time
+if it will be used during apply; planning itself still never breaks links.
+
+The plan JSON records this preparation in `preflight`. Failed/inaccessible files
+remain in the plan as explicitly unverified candidates, outside the confirmed
+change count. Within changed files, selected no-op prerequisite steps are kept
+for composition and revalidation; the displayed change count excludes them.
+Apply always validates the retained steps again. Files can change after planning,
+and final output checks run only during apply, so preparation is not a guarantee
+of a successful write.
+
+For offline use, `plan ... --report-only` keeps QA candidates without opening
+NetCDFs and labels them `fixes candidats ... (non vérifiés)`. Regenerate QA after
+applying fixes.
+A zero automatic count with pending findings does not mean all remaining findings
+are accepted false positives. An accepted false positive must be classified `waive`.
 
 ### Processing several files concurrently
 

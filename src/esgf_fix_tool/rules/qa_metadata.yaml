@@ -136,7 +136,7 @@
 - id: C083
   check: \[CMIP7\] \[ATTR004\] Variable 'rsus' attribute 'cell_methods' registry expected-term check$
   message: 'Expected ''area: mean where land time: mean'' to equal ''area: time: mean where land'' from registry key ''cell_methods''\.$'
-  dataset: CMIP7\.SRF\.rsus\.tavg-u-hxy-lnd\.mon\.glb\.g111\.[^.]+\.[^.]+\.[^.]+$
+  dataset: CMIP7\.SRF\.rsus\.tavg-u-hxy-lnd\.mon\.glb\.(?:g111|g243|g245)\.
   action: fix
   fix: set_var_attr_if_matches
   params:
@@ -144,7 +144,7 @@
     attr: cell_methods
     expected: 'area: mean where land time: mean'
     value: 'area: time: mean where land'
-  note: Apply the exact registry text for the reviewed land product.
+  note: Apply the exact registry text for the reviewed land product on g111, g243 and g245. The attribute-only replacement is independent of horizontal geometry; preserve all scientific arrays. No model or experiment restriction.
 
 - id: C084
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
@@ -189,7 +189,7 @@
 
 - id: C086
   check: \[CMIP7\] \[COORD004\] Coordinate metadata recommendations$
-  message: '''(?P<coordinate>lat|lon|latitude|longitude|nav_lat|nav_lon|rlat)'' long_name=''(?:|Latitude|Longitude)''; the recommended value is ''(?P<value>Latitude|latitude|longitude|Grid Latitude)''\.$'
+  message: '''(?P<coordinate>lat|lon|latitude|longitude|nav_lat|nav_lon|rlat)'' long_name=''(?:|Latitude|Longitude|(?:Latitude|Longitude) at NEMO [UVT] points)''; the recommended value is ''(?P<value>Latitude|latitude|longitude|Grid Latitude)''\.$'
   action: fix
   fix: set_reviewed_coordinate_long_name
   params:

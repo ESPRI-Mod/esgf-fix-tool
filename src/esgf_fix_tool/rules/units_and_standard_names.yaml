@@ -89,3 +89,12 @@
   fix: fix_invalid_standard_names
   params: {expected: [scatratio], replacement: backscattering_ratio, units: "1", var: scatratio}
   note: scatratio registry mapping; backscattering_ratio is a valid CF v95 alias; bins and bounds remain separate
+
+
+- id: C011a
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: '(?:standard_name cell_fraction is not defined in Standard Name Table v95\.(?: Possible close match\(es\): \[''area_fraction'', ''ocean_volume_fraction'', ''cloud_area_fraction''\])?|Attribute long_name or/and standard_name is highly recommended for variable cell_fraction)$'
+  action: fix
+  fix: set_var_attr_if_matches
+  params: {var: cell_fraction, attr: standard_name, expected: ['', cell_fraction], value: area_fraction}
+  note: User-approved area_fraction standard_name for variable cell_fraction, replacing the former deletion recipe. Handle both the invalid-name and missing-name diagnostics with this same guarded method. Accept only the absent, empty or invalid original attribute; preserve an already-correct or different standard_name. Preserve all arrays and all other attributes.

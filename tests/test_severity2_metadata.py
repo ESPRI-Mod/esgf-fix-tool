@@ -355,10 +355,10 @@ def test_rlat_recommendation_uses_existing_metadata_method_in_place(
     assert apply_plan(q, tmp_path / "again")["changed"] == 0
 
 
-def tslsi_file(path, cell_methods):
+def tslsi_file(path, cell_methods, var="tslsi"):
     with netCDF4.Dataset(path, "w") as ds:
         ds.createDimension("time", 2)
-        v = ds.createVariable("tslsi", "f4", ("time",))
+        v = ds.createVariable(var, "f4", ("time",))
         v[:] = [250.5, 281.0]
         v.standard_name, v.units, v.cell_methods = "surface_temperature", "K", cell_methods
 
@@ -375,10 +375,11 @@ def test_instantaneous_tslsi_over_land_and_sea_ice_is_an_absolute_temperature(tm
 
 
 def test_an_unreviewed_cell_methods_is_named_in_the_error(tmp_path):
-    p = tmp_path / "tslsi.nc"
-    tslsi_file(p, "area: mean time: difference")
-    q = FixPlan("test", "s", {str(p): [Step("C075", "add_temperature_units_metadata", {"var": "tslsi"})]})
-    with pytest.raises(ValueError, match="Unreviewed cell_methods for temperature tslsi: 'area: mean time: difference'"):
+    # tslsi is exempt from the cell_methods check (any tslsi is an absolute temperature); ts is not
+    p = tmp_path / "ts.nc"
+    tslsi_file(p, "area: mean time: difference", var="ts")
+    q = FixPlan("test", "s", {str(p): [Step("C075", "add_temperature_units_metadata", {"var": "ts"})]})
+    with pytest.raises(ValueError, match="Unreviewed cell_methods for temperature ts: 'area: mean time: difference'"):
         apply_plan(q, tmp_path / "log")
     with netCDF4.Dataset(p) as ds:
-        assert "units_metadata" not in ds["tslsi"].ncattrs()
+        assert "units_metadata" not in ds["ts"].ncattrs()

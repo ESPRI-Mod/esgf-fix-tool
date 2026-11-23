@@ -116,9 +116,16 @@
     target: wavelength
   note: Explicit lambda443nm/lambda550nm/lambda865nm registry mappings, with nm units.
 
+- id: C033r
+  check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
+  message: The required text auxiliary coordinate 'sector' for coordinate ID 'vegtype' is absent, so its configured dependent coordinate checks could not be evaluated\.$
+  dataset: CMIP7\.SRF\.gppVgt\.tavg-u-hxy-multi\.
+  action: review
+  note: The supplied historical gppVgt header has only time,lat,lon and no vegetation labels or category dimension. Recover the original vegetation-resolved field or confirm its scientific representation before adding sector; never borrow the 15 laiVgt labels or duplicate a field across invented categories.
+
 - id: C033
   check: \[CMIP7\] \[COORD001\] Coordinate identity and structure$
-  message: The required text auxiliary coordinate 'sector' for coordinate ID 'modelvegtype' is absent, so its configured dependent
+  message: The required text auxiliary coordinate 'sector' for coordinate ID '(?:modelvegtype|vegtype)' is absent, so its configured dependent
     coordinate checks could not be evaluated\.$
   action: fix
   fix: add_text_coordinate_alias

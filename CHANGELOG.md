@@ -8,11 +8,46 @@ A new or changed rule is at least a minor version: it changes what the tool does
 
 ### Fixed
 
-- C075 (`add_temperature_units_metadata`) accepts the instantaneous `tslsi` profile, `cell_methods = "area: mean
-  (over land and sea ice) time: point"` (3hr `tpt` files, values around 250 K: an absolute temperature), and writes
-  `units_metadata = "temperature: on_scale"`. Its refusal blocked these 8 files at every iteration.
 - C075 says which check refused a variable: an unreviewed standard_name/units pair (with the reviewed one), or an
   unreviewed `cell_methods` (shown). The former message only showed the standard_name and units, which were fine.
+- C011a: set cell_fraction:standard_name to
+  area_fraction when absent, empty or still cell_fraction. The invalid-name and
+  missing-name diagnostics now select the same guarded attribute recipe, instead
+  of deleting the attribute. Preserve other values and all numerical arrays.
+
+
+- Plan now prepares current NetCDF files read-only using apply's dry-run pipeline,
+  after path mapping. Count confirmed changed steps/files; remove fully conforming
+  files while retaining selected no-op prerequisites in changed files. Record
+  preparation in plan JSON; retain and label failures/inaccessible files instead
+  of counting them as conforming. Add --report-only for explicit offline candidate
+  planning and --break-hardlinks to match apply's preparation policy.
+
+- C086 repairs the former NEMO U/V/T long_name captions on the matching injected
+  coordinate grids. C119 now assigns lowercase latitude/longitude captions when
+  injecting coordinates, preserving all coordinate and scientific values.
+
+- Extend C083 to rsus land products on g243 and g245 as well as g111, using
+  the same exact guarded cell_methods replacement without changing arrays.
+
+- Make the plan summary explicit: selected automatic fixes and affected files,
+  distinct ignored QA diagnostics, pending/external-work diagnostics with status
+  counts, and automatic steps omitted by filters. Keep waived/review-only files
+  out of the executable count and retain read-only, report-based planning.
+
+- C101/C101w accept both reviewed g112 basin-mask sizes: CM6 (332,362) and
+  CM7 (331,360). Preserve each native grid, codes and missing-point mask;
+  keep one-dimensional basin coordinates outside this conversion. Report the
+  observed dimensions and metadata when preflight rejects a mask.
+
+- C033 also recognizes the vegtype coordinate ID; C048 accepts both vegtype and
+  modelvegtype and runs the existing category-dimension rename before sector
+  alias creation. Keep gppVgt/laiVgt fields reported as (time,lat,lon) in review:
+  missing vegetation-category data cannot be repaired by a permutation.
+- C075 accepts instantaneous tslsi surface temperatures after validating their
+  standard_name and units, without depending on a sampled cell_methods list.
+- C002a includes the exact reviewed fVegLitter comment and normalizes only its
+  escaped underscores, preserving the complete scientific text.
 
 ## [0.9.0] - 2026-11-20
 

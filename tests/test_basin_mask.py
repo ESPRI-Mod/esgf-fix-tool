@@ -16,14 +16,14 @@ from esgf_fix_tool.report import Finding, QAReport
 from esgf_fix_tool.ruleset import RuleSet
 
 
-def make(path, fmt='NETCDF4', dtype='f4'):
-    data = (np.arange(332*362).reshape(332,362) % 11).astype(dtype)
+def make(path, fmt='NETCDF4', dtype='f4', shape=(332, 362)):
+    data = (np.arange(np.prod(shape)).reshape(shape) % 11).astype(dtype)
     missing = np.zeros(data.shape, dtype=bool)
     missing[0,0] = missing[-1,-1] = True
     with netCDF4.Dataset(path, 'w', format=fmt) as ds:
         ds.setncatts(dict(source_id='IPSL-CM6-ESMCO2', variable_id='basin',
                          branded_variable='basin_ti-u-hxy-u', grid_label='g112'))
-        ds.createDimension('y',332); ds.createDimension('x',362)
+        ds.createDimension('y',shape[0]); ds.createDimension('x',shape[1])
         fill = np.float32(1e20) if dtype == 'f4' else np.int32(-9999)
         v = ds.createVariable('basin',dtype,('y','x'), fill_value=fill, zlib=fmt.startswith('NETCDF4'))
         v.standard_name='region'; v.long_name='Region Selection Index'
@@ -41,8 +41,9 @@ def plan(path):
 
 
 @pytest.mark.parametrize('fmt',['NETCDF4','NETCDF4_CLASSIC','NETCDF3_64BIT_OFFSET'])
-def test_mask_conversion_preserves_codes_missing_points_and_other_arrays(tmp_path,monkeypatch,fmt):
-    p=tmp_path/'mask.nc'; expected, mask=make(p,fmt)
+@pytest.mark.parametrize('shape', [(332, 362), (331, 360)])
+def test_mask_conversion_preserves_codes_missing_points_and_other_arrays(tmp_path,monkeypatch,fmt,shape):
+    p=tmp_path/'mask.nc'; expected, mask=make(p,fmt,shape=shape)
     with netCDF4.Dataset(p) as ds:
         original={n:ds[n][:].tobytes() for n in ('latitude','longitude')}
         compression=ds['basin'].filters(); chunks=ds['basin'].chunking()
@@ -75,8 +76,9 @@ def test_mask_conversion_preserves_codes_missing_points_and_other_arrays(tmp_pat
     assert json.loads((tmp_path/'apply.jsonl').read_text())['rewrite_count']==1
 
 
-def test_existing_int32_mask_only_needs_attributes_in_place(tmp_path,monkeypatch):
-    p=tmp_path/'mask.nc';make(p,dtype='i4');inode=p.stat().st_ino
+@pytest.mark.parametrize('shape', [(332, 362), (331, 360)])
+def test_existing_int32_mask_only_needs_attributes_in_place(tmp_path,monkeypatch,shape):
+    p=tmp_path/'mask.nc';make(p,dtype='i4',shape=shape);inode=p.stat().st_ino
     def forbidden(*args):raise AssertionError('Integer mask was unnecessarily rewritten')
     monkeypatch.setattr(Batch,'write',forbidden)
     assert apply_plan(plan(p),tmp_path/'log')['changed']==1
@@ -85,8 +87,9 @@ def test_existing_int32_mask_only_needs_attributes_in_place(tmp_path,monkeypatch
 
 
 @pytest.mark.parametrize('bad',[2.5,11.,-1.,float('inf'),float('nan')])
-def test_invalid_codes_abort_before_any_write(tmp_path,bad):
-    p=tmp_path/'mask.nc';make(p)
+@pytest.mark.parametrize('shape', [(332, 362), (331, 360)])
+def test_invalid_codes_abort_before_any_write(tmp_path,bad,shape):
+    p=tmp_path/'mask.nc';make(p,shape=shape)
     with netCDF4.Dataset(p,'a') as ds:ds['basin'][1,1]=bad
     before=p.read_bytes()
     with pytest.raises(ValueError,match='codes outside'):
@@ -97,6 +100,7 @@ def test_invalid_codes_abort_before_any_write(tmp_path,bad):
 def test_three_basin_axis_is_not_reinterpreted(tmp_path):
     p=tmp_path/'axis.nc'
     with netCDF4.Dataset(p,'w') as ds:
+        ds.branded_variable, ds.grid_label = 'basin_ti-u-hxy-u', 'g112'
         ds.createDimension('basin',3)
         v=ds.createVariable('basin','f8',('basin',));v[:]=[1,2,3]
         v.standard_name='region'; v.long_name='Sub-basin mask (1=Global 2=Atlantic 3=Indo-Pacific)'
@@ -128,11 +132,13 @@ def test_actual_report_selects_one_mask_and_distinct_sector_fixes_for_nine_axes(
 @pytest.mark.parametrize('experiment', ['piControl-spinup', 'esm-piControl-spinup'])
 @pytest.mark.parametrize('fmt', ['NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_64BIT_OFFSET'])
 @pytest.mark.parametrize('dtype', ['f4', 'i4'])
-def test_units_one_diagnostic_plans_and_applies_the_full_mask_recipe(tmp_path, monkeypatch, experiment, fmt, dtype):
+@pytest.mark.parametrize('model,shape', [('IPSL-CM6-ESMCO2',(332,362)), ('IPSL-CM7A',(331,360))])
+def test_units_one_diagnostic_plans_and_applies_the_full_mask_recipe(tmp_path, monkeypatch, experiment, fmt, dtype, model, shape):
     """Reproduce the supplied header: units=1 exists but categorical flags do not."""
-    p = tmp_path/f'basin_ti-u-hxy-u_fx_glb_g112_IPSL-CM6-ESMCO2_{experiment}_r1i1p1f1.nc'
-    expected, mask = make(p, fmt, dtype)
+    p = tmp_path/f'basin_ti-u-hxy-u_fx_glb_g112_{model}_{experiment}_r1i1p1f1.nc'
+    expected, mask = make(p, fmt, dtype, shape)
     with netCDF4.Dataset(p, 'a') as ds:
+        ds.source_id = model
         ds.experiment_id = experiment
         ds.frequency, ds.region, ds.variant_label = 'fx', 'glb', 'r1i1p1f1'
         ds.createDimension('bnds', 2)
@@ -150,7 +156,7 @@ def test_units_one_diagnostic_plans_and_applies_the_full_mask_recipe(tmp_path, m
 
     finding = Finding(3, '[CF-Conventions] §3.1 Units',
         'Units "1" for variable basin must be convertible to canonical units "None"',
-        f'CMIP7.OCE.basin.ti-u-hxy-u.fx.glb.g112.IPSL-CM6-ESMCO2.{experiment}.r1i1p1f1', str(p))
+        f'CMIP7.OCE.basin.ti-u-hxy-u.fx.glb.g112.{model}.{experiment}.r1i1p1f1', str(p))
     report = QAReport(Path('qa.json'), {}, [finding])
     classification = classify(report, RuleSet.load(*default_rule_paths()))
     item = classification.items[0]
@@ -171,6 +177,7 @@ def test_units_one_diagnostic_plans_and_applies_the_full_mask_recipe(tmp_path, m
     with netCDF4.Dataset(p) as ds:
         v = ds['basin']
         assert v.dtype == np.dtype('i4') and v.dimensions == ('y', 'x')
+        assert v.shape == shape
         assert v.units == '1'
         assert v.flag_values.dtype == np.dtype('i4')
         np.testing.assert_array_equal(v.flag_values, np.arange(11, dtype='i4'))
@@ -198,3 +205,13 @@ def test_canonical_units_diagnostic_on_a_basin_axis_does_not_select_mask_convers
     result = classify(QAReport(Path('qa'), {}, [finding]), RuleSet.load(*default_rule_paths()))
     assert result.items[0].match.rule.id == 'C101a'
     assert result.items[0].match.rule.fix == 'fix_basin_sector'
+
+
+@pytest.mark.parametrize('shape', [(331,362), (332,360), (3,4)])
+def test_unreviewed_grid_shapes_are_rejected_without_any_write(tmp_path, shape):
+    path = tmp_path/'wrong_grid.nc'
+    make(path, shape=shape)
+    original = path.read_bytes()
+    with pytest.raises(ValueError, match='shape='):
+        apply_plan(plan(path), tmp_path/'log')
+    assert path.read_bytes() == original
