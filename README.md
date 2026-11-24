@@ -386,6 +386,15 @@ rules in `rules/checker_errors.yaml` (`applies_to: checker_error`), which only e
 compliance-checker [#1374](https://github.com/ioos/compliance-checker/issues/1374), `check_geographic_region` on
 flag-encoded region variables (`basin`); the other checks of those files did run. Any other crash still gives 40.
 
+### Scoped waivers
+
+`rules/waivers.yaml` holds findings decided to be false positives **in a given context**: each rule restricts the
+dataset id (`CMIP7.<realm>.<variable>.<branding>.<frequency>.<region>.<grid>.<source>.<experiment>.<variant>`) at
+least to the experiment the decision was taken for, and records the scope, the decision and the reason. The same
+finding in another experiment is not waived: it shows up again, and someone decides again (widening the scope if it
+holds). Today: W001 (3hr series of `historical` starting in 1950), W002/W003 (climatology dates and the "gap"
+between two climatologies of `historical`).
+
 ### Choosing rules
 
 By default, `classify` and `plan` load every packaged catalogue, reviewed catalogues first and historical

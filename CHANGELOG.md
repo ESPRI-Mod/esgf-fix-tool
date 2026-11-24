@@ -4,6 +4,16 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `rules/waivers.yaml`: scoped waivers, false positives decided for one context only (at least the experiment, via the
+  dataset id), with their scope, decision and reason. W001: 3hr series of `historical` starting in 1950 (the Data
+  Request asks for 3hr from 1950 only). W002: climatology dates (TIME001 midpoints) of `historical` `tclm`. W003: the
+  continuity "gap" between two climatologies of `historical` `tclm`. Gaps of ordinary series stay S031. Decided at
+  the meeting of 2026-11-24 on the pilot simulation (IPSL-CM6-ESMCO2 historical).
+
 ## [0.10.0] - 2026-11-23
 
 ### Fixed
