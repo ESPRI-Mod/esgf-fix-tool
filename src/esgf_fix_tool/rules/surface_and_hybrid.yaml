@@ -16,7 +16,7 @@
 - id: C074c
   check: \[Consistency\] Coordinates \(Inter-Dataset\)$
   message: 'The following coordinates differ between datasets: ap,.*'
-  dataset: CMIP7\.ATM\.(?!(?:edt|evu)\.)
+  dataset: CMIP7\.(?:ATM|CHM)\.(?!(?:edt|evu)\.)
   action: fix
   fix: fix_hybrid_coefficients
   params: {coordinate: auto}
@@ -100,4 +100,4 @@
     coordinate: '{coordinate}'
   note: Use the supplied reference after checking the complete lev axis. Bind ap/b to lev, and pair consecutive reference
     interfaces for alevel coefficient bounds. Preserve lev and the science arrays.
-  dataset: CMIP7\.ATM\.(?!(?:edt|evu)\.)
+  dataset: CMIP7\.(?:ATM|CHM)\.(?!(?:edt|evu)\.)

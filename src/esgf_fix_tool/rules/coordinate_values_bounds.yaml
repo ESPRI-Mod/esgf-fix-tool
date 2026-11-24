@@ -205,8 +205,7 @@
   action: fix
   fix: fix_climatology_reference
   params: {}
-  note: Two diagnostics, one step per file. Reuse and rename existing intervals to climatology_bnds; switch bounds -> climatology.
-    Runtime checks temporal labels, cell_methods and interval validity; no averaging/rebinning.
+  note: Two diagnostics, one step per file. Reuse the monthly tclm reconstruction to reduce complete yearly monthly series to 12 climatological means and build climatology_bnds. Preserve the approved area:mean where air clause, including ch4/n2o/o3 p19 products. Already reconstructed climatologies only require metadata validation.
 
 - id: C067
   check: \[CMIP7\] \[COORD009\] Coordinate bounds naming$

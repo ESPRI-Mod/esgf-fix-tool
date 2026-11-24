@@ -4,6 +4,25 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Changed
+
+- Reuse the cleanup command for explicitly retired CHM ch4/n2o_tclm-u-hm-air
+  products, without requiring a duplicate keeper. Check identity and deletion
+  boundaries, preserve dry-run behavior, and log separate obsolete-product counts.
+  Skip recipes on these products during ordinary apply and handle stale-plan replay.
+- C066/C106 reconstruction preserves area:mean where air and accepts the reviewed
+  ch4/n2o/o3 p19 climatologies; retain complete-year and numerical checks.
+- C014a reuses hybrid normalization for CHM al/alh products, including coefficient
+  dimension repair before normalization. Shared recipes accept compound atmospheric
+  realms (atmosChem, aerosol, atmos) while retaining full reference/vector checks.
+- C003 now changes standard to proleptic_gregorian for the observed TIME003a
+  recommendation. Validate epochs, times and temporal bounds before editing only
+  calendar attributes; remove the obsolete gregorian-to-standard conversion.
+- Extend C112's existing exact registry-comment replacement to the 35 branded
+  products (24 grouped diagnostics) audited in the 2026-11-24 INCA report.
+
 ## [0.11.0] - 2026-11-24
 
 ### Added

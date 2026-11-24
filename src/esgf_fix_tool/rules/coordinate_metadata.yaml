@@ -1,13 +1,10 @@
 - id: C003
-  check: '\[CMIP7\] \[ATTR004\] Coordinate Variable ''(?P<var>[^'']+)'' attribute ''calendar'' enum check'
-  message: 'Value ''gregorian'' not in allowed values'
+  check: '\[CMIP7\] \[TIME003a\] Calendar for time coordinate$'
+  message: "Variable 'time' has a calendar attribute with the value 'standard'\\. It is recommended to use 'proleptic_gregorian' instead\\.$"
   action: fix
-  fix: set_var_attr
-  params: {var: "{var}", attr: calendar, value: standard}
-  severity: 3
-  upstream_status: not_reported
-  note: "'gregorian' is a deprecated CF synonym of 'standard' (same calendar). New on piControl-spinup s.02 (pilot run #1)"
-
+  fix: standard_to_proleptic_gregorian
+  params: {}
+  note: User-approved standard to proleptic_gregorian on model time coordinates. Validate Gregorian-era epoch, all time values and referenced bounds before changing calendar attributes only. Preserve numeric encoding and units. Do not restore the obsolete gregorian-to-standard recipe.
 
 - id: C095
   check: \[CF-Conventions\] §3\.1 Units$|\[CMIP7\] \[COORD003\] Coordinate metadata$

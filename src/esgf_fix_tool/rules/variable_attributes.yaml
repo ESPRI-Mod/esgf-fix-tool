@@ -4,9 +4,51 @@
   check: \[CMIP7\] \[ATTR004\] Variable '(?P<var>[^']+)' attribute 'comment' registry expected-term check$
   message: Expected .*
   action: fix
-  note: User authorized replacing the five observed scientific comments by the exact expected registry text. Guard against
+  note: User authorized the exact expected registry text for the audited products, including the 2026-11-24 chemistry variants. Guard against
     unrelated content changes.
-  dataset: CMIP7\.[^.]+\.(?:siareaacrossline\.tavg\-u\-ht\-u|simassacrossline\.tavg\-u\-ht\-u|sisnmassacrossline\.tavg\-u\-ht\-u|wmo\.tavg\-ol\-hxy\-sea|wo\.tavg\-ol\-hxy\-sea)\.
+  dataset: >-
+    (?x:CMIP7\.[^.]+\.(?:
+      c2h6\.tavg\-al\-hxy\-u
+      | c3h6\.tavg\-al\-hxy\-u
+      | c3h8\.tavg\-al\-hxy\-u
+      | ch3coch3\.tavg\-al\-hxy\-u
+      | ch4\.tavg\-al\-hxy\-u
+      | ch4\.tavg\-p19\-hxy\-air
+      | ch4\.tavg\-p39\-hy\-air
+      | ch4\.tclm\-p19\-hxy\-air
+      | co\.tavg\-al\-hxy\-u
+      | dms\.tavg\-al\-hxy\-u
+      | emioa\.tavg\-u\-hxy\-u
+      | hcho\.tavg\-al\-hxy\-u
+      | hno3\.tavg\-al\-hxy\-u
+      | hno3\.tavg\-p39\-hy\-air
+      | ho2\.tavg\-p39\-hy\-air
+      | mmraerh2o\.tavg\-al\-hxy\-u
+      | mmroa\.tavg\-al\-hxy\-u
+      | n2o\.tavg\-al\-hxy\-u
+      | n2o\.tavg\-p19\-hxy\-air
+      | n2o\.tavg\-p39\-hy\-air
+      | n2o\.tclm\-p19\-hxy\-air
+      | no2\.tavg\-al\-hxy\-u
+      | no\.tavg\-al\-hxy\-u
+      | o3\.tavg\-al\-hxy\-u
+      | o3\.tavg\-p19\-hxy\-air
+      | o3\.tavg\-p39\-hy\-air
+      | o3\.tclm\-p19\-hxy\-air
+      | o3loss\.tavg\-al\-hxy\-u
+      | o3prod\.tavg\-al\-hxy\-u
+      | oh\.tavg\-al\-hxy\-u
+      | oh\.tavg\-p39\-hy\-air
+      | pan\.tavg\-al\-hxy\-u
+      | photo1d\.tavg\-al\-hxy\-u
+      | siareaacrossline\.tavg\-u\-ht\-u
+      | simassacrossline\.tavg\-u\-ht\-u
+      | sisnmassacrossline\.tavg\-u\-ht\-u
+      | so2\.tavg\-al\-hxy\-u
+      | wetso4\.tavg\-u\-hxy\-u
+      | wmo\.tavg\-ol\-hxy\-sea
+      | wo\.tavg\-ol\-hxy\-sea
+    )\.)
   fix: fix_registry_comment
   params:
     var: '{var}'
