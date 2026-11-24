@@ -245,7 +245,13 @@ def apply_plan(
         raise ValueError("workers must be a positive integer")
     if only_under is not None:
         check_under(plan, only_under)
-    from .deduplicate import apply_root, completed_discard, deduplicate
+    from .deduplicate import (
+        apply_root,
+        completed_discard,
+        deduplicate,
+        unused_product,
+        validate_unused,
+    )
 
     active_files = dict(plan.files)
     selection = {}
@@ -279,8 +285,24 @@ def apply_plan(
     # deduplication itself runs after the workers have closed all NetCDF handles.
     deduplicate_root = None if shard is not None else apply_root(plan, only_under)
     removed_duplicates = {}
+    removed_unused = []
     if deduplicate_root is not None:
         for path in list(active_files):
+            if unused_product(deduplicate_root, Path(path)):
+                candidate = Path(path)
+                if not candidate.exists() and not candidate.is_symlink():
+                    removed_unused.append(path)
+                    del active_files[path]
+                    continue
+                try:
+                    validate_unused(deduplicate_root, candidate)
+                except (OSError, ValueError):
+                    pass  # Invalid identity follows normal error handling; never delete by basename alone.
+                else:
+                    # Do not reconstruct or rewrite a product that is about to
+                    # be deleted by the explicit cleanup policy after workers close.
+                    del active_files[path]
+                    continue
             keep = completed_discard(deduplicate_root, path)
             if keep is not None:
                 removed_duplicates[path] = str(keep)
@@ -487,11 +509,26 @@ def apply_plan(
                 blocked_paths=failed_paths,
                 emit=lambda message: notify("deduplication", "result", message=message),
             )
-            notify("deduplication", "summary", message=(
+            summary = (
                 f"Doublons ATM/SRF : {result['deleted']} supprimés, "
                 f"{result['would_delete']} à supprimer (simulation), "
                 f"{len(removed_duplicates)} déjà supprimés, {result['failed']} échecs"
-            ))
-        stats.update({f"duplicates_{key}": value for key, value in result.items()})
+            )
+            if any(key.startswith('obsolete_') for key in result) or removed_unused:
+                with dedup_log.open('a', encoding='utf-8') as log:
+                    for path in removed_unused:
+                        log.write(json.dumps(dict(time=datetime.now(UTC).isoformat(),
+                            operation='unused-product-removal', status='already_removed',
+                            discard=path, dry_run=dry_run)) + '\n')
+                summary += (
+                    f" | Produits inutiles : {result.get('obsolete_deleted', 0)} supprimés, "
+                    f"{result.get('obsolete_would_delete', 0)} à supprimer (simulation), "
+                    f"{len(removed_unused)} déjà supprimés, {result.get('obsolete_failed', 0)} échecs"
+                )
+            notify('deduplication', 'summary', message=summary)
+        stats.update({key if key.startswith('obsolete_') else f"duplicates_{key}": value
+                      for key, value in result.items()})
+        if removed_unused:
+            stats['obsolete_already_removed'] = len(removed_unused)
         stats["duplicates_already_removed"] = len(removed_duplicates)
     return stats

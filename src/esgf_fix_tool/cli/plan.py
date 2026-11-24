@@ -93,6 +93,9 @@ def run(
         print(f"{counts['changed_steps']} fixes à appliquer sur {counts['changed_files']} fichiers → {output}")
         print(f"Déjà conformes : {counts['conforming_files']} fichiers retirés du plan ; "
               f"{counts['noop_steps']} étapes sans changement")
+        if counts.get('cleanup_files'):
+            print(f"Produits inutiles : {counts['cleanup_files']} fichiers réservés au nettoyage "
+                  "lors de apply/deduplicate (aucune suppression pendant plan)")
         if counts['unverified_files']:
             print(f"À vérifier : {counts['unverified_steps']} fixes sur {counts['unverified_files']} fichiers "
                   "non vérifiés ou en échec, conservés dans le plan")
@@ -109,4 +112,4 @@ def run(
         print(f"Filtres : {sum(len(s) for s in excluded.values())} fixes non sélectionnés "
               f"sur {len(excluded)} fichiers")
     if p.deduplicate_root:
-        print(f"Automatic ATM/SRF deduplication during apply → {p.deduplicate_root}")
+        print(f"Automatic ATM/SRF deduplication + unused CHM product cleanup during apply → {p.deduplicate_root}")

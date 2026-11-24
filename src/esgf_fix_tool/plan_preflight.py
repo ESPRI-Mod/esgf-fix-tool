@@ -1,6 +1,9 @@
 """Refine report candidates using exactly apply's read-only preparation pipeline."""
 
+from pathlib import Path
+
 from .apply import apply_file
+from .deduplicate import unused_product, validate_unused
 from .plan import order_steps
 
 
@@ -14,10 +17,17 @@ def verify_plan(plan, files=None, *, break_hardlinks=False):
     candidates = list(plan.files.items()) if files is None else files
     retained, records = {}, {}
     counts = dict(changed_steps=0, changed_files=0, noop_steps=0, conforming_files=0,
-                  unverified_steps=0, unverified_files=0)
+                  unverified_steps=0, unverified_files=0, cleanup_files=0)
     for path, selected in candidates:
         steps = order_steps(selected)
         try:
+            root = Path(plan.deduplicate_root).resolve() if plan.deduplicate_root else None
+            if root is not None and unused_product(root, Path(path)):
+                if Path(path).exists() or Path(path).is_symlink():
+                    validate_unused(root, Path(path))
+                records[path] = dict(status='cleanup-only', operation='unused-product-removal')
+                counts['cleanup_files'] += 1
+                continue  # Leave deletion to the explicit apply/deduplicate cleanup stage.
             entries = apply_file(path, steps, dry_run=True, break_hardlinks=break_hardlinks,
                                  continue_on_fix_error=True)
         except Exception as error:  # noqa: BLE001 -- recipe failures stay explicit; interrupts propagate
