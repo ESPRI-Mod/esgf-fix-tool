@@ -1,6 +1,6 @@
 [project]
 name = "esgf-fix-tool"
-version = "0.11.0"
+version = "0.12.0"
 description = "Fix CMIP7 netCDF files from an esgqa report and a set of rules"
 readme = "README.md"
 authors = [
