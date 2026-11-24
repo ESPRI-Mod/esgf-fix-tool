@@ -9,7 +9,8 @@ A new or changed rule is at least a minor version: it changes what the tool does
 ### Changed
 
 - Reuse the cleanup command for explicitly retired CHM ch4/n2o_tclm-u-hm-air
-  products, without requiring a duplicate keeper. Check identity and deletion
+  products, without requiring a duplicate keeper. This applies to every simulation with a `CMIP7/CHM` tree (any
+  source, any experiment): `deduplicate` and the clean-up stage of an ordinary `apply` delete them. Check identity and deletion
   boundaries, preserve dry-run behavior, and log separate obsolete-product counts.
   Skip recipes on these products during ordinary apply and handle stale-plan replay.
 - C066/C106 reconstruction preserves area:mean where air and accepts the reviewed

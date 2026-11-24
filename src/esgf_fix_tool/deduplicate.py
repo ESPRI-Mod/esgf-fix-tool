@@ -335,6 +335,6 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print, blo
             entry['status'] = status
             log.write(json.dumps(entry) + '\n'); log.flush()
             counts['obsolete_' + status] += 1
-            emit(f"{status}: {discard.name} [produit inutile]" +
+            emit(f"{status}: {discard.name} [retired product]" +
                  (f" — {entry['error']}" if 'error' in entry else ''))
     return counts
