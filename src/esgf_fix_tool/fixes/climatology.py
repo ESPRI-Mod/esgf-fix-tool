@@ -25,10 +25,10 @@ def _ordered_methods(text, label):
     Refuse unreviewed qualifiers instead of guessing how to attach them.
     """
     pattern = (
-        r"(?P<prefix>area:\s*(?:mean\s+)?)?"
+        r"(?P<prefix>area:\s*(?:mean\s+(?P<before>where\s+air\s+)?)?)?"
         r"(?P<time>time:\s*(?P<stat>mean|maximum|minimum)\s+within\s+"
         r"(?P<period>years|days)\s+time:\s*mean\s+over\s+(?P=period))"
-        r"(?P<suffix>\s+area:\s*mean)?"
+        r"(?P<suffix>\s+area:\s*mean(?P<after>\s+where\s+air)?)?"
     )
     match = re.fullmatch(pattern, text.strip())
     if (
@@ -42,7 +42,10 @@ def _ordered_methods(text, label):
             f"Unreviewed climatological cell_methods syntax for {label}: {text!r}"
         )
     has_area = bool(match["prefix"] or match["suffix"])
-    return ("area: mean " if has_area else "") + match["time"]
+    # The atmospheric qualifier belongs to the spatial clause. Keep it when
+    # restoring DR order; never broaden the average from air to another domain.
+    qualifier = "where air " if match["before"] or match["after"] else ""
+    return ("area: mean " + qualifier if has_area else "") + match["time"]
 
 
 def _verify_method_order(source, output):

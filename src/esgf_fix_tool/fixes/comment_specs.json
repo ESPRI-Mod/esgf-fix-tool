@@ -515,5 +515,355 @@
         "value": "In accordance with common usage in geophysical disciplines, \"flux\" implies per unit area, called \"flux density\" in physics. \"Vegetation\" means any living plants e.g. trees, shrubs, grass. \"Litter\" is dead plant material in or above the soil. It is distinct from coarse wood debris. The precise distinction between \"fine\" and \"coarse\" is model dependent. The sum of the quantities with standard names mass_flux_of_carbon_into_litter_from_vegetation_due_to_mortality and mass_flux_of_carbon_into_litter_from_vegetation_due_to_senescence is mass_flux_of_carbon_into_litter_from_vegetation."
       }
     ]
+  },
+  "c2h6_tavg-al-hxy-u": {
+    "var": "c2h6",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "c3h6_tavg-al-hxy-u": {
+    "var": "c3h6",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "c3h8_tavg-al-hxy-u": {
+    "var": "c3h8",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ch3coch3_tavg-al-hxy-u": {
+    "var": "ch3coch3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction \"mole\\_fraction\\_of\\_X\\_in\\_Y\", where X is a material constituent of Y. A chemical species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox\\_expressed\\_as\\_nitrogen\". Acetone is an organic molecule with the chemical formula CH3CH3CO. The IUPAC name for acetone is propan-2-one. Acetone is a member of the group of organic compounds known as ketones. There are standard names for the ketone group as well as for some of the individual species.",
+        "value": "Mole fraction is used in the construction \"mole_fraction_of_X_in_Y\", where X is a material constituent of Y. A chemical species denoted by X may be described by a single term such as \"nitrogen\" or a phrase such as \"nox_expressed_as_nitrogen\". Acetone is an organic molecule with the chemical formula CH3CH3CO. The IUPAC name for acetone is propan-2-one. Acetone is a member of the group of organic compounds known as ketones. There are standard names for the ketone group as well as for some of the individual species."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ch4_tavg-al-hxy-u": {
+    "var": "ch4",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ch4_tavg-p19-hxy-air": {
+    "var": "ch4",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ch4_tavg-p39-hy-air": {
+    "var": "ch4",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ch4_tclm-p19-hxy-air": {
+    "var": "ch4",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "co_tavg-al-hxy-u": {
+    "var": "co",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "dms_tavg-al-hxy-u": {
+    "var": "dms",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "emioa_tavg-u-hxy-u": {
+    "var": "emioa",
+    "variants": [
+      {
+        "observed": "This is the sum of total emission of POA and total production of SOA (emipoa+chepsoa). \"Mass\" refers to the mass of organic matter, not mass of organic carbon alone. We recommend a scale factor of POM=1.4\\*OC, unless your model has more detailed info available.  Integrate 3D chemical production and emission field vertically to 2d field.",
+        "value": "This is the sum of total emission of POA and total production of SOA (emipoa+chepsoa). \"Mass\" refers to the mass of organic matter, not mass of organic carbon alone. We recommend a scale factor of POM=1.4*OC, unless your model has more detailed info available.  Integrate 3D chemical production and emission field vertically to 2d field."
+      }
+    ],
+    "replace_expected": true
+  },
+  "hcho_tavg-al-hxy-u": {
+    "var": "hcho",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "hno3_tavg-al-hxy-u": {
+    "var": "hno3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "hno3_tavg-p39-hy-air": {
+    "var": "hno3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "ho2_tavg-p39-hy-air": {
+    "var": "ho2",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.  The chemical formula of hydroperoxyl radical is HO2.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.  The chemical formula of hydroperoxyl radical is HO2."
+      }
+    ],
+    "replace_expected": true
+  },
+  "mmraerh2o_tavg-al-hxy-u": {
+    "var": "mmraerh2o",
+    "variants": [
+      {
+        "observed": "Mass fraction is used in the construction mass\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y. It means the ratio of the mass of X to the mass of Y (including X). \"Aerosol\" means the system of suspended liquid or solid particles in air (except cloud droplets) and their carrier gas, the air itself. \"Ambient\\_aerosol\" means that the aerosol is measured or modelled at the ambient state of pressure, temperature and relative humidity that exists in its immediate environment. \"Ambient aerosol particles\" are aerosol particles that have taken up ambient water through hygroscopic growth. The extent of hygroscopic growth depends on the relative humidity and the composition of the particles.",
+        "value": "Mass fraction is used in the construction mass_fraction_of_X_in_Y, where X is a material constituent of Y. It means the ratio of the mass of X to the mass of Y (including X). \"Aerosol\" means the system of suspended liquid or solid particles in air (except cloud droplets) and their carrier gas, the air itself. \"Ambient_aerosol\" means that the aerosol is measured or modelled at the ambient state of pressure, temperature and relative humidity that exists in its immediate environment. \"Ambient aerosol particles\" are aerosol particles that have taken up ambient water through hygroscopic growth. The extent of hygroscopic growth depends on the relative humidity and the composition of the particles."
+      }
+    ],
+    "replace_expected": true
+  },
+  "mmroa_tavg-al-hxy-u": {
+    "var": "mmroa",
+    "variants": [
+      {
+        "observed": "We recommend a scale factor of POM=1.4\\*OC, unless your model has more detailed info available.",
+        "value": "We recommend a scale factor of POM=1.4*OC, unless your model has more detailed info available."
+      }
+    ],
+    "replace_expected": true
+  },
+  "n2o_tavg-al-hxy-u": {
+    "var": "n2o",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O."
+      }
+    ],
+    "replace_expected": true
+  },
+  "n2o_tavg-p19-hxy-air": {
+    "var": "n2o",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O."
+      }
+    ],
+    "replace_expected": true
+  },
+  "n2o_tavg-p39-hy-air": {
+    "var": "n2o",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O."
+      }
+    ],
+    "replace_expected": true
+  },
+  "n2o_tclm-p19-hxy-air": {
+    "var": "n2o",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.   The chemical formula of  nitrous oxide is N2O."
+      }
+    ],
+    "replace_expected": true
+  },
+  "no_tavg-al-hxy-u": {
+    "var": "no",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "no2_tavg-al-hxy-u": {
+    "var": "no2",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3_tavg-al-hxy-u": {
+    "var": "o3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3_tavg-p19-hxy-air": {
+    "var": "o3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3_tavg-p39-hy-air": {
+    "var": "o3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3_tclm-p19-hxy-air": {
+    "var": "o3",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3loss_tavg-al-hxy-u": {
+    "var": "o3loss",
+    "variants": [
+      {
+        "observed": "ONLY provide the sum of the following reactions: (i) O(1D)+H2O; (ii) O3+HO2; (iii) O3+OH; (iv) O3+alkenes (isoprene, ethene,...)",
+        "value": "ONLY provide the sum of the following reactions: (i) O(1D)+H2O; (ii) O3+HO2; (iii) O3+OH; (iv) O3+alkenes (isoprene, ethene, ...)"
+      }
+    ],
+    "replace_expected": true
+  },
+  "o3prod_tavg-al-hxy-u": {
+    "var": "o3prod",
+    "variants": [
+      {
+        "observed": "ONLY provide the sum of all the HO2/RO2 + NO reactions (as k\\*[HO2]\\*[NO])",
+        "value": "ONLY provide the sum of all the HO2/RO2 + NO reactions (as k*[HO2]*[NO])"
+      }
+    ],
+    "replace_expected": true
+  },
+  "oh_tavg-al-hxy-u": {
+    "var": "oh",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "oh_tavg-p39-hy-air": {
+    "var": "oh",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "pan_tavg-al-hxy-u": {
+    "var": "pan",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "photo1d_tavg-al-hxy-u": {
+    "var": "photo1d",
+    "variants": [
+      {
+        "observed": "proposed name: photolysis\\_rate\\_of\\_ozone\\_to\\_O1D",
+        "value": "proposed name: photolysis_rate_of_ozone_to_O1D"
+      }
+    ],
+    "replace_expected": true
+  },
+  "so2_tavg-al-hxy-u": {
+    "var": "so2",
+    "variants": [
+      {
+        "observed": "Mole fraction is used in the construction mole\\_fraction\\_of\\_X\\_in\\_Y, where X is a material constituent of Y.",
+        "value": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y."
+      }
+    ],
+    "replace_expected": true
+  },
+  "wetso4_tavg-u-hxy-u": {
+    "var": "wetso4",
+    "variants": [
+      {
+        "observed": "proposed name: tendency\\_of\\_atmosphere\\_mass\\_content\\_of\\_sulfate\\_dry\\_aerosol\\_due\\_to\\_wet\\_deposition",
+        "value": "proposed name: tendency_of_atmosphere_mass_content_of_sulfate_dry_aerosol_due_to_wet_deposition"
+      }
+    ],
+    "replace_expected": true
   }
 }

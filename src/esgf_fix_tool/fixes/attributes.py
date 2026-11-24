@@ -233,3 +233,51 @@ def set_global_attr_if_matches(ds, attr: str, expected: str, value: str) -> bool
     else:
         ds.setncattr(attr, value)
     return True
+
+
+@fix("standard_to_proleptic_gregorian")
+def standard_to_proleptic_gregorian(ds):
+    """Update the model calendar only when all dates and epochs are Gregorian.
+
+    CF 4.4.3: standard is mixed Julian/Gregorian before 1582-10-15. Do not
+    relabel an older epoch or interval without a separately approved conversion.
+    """
+    import netCDF4
+    import numpy as np
+
+    time = ds.variables.get("time")
+    if time is None or getattr(time, "calendar", "") not in ("standard", "proleptic_gregorian"):
+        return False
+    if time.dimensions != ("time",) or getattr(time, "standard_name", "") != "time":
+        raise ValueError("Expected the CF time coordinate before calendar correction")
+    names = ["time"]
+    for attr in ("bounds", "climatology"):
+        bound = getattr(time, attr, "")
+        if bound:
+            if bound not in ds.variables:
+                raise ValueError("Referenced temporal bounds are absent")
+            if bound not in names:
+                names.append(bound)
+    for name in names:
+        v = ds[name]
+        calendar = getattr(v, "calendar", time.calendar)
+        units = getattr(v, "units", getattr(time, "units", ""))
+        if calendar not in ("standard", "gregorian", "proleptic_gregorian"):
+            raise ValueError("Conflicting calendar on temporal bounds")
+        if getattr(v, "units_metadata", "") == "leap_seconds: utc":
+            raise ValueError("UTC leap-second interpretation requires a separate conversion")
+        values = np.ma.asarray(v[:])
+        if np.ma.getmaskarray(values).any() or not np.isfinite(values).all():
+            raise ValueError("Missing or non-finite time values require review")
+        # Checking the origin prevents a hidden offset even for dates after 1582.
+        minimum = float(np.min(values)) if values.size else 0.0
+        dates = netCDF4.num2date([0.0, minimum], units, calendar=calendar)
+        if any((d.year, d.month, d.day) < (1582, 10, 15) for d in dates):
+            raise ValueError("Calendar replacement requires epoch, times and bounds on/after 1582-10-15")
+    changed = False
+    for name in names:
+        v = ds[name]
+        if (name == "time" or "calendar" in v.ncattrs()) and getattr(v, "calendar", "") != "proleptic_gregorian":
+            v.setncattr("calendar", "proleptic_gregorian")
+            changed = True
+    return changed

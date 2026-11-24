@@ -57,6 +57,22 @@
   params: {expected: [number of layer interfaces, number of layers]}
   note: same attributes as C004/C005; match full descriptions, never remove a name merely starting with number
 
+- id: C014b
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name x is not defined in Standard Name Table v95\.$'
+  dataset: 'CMIP7\.CHM\.(?:ch4|n2o)\.tclm-u-hm-air\.'
+  action: other_step
+  note: User retired both ch4/n2o_tclm-u-hm-air products. Remove them through the explicit unused-product cleanup policy in apply/deduplicate, independent of QA rules. Do not repair their coefficients or reconstruct their climatology.
+
+- id: C014a
+  check: '\[CF-Conventions\] §3\.3 Standard Name$'
+  message: 'standard_name x is not defined in Standard Name Table v95\.$'
+  dataset: 'CMIP7\.CHM\.[^.]+\.[^-]+-al(?:h)?-'
+  action: fix
+  fix: normalize_hybrid_coordinate
+  params: {}
+  note: Reuse C074/C102 for atmospheric chemistry. Validate the complete lev vector against the supplied reference, bind ap/b and coefficient bounds to lev before normalization, and set the hybrid standard_name/formula metadata. Preserve scientific data; accept compound atmospheric realms without any model/experiment restriction. Products branded without a vertical axis remain in review.
+
 - id: C014
   check: '\[CF-Conventions\] §3\.3 Standard Name$'
   message: 'standard_name x is not defined in Standard Name Table v95\.$'

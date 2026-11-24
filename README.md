@@ -561,3 +561,25 @@ tracebacks, and the command exits with an error status so unresolved work stays
 visible. Failures during writing or final verification are never retried this
 way. `--fail-fast` retains the original whole-file refusal. The Python API uses
 this behavior when `continue_on_error=True` is requested.
+
+
+### Retired global chemistry climatologies
+
+The cleanup stage used by `deduplicate` and ordinary `apply` also removes exactly
+`ch4_tclm-u-hm-air` and `n2o_tclm-u-hm-air` in the simulation's CHM tree. These are
+explicitly retired products, not duplicate copies: no keeper is required. Validate
+their filename and NetCDF identity first, reject symbolic links or mismatches,
+and log them separately with `operation="unused-product-removal"`. Deletions obey
+the same `--only-under` boundary and `--dry-run` policy as component cleanup.
+Other CH4/N2O products, including `tclm-p19-hxy-air`, remain untouched by this policy.
+
+`plan` reserves these products for cleanup without modifying them. Ordinary
+`apply` skips their scientific recipes and removes them during the cleanup stage;
+replaying a stale plan recognizes already-removed retired products. Sharded apply
+keeps cleanup disabled, as for ATM/SRF duplicates: run `deduplicate` separately.
+The cleanup summary distinguishes retired products from ATM/SRF duplicates.
+
+Monthly climatology reconstruction accepts the reviewed spatial clause
+`area: mean where air` and keeps it alongside `time: mean within years time:
+mean over years`. Complete monthly years and the existing missing-value checks
+remain required; the statistical operation is unchanged.

@@ -22,6 +22,12 @@ BOUND_LONG_NAMES = {
 }
 
 
+def _atmospheric_realm(ds):
+    """Accept single or compound atmospheric realms, never an ocean/land axis."""
+    tokens = set(str(getattr(ds, "realm", "")).split())
+    return bool(tokens) and tokens <= {"atmos", "aerosol", "atmosChem"}
+
+
 def _coordinate(ds):
     if "lev" in ds.variables:
         name = "lev"
@@ -67,7 +73,7 @@ def _term_long_name(ds, term):
 def _attributes(ds, coordinate):
     if coordinate not in ["alevel", "alevhalf"]:
         raise ValueError("Expected alevel or alevhalf")
-    if getattr(ds, "realm", "") not in ["atmos", "aerosol"]:
+    if not _atmospheric_realm(ds):
         raise ValueError(
             "Hybrid metadata correction is scoped to the reviewed IPSL atmosphere"
         )
@@ -160,7 +166,7 @@ def is_hybrid_step(step):
 
 def _is_hybrid(ds):
     return (
-        getattr(ds, "realm", "") in ("atmos", "aerosol")
+        _atmospheric_realm(ds)
         and {"lev", "ap", "b"} <= ds.variables.keys()
         and getattr(ds["lev"], "standard_name", "") == STANDARD_NAME
     )
@@ -650,7 +656,7 @@ def _normalization_values(ds):
         name != "lev"
         or lev.dtype != np.dtype("f8")
         or any(a in lev.ncattrs() for a in ("scale_factor", "add_offset"))
-        or getattr(ds, "realm", "") not in ("atmos", "aerosol")
+        or not _atmospheric_realm(ds)
         or not {*terms, "ps"} <= ds.variables.keys()
         or getattr(ds["ps"], "units", "") != "Pa"
     ):

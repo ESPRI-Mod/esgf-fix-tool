@@ -1,4 +1,4 @@
-"""Resolve the user's approved ATM/SRF production overlaps, without QA rules."""
+"""Apply approved component-copy and unused-product cleanup policies, without QA rules."""
 
 import json
 import os
@@ -17,6 +17,55 @@ POLICY = {
     "evspsbl": ("hxy", "u", "ATM"),
     "snc": ("hxy", "lnd", "SRF"),
 }
+UNUSED_PRODUCTS = {"ch4_tclm-u-hm-air", "n2o_tclm-u-hm-air"}
+
+
+def unused_product(root, path):
+    """Select only the two explicitly retired brands in a flat CHM component tree."""
+    root, path = Path(root), Path(path)
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError:
+        return None
+    if not (len(parts) >= 2 and (parts[0] == 'CHM' or parts[:2] == ('CMIP7', 'CHM'))):
+        return None
+    if '..' in parts:
+        return None
+    fields = path.name.split('_', 2)
+    brand = '_'.join(fields[:2])
+    return brand if path.suffix == '.nc' and len(fields) == 3 and brand in UNUSED_PRODUCTS else None
+
+
+def validate_unused(root, path):
+    """Verify the exact unused product from metadata, without reading science arrays."""
+    root, path = Path(root).resolve(), Path(path)
+    brand = unused_product(root, path)
+    if not brand or path.is_symlink() or path.resolve() != path or not path.is_file():
+        raise ValueError('Expected an approved regular unused CHM product inside the simulation')
+    signature = _signature(path)
+    variable = brand.split('_', 1)[0]
+    with netCDF4.Dataset(path) as ds:
+        if (getattr(ds, 'branded_variable', '') != brand
+                or getattr(ds, 'variable_id', '') != variable or variable not in ds.variables
+                or any(not getattr(ds, attr, '') for attr in IDENTITY)
+                or getattr(ds, 'frequency', '') != 'mon'):
+            raise ValueError('Unused-product filename and NetCDF identity disagree; file retained')
+        prefix = '_'.join((brand, *(str(getattr(ds, a)) for a in
+                         ('frequency','region','grid_label','source_id','experiment_id','variant_label'))))
+        if path.stem != prefix and not path.stem.startswith(prefix + '_'):
+            raise ValueError('Unused-product filename and NetCDF identity disagree; file retained')
+    return signature
+
+
+def _unused_candidates(root):
+    for component in (root / 'CHM', root / 'CMIP7' / 'CHM'):
+        if component.is_dir() and not component.is_symlink():
+            for directory, dirs, files in os.walk(component, followlinks=False):
+                dirs.sort()
+                for filename in sorted(files):
+                    path = Path(directory) / filename
+                    if unused_product(root, path):
+                        yield path
 # CF calendar names that mean the same calendar (a missing calendar is "standard")
 CALENDAR_ALIASES = {"": "standard", "gregorian": "standard", "365_day": "noleap", "366_day": "all_leap"}
 # standard (mixed Julian/Gregorian) and proleptic_gregorian give the same dates from the Gregorian reform on
@@ -168,7 +217,7 @@ def apply_root(plan, only_under=None):
         for name in plan.files:
             path = Path(name)
             for parent in path.parents:
-                if parent.name in ("ATM", "SRF") and parent.parent.name == "CMIP7":
+                if parent.name in ("ATM", "SRF", "CHM") and parent.parent.name == "CMIP7":
                     roots.add(parent.parent)
                     break
         if len(roots) == 1:
@@ -176,7 +225,8 @@ def apply_root(plan, only_under=None):
         elif not roots and only_under is not None:
             base = Path(only_under)
             for candidate in (base, base / "CMIP7"):
-                if (candidate / "ATM").is_dir() and (candidate / "SRF").is_dir():
+                if ((candidate / "ATM").is_dir() and (candidate / "SRF").is_dir()
+                        or (candidate / "CHM").is_dir()):
                     root = candidate
                     break
     if root is None:
@@ -191,21 +241,21 @@ def apply_root(plan, only_under=None):
     # Automatic cleanup is limited to one flat component tree. A report scope
     # over published DRS data or several simulations must not trigger a broad scan.
     for candidate in (root, root / "CMIP7"):
-        if any((candidate / component).is_dir() for component in ("ATM", "SRF")):
+        if any((candidate / component).is_dir() for component in ("ATM", "SRF", "CHM")):
             return candidate
     return None
 
 
 def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print, blocked_paths=()):
-    """Unlink only approved secondary products with a validated preferred peer.
+    """Unlink approved component copies and explicitly retired chemistry products.
 
     Deleting needs ``only_under``: the caller names the directory deletions are allowed in, which must
-    contain ``root``. A dry run needs nothing. A missing keeper is never guessed or synthesized. No NetCDF
+    contain ``root``. A dry run needs nothing. For duplicate copies, a missing keeper is never guessed or synthesized. No NetCDF
     array is edited. Replaying after deletion finds no secondary candidate and changes nothing.
     """
     root, fixlog = Path(root).resolve(), Path(fixlog)
     if not root.is_dir():
-        raise ValueError("Expected the simulation directory containing ATM/SRF")
+        raise ValueError("Expected the simulation directory containing component subdirectories")
     # These are simulation files: never delete without an explicit, named consent.
     if not dry_run:
         if only_under is None:
@@ -256,4 +306,35 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print, blo
             other = "SRF" if preferred == "ATM" else "ATM"
             emit(f"{status}: {discard.name} [{other}] — keep: {preferred}" +
                  (f" — {entry['error']}" if "error" in entry else ""))
+        # These are not duplicates: the user explicitly retired the two global
+        # climatology products. No preferred peer or equality test is required.
+        for discard in _unused_candidates(root):
+            for key in ('obsolete_deleted', 'obsolete_would_delete', 'obsolete_failed'):
+                counts.setdefault(key, 0)
+            entry = dict(time=datetime.now(UTC).isoformat(), operation='unused-product-removal',
+                         branded_variable=unused_product(root, discard), discard=str(discard),
+                         dry_run=dry_run, tool_version=__version__)
+            try:
+                if discard.resolve() in blocked:
+                    raise ValueError('A planned correction failed; unused product retained')
+                signature = validate_unused(root, discard)
+                entry['status'] = 'validated'
+                log.write(json.dumps(entry) + '\n'); log.flush()
+                if _signature(discard) != signature:
+                    raise ValueError('Unused product changed during inspection; retained')
+                if dry_run:
+                    status = 'would_delete'
+                else:
+                    if not discard.resolve().is_relative_to(only_under):
+                        raise ValueError('Unused product is outside --only-under; retained')
+                    discard.unlink()
+                    status = 'deleted'
+            except Exception as exc:  # noqa: BLE001 -- record one failed candidate and continue
+                status = 'failed'
+                entry['error'] = str(exc)
+            entry['status'] = status
+            log.write(json.dumps(entry) + '\n'); log.flush()
+            counts['obsolete_' + status] += 1
+            emit(f"{status}: {discard.name} [retired product]" +
+                 (f" — {entry['error']}" if 'error' in entry else ''))
     return counts

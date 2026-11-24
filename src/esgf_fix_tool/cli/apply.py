@@ -120,5 +120,5 @@ def run(
         )
     if not display.interactive:
         print(stats, flush=True)
-    if stats.get("failed", 0) or stats.get("duplicates_failed", 0):
+    if stats.get("failed", 0) or stats.get("duplicates_failed", 0) or stats.get("obsolete_failed", 0):
         raise typer.Exit(1)

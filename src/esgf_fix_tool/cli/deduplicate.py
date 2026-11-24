@@ -1,4 +1,4 @@
-"""Remove approved ATM/SRF overlaps independently of QA reports and rules."""
+"""Remove approved overlaps and retired products independently of QA reports."""
 
 from pathlib import Path
 from typing import Annotated
@@ -11,13 +11,13 @@ NAME = "deduplicate"
 
 
 def run(
-    root: Annotated[Path, typer.Argument(help="simulation directory containing ATM/SRF", exists=True, file_okay=False)],
+    root: Annotated[Path, typer.Argument(help="simulation/CMIP7 directory containing component subdirectories", exists=True, file_okay=False)],
     dry_run: Annotated[bool, typer.Option("--dry-run", help="show validated deletions without removing files")] = False,
     fixlog: Annotated[Path, typer.Option(help="deduplication JSONL log, appended")] = Path("deduplicate.jsonl"),
     only_under: Annotated[Path | None, typer.Option(
         help="required to delete: the directory deletions are allowed in (the simulation directory or a parent)")] = None,
 ):
-    """Keep ATM areacella/evspsbl hxy-u and SRF snc hxy-lnd when both exist."""
+    """Keep preferred ATM/SRF copies; remove unused CHM ch4/n2o_tclm-u-hm-air products."""
     if not dry_run and only_under is None:
         raise typer.BadParameter(
             "deleting simulation files requires --only-under DIR (or use --dry-run to preview)",
@@ -28,5 +28,5 @@ def run(
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(2) from None
     print(result, flush=True)
-    if result["failed"]:
+    if result["failed"] or result.get('obsolete_failed', 0):
         raise typer.Exit(1)
