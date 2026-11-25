@@ -16,9 +16,13 @@ Rules = Annotated[list[Path] | None, typer.Option("--rules", "-r", exists=True,
     help="rule file, repeatable, first match wins; default: all packaged rules")]
 Previous = Annotated[Path | None, typer.Option(help="report of the previous iteration (detects 'no change')")]
 Final = Annotated[bool, typer.Option("--final", help="final gate: deferred / other-step findings block")]
+Work = Annotated[Path | None, typer.Option(
+    "--work", help="WORK directory of the simulation, for a report on the DRS: the realm of each dataset, from the "
+                   "file names (default: the directory the latest ../qa_<N> report checked)")]
 OnlyRules = Annotated[list[str] | None, typer.Option("--rule", help="rule id, repeatable: only these rules")]
 
 
-def classification(report: Path, rules: list[Path], previous: Path | None, final: bool) -> Classification:
-    return classify(QAReport.load(report), RuleSet.load(*rules), final=final,
-                    previous=QAReport.load(previous) if previous else None)
+def classification(report: Path, rules: list[Path], previous: Path | None, final: bool,
+                   work: Path | None = None) -> Classification:
+    return classify(QAReport.load(report, work), RuleSet.load(*rules), final=final,
+                    previous=QAReport.load(previous, work) if previous else None)
