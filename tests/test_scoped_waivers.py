@@ -60,6 +60,9 @@ def test_not_waived_outside_its_scope(tmp_path, rules, finding, dataset, severit
 
 
 def test_real_gaps_and_axis_shifts_of_ordinary_series_are_never_waived(tmp_path, rules):
-    ds = f"CMIP7.ATM.cltcalipso.tpt-u-hxy-u.3hr.glb.g111.{HIST}"     # 1 January 00:00 missing every year
+    ds = f"CMIP7.ATM.clt.tpt-u-hxy-u.3hr.glb.g111.{HIST}"
     assert outcome(tmp_path, rules, SERIES_GAP, ds) == (Outcome.UPSTREAM, "S031")
     assert outcome(tmp_path, rules, AXIS, ds)[0] is Outcome.UNKNOWN
+    # cltcalipso (1 January 00:00 missing every year): not waived either, filled by decision (C122c)
+    cltcalipso = f"CMIP7.ATM.cltcalipso.tpt-u-hxy-u.3hr.glb.g111.{HIST}"
+    assert outcome(tmp_path, rules, SERIES_GAP, cltcalipso) == (Outcome.FIX, "C122c")
