@@ -44,8 +44,9 @@ class QAReport:
             for dataset, paths in datasets.items()
             for p in paths
         ]
-        if any(DRS_DATASET.match(f.dataset) for f in findings + errors):
-            realms = work_realms(work if work is not None else _loop_work(path))
+        if any(DRS_DATASET.match(f.dataset) or SHORT_DATASET.match(f.dataset) for f in findings + errors):
+            drs = any(DRS_DATASET.match(f.dataset) for f in findings + errors)
+            realms = work_realms(work if work is not None else _loop_work(path)) if drs else {}
             findings = [_with_work_id(f, realms) for f in findings]
             errors = [_with_work_id(f, realms) for f in errors]
         return cls(source=path, info=raw.get("info", {}), findings=findings, errors=errors)
@@ -88,22 +89,35 @@ DRS_DATASET = re.compile(
     r"CMIP7\.(?P<activity>[^.]+)\.(?P<institution>[^.]+)\.(?P<source>[^.]+)\.(?P<experiment>[^.]+)\.(?P<variant>[^.]+)"
     r"\.(?P<region>[^.]+)\.(?P<frequency>[^.]+)\.(?P<variable>[^.]+)\.(?P<branding>[^.]+)\.(?P<grid>[^.]+)"
     r"\.(?:v\d{8}|latest|files\.d\d{8})$")
+# A group of files esgqa named by their directory only (a QA on a subset of WORK with a single dataset).
+SHORT_DATASET = re.compile(r"CMIP7\.(?P<realm>[A-Za-z0-9-]+)$")
 
 
 def work_dataset_id(dataset: str, path: str, realms: dict[str, str]) -> str:
-    """The WORK form of a DRS dataset id, the one the rules are written for:
+    """The WORK form of a dataset id, the one the rules are written for:
     CMIP7.<realm>.<variable>.<branding>.<frequency>.<region>.<grid>.<source>.<experiment>.<variant>.
 
-    The DRS has no realm (the model component directory of WORK: ATM, OCE, SRF, ...): it comes from ``realms``
-    (file name -> realm; the DRS files are hard links to the WORK ones). Unknown: the id is kept, and the rules
-    scoped to datasets do not match it (the finding stays blocking, never wrongly waived)."""
+    - A DRS id (final QA) has no realm (the model component directory of WORK: ATM, OCE, SRF, ...): it comes from
+      ``realms`` (file name -> realm; the DRS files are hard links to the WORK ones).
+    - A short id, ``CMIP7.<realm>``: esgqa names a group by what its files have in common, so a QA on a subset of
+      WORK (``-w``) with a single dataset gets only the directory; the facets come from the file name.
+
+    Unknown realm or file name not in the DRS syntax: the id is kept, and the rules scoped to datasets do not match
+    it (the finding stays blocking, never wrongly waived)."""
+    name = os.path.basename(path)
     m = DRS_DATASET.match(dataset)
-    realm = realms.get(os.path.basename(path)) if m else None
-    if not realm:
+    if m:
+        realm = realms.get(name)
+        if not realm:
+            return dataset
+        g = m.groupdict()
+        return ".".join(("CMIP7", realm, g["variable"], g["branding"], g["frequency"], g["region"], g["grid"],
+                         g["source"], g["experiment"], g["variant"]))
+    m = SHORT_DATASET.match(dataset)
+    facets = name[:-3].split("_") if name.endswith(".nc") else []
+    if not m or len(facets) < 8 or not all(facets[:8]):
         return dataset
-    g = m.groupdict()
-    return ".".join(("CMIP7", realm, g["variable"], g["branding"], g["frequency"], g["region"], g["grid"],
-                     g["source"], g["experiment"], g["variant"]))
+    return ".".join(("CMIP7", m["realm"], *facets[:8]))
 
 
 def work_realms(work: str | Path | None) -> dict[str, str]:

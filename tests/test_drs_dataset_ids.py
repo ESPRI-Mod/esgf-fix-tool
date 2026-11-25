@@ -1,4 +1,5 @@
-"""A final QA on the DRS names datasets by their directories; the rules see them in their WORK form."""
+"""Datasets named by their DRS directories (final QA) or by their WORK directory only (a QA on a subset): the rules
+see them in their WORK form."""
 
 import json
 
@@ -63,3 +64,12 @@ def test_work_defaults_to_what_the_latest_loop_report_checked(tmp_path, rules):
     report = write(tmp_path / "run" / "qa_final" / "qa_result_c_abc.json", DRS + ".v20261125", drs_path())
     (item,) = classify(QAReport.load(report), rules, final=True).items
     assert item.finding.dataset == WORK_ID and item.match.rule.id == "W002"
+
+
+def test_a_short_id_from_a_qa_on_a_subset_gets_its_facets_from_the_file_name(tmp_path, rules):
+    path = "/work/CMIP7/ATM/" + NAME
+    assert work_dataset_id("CMIP7.ATM", path, {}) == WORK_ID
+    assert work_dataset_id("CMIP7.ATM", "/work/CMIP7/ATM/notdrs.nc", {}) == "CMIP7.ATM"   # kept: no facets
+    report = write(tmp_path / "run" / "subset" / "qa_result_x_abc.json", "CMIP7.ATM", path, "/work")
+    (item,) = classify(QAReport.load(report), rules).items
+    assert item.finding.dataset == WORK_ID and item.outcome is Outcome.WAIVED and item.match.rule.id == "W002"

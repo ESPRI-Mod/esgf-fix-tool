@@ -4,6 +4,15 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- A QA on a subset of WORK (`esgqa -w ...`) with a single dataset names it by its directory only (`CMIP7.ATM`): no
+  rule scoped to datasets matched (C122 on the 8 cltcalipso files of the pilot). Such a short id now gets the facets
+  of the file name: `CMIP7.<realm>.<variable>.<branding>.<frequency>.<region>.<grid>.<source>.<experiment>.<variant>`.
+  A file name not in the DRS syntax keeps the short id: the scoped rules do not apply, the finding still blocks.
+
 ## [0.13.0] - 2026-11-25
 
 ### Added
