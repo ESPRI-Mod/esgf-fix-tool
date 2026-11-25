@@ -75,12 +75,17 @@ def apply_file(
 ) -> list[dict]:
     """Report the current file before any potentially long I/O, including cancellation."""
     steps = order_steps(steps)
+    # Inserting time steps changes a dimension's length, which the grouped rewrite refuses by design: those
+    # steps run last, on their own, once the other fixes (and a rename) are committed.
+    fills = [s for s in steps if s.fix == "fill_missing_time_steps"]
+    steps = [s for s in steps if s.fix != "fill_missing_time_steps"] + fills
     with reporting(events, path):
         notify("file", "start", index=file_index, total=file_total, dry_run=dry_run)
         try:
-            actual, target, rename_index = _rename_request(path, steps)
-            entries = _apply_file(actual, steps, dry_run=dry_run, break_hardlinks=break_hardlinks,
-                                  continue_on_fix_error=continue_on_fix_error)
+            others = steps[:len(steps) - len(fills)]
+            actual, target, rename_index = _rename_request(path, others)
+            entries = _apply_file(actual, others, dry_run=dry_run, break_hardlinks=break_hardlinks,
+                                  continue_on_fix_error=continue_on_fix_error) if others else []
             if target is not None and entries[rename_index].get("status") in ("failed", "blocked"):
                 target = None
             if target is not None:
@@ -108,6 +113,9 @@ def apply_file(
                     entry["write_mode"] = "rename-only"
             elif rename_index is not None:
                 entries[rename_index]["filename_target"] = str(actual)
+            final = target if target is not None and not dry_run else actual
+            for step in fills:
+                entries.append(_fill_entry(final, step, dry_run, break_hardlinks, continue_on_fix_error))
         except BaseException as exc:
             notify(
                 "file",
@@ -128,6 +136,25 @@ def apply_file(
             error="Résultat partiel : les correctifs indépendants ont été conservés" if any(e.get("status") in ("failed", "blocked") for e in entries) else "",
         )
         return entries
+
+
+def _fill_entry(path, step, dry_run, break_hardlinks, continue_on_fix_error):
+    """Run one fill_missing_time_steps step (fixes.time_fill.fill_file) and return its fixlog entry."""
+    entry = dict(rule=step.rule, fix=step.fix, params=step.params, changed=False, write_mode="none")
+    with step_scope(step):
+        notify("fix", "start")
+        try:
+            details = fixes.time_fill.fill_file(path, step.params["var"], step.params.get("max_fraction", 0.01),
+                                                dry_run=dry_run, break_hardlinks=break_hardlinks)
+        except Exception as exc:
+            if not continue_on_fix_error:
+                raise
+            entry.update(status="failed", error=str(exc), traceback=traceback.format_exc())
+            return entry
+    entry.update(details, changed=details["time_steps_filled"] > 0, data_verified=not dry_run)
+    if entry["changed"] and not dry_run:
+        entry["write_mode"] = "time-fill-rewrite"
+    return entry
 
 
 def _apply_file(

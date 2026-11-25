@@ -4,6 +4,30 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- `fill_missing_time_steps` (C122, C122b, C122c): the missing 3-hourly steps of cltcalipso (IPSL-CM6-ESMCO2
+  historical) are inserted with their exact time and a fully missing field (`_FillValue`), as the model team decided
+  on 2026-11-25 while they look for the cause. The fix finds the missing steps itself, against the axis of the file
+  name's time range; it refuses anything else (values off that axis, duplicates, time bounds, other variables on the
+  time dimension, no `_FillValue`, more than 1% of the steps missing, other hard links without `--break-hardlinks`).
+  The existing values are copied unchanged and checked after writing; the fixlog (`filled_steps`) and the global
+  `history` list the filled steps (`comment` belongs to the CV, a variable `history` is forbidden). The insertion
+  changes the length of the time dimension, which the grouped rewrite refuses by design: `apply` runs it on its own,
+  after the file's other fixes. It resolves the TIME001 axis shift, the TIME003 end of range and the 6-hour gaps
+  between files.
+
+### Fixed
+
+- A final QA on the DRS names datasets by their directories (`CMIP7.<activity>.<institution>.<source>....<grid>.v<date>`),
+  with no realm: no rule scoped to datasets matched (W001-W003, C107a, ...), so findings decided in the loop blocked
+  the final gate. The report now gives them their WORK form back
+  (`CMIP7.<realm>.<variable>.<branding>.<frequency>.<region>.<grid>.<source>.<experiment>.<variant>`), the realm
+  found from the file names in the WORK directory: `--work`, or by default the directory the latest `../qa_<N>`
+  report checked. A realm not found keeps the DRS id: the scoped rules do not apply, the finding still blocks.
+
 ## [0.12.0] - 2026-11-24
 
 ### Changed

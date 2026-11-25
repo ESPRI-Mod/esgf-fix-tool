@@ -247,3 +247,37 @@
   fix: rotate_reviewed_longitude
   params: {}
   note: User-approved g131 river products only. Validate the existing 720 half-degree centers and their bounds, translate signed longitude cells by 360 degrees, and cyclically rotate all arrays carrying lon. Combine with C118 latitude reversal in a single streamed atomic rewrite; preserve raw values, masks, packing, attributes and compression. The terminal upper bound is 360, not zero. No model/experiment restriction; g111 rounding and atmospheric polygon grids are unchanged.
+
+# Missing time steps of cltcalipso 3hr (pilot historical-CO2conc-01): the model team asked on 2026-11-25 to fill them
+# with _FillValue while they look for the cause. The fix finds the missing steps itself (against the axis of the file
+# name), lists them in the fixlog and in the global history; it refuses anything but a few missing steps on a clean
+# axis. Scoped to the decision: the same symptom elsewhere comes back for a decision.
+- id: C122
+  check: \[CMIP7\] \[TIME001\] Check Time Squareness
+  message: \d+ time values do not match the expected axis\. First incident at index \d+.*var=cltcalipso, midpoint=False\)$
+  dataset: CMIP7\.[^.]+\.cltcalipso\.tpt-u-hxy-u\.3hr\.[^.]+\.[^.]+\.IPSL-CM6-ESMCO2\.historical\.
+  action: fix
+  fix: fill_missing_time_steps
+  params:
+    var: cltcalipso
+  note: Model team decision of 2026-11-25 (pilot historical-CO2conc-01). Insert the missing 3-hourly steps with a fully
+    missing field (_FillValue), with their exact time; the existing values are copied unchanged and checked; the global
+    history lists the filled steps.
+- id: C122b
+  check: \[CMIP7\] \[TIME003\] Check Time Range vs Filename
+  message: The filename time range '\d{12}-\d{12}' does not match the first and last data endpoints.*
+  dataset: CMIP7\.[^.]+\.cltcalipso\.tpt-u-hxy-u\.3hr\.[^.]+\.[^.]+\.IPSL-CM6-ESMCO2\.historical\.
+  action: fix
+  fix: fill_missing_time_steps
+  params:
+    var: cltcalipso
+  note: Same decision as C122; the missing last step (00:00 of the file name's end) is one of the filled steps.
+- id: C122c
+  check: \[Continuity\] Time continuity
+  message: Gap in time axis \(between files\) - previous .* - delta-t 6\.0 hours$
+  dataset: CMIP7\.[^.]+\.cltcalipso\.tpt-u-hxy-u\.3hr\.[^.]+\.[^.]+\.IPSL-CM6-ESMCO2\.historical\.
+  action: fix
+  fix: fill_missing_time_steps
+  params:
+    var: cltcalipso
+  note: Same decision as C122; the step missing between two files is the last one of the previous file, filled there.

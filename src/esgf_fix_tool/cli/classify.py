@@ -10,7 +10,7 @@ import typer
 
 from ..classify import BLOCKING_SEVERITY
 from .catalogues import default_rule_paths
-from .common import Final, OnlyRules, Previous, Report, Rules, classification
+from .common import Final, OnlyRules, Previous, Report, Rules, Work, classification
 
 NAME = "classify"
 
@@ -23,10 +23,11 @@ def run(
     as_json: Annotated[bool, typer.Option("--json", help="JSON output")] = False,
     show: Annotated[int, typer.Option(help="rules / unmatched messages to show")] = 15,
     rule: OnlyRules = None,
+    work: Work = None,
 ):
     """Classify a report, print the decision, exit with its code
     (0 clean, 10 known, 20 new_rule, 21 blocked_upstream, 30 no_change, 40 checker_error)."""
-    c = classification(report, rules or default_rule_paths(), previous, final)
+    c = classification(report, rules or default_rule_paths(), previous, final, work)
     decision = c.decision()
     blocking = c.blocking()
     summary = {
