@@ -19,7 +19,7 @@ from .progress import ProgressEvent, activity, notify, reporting, step_scope
 
 
 def _rename_request(path, steps):
-    """Resolve both explicit C097 renames and a grid edit's paired filename edit."""
+    """Resolve explicit renames (C097 grid label, C125 time range) and a grid edit's paired filename edit."""
     requests = []
     for i, step in enumerate(steps):
         if step.fix == "sync_filename_grid_label":
@@ -28,6 +28,8 @@ def _rename_request(path, steps):
             # The filename is part of this grid-label correction. Do not wait
             # for a later QA iteration to discover its mismatch (C097).
             target = fixes.grid_labels.proposed_drs_path(path, **step.params)
+        elif step.fix == "sync_filename_time_range":
+            target = fixes.time_range.filename_time_target(path, **step.params)
         elif step.fix == "reduce_replicated_zostoga":
             fields = Path(path).name.split("_", 5)
             if len(fields) != 6 or fields[0] != "zostoga":
@@ -42,7 +44,8 @@ def _rename_request(path, steps):
         raise ValueError("Conflicting filename synchronizations for one file")
     # Prefer the explicit rename's log entry when both diagnostics were selected.
     i, target = next(
-        ((i, target) for i, target in requests if steps[i].fix == "sync_filename_grid_label"),
+        ((i, target) for i, target in requests
+         if steps[i].fix in ("sync_filename_grid_label", "sync_filename_time_range")),
         requests[0],
     )
     if target is None:

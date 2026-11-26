@@ -4,6 +4,26 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- C123: `parent_experiment_id = esm_piControl` (every file of CM6-ESMCO2-FT.p1.3.esm-hist.01, ATTR004 and ATTR007c)
+  becomes `esm-piControl`, the CV's id. Only that exact value is replaced.
+- C124: `activity_id = SCENARIOMIP` (every file of scen7-vl and scen7-hl) becomes `ScenarioMIP`, the CV's
+  `drs_name` (esgdrs builds the DRS from it). Only that exact value is replaced.
+- C125 and `sync_filename_time_range`: a file name whose time range ends after its data (TIME003) is renamed to the
+  data's real end. On scen7-vl and scen7-hl the atmosphere was restarted from 2040: the file being written then holds
+  data up to 2039 only under its planned end (`..._202201-210012.nc` holds 2022-2039, `..._204001-210012.nc`
+  follows); 170 files in each, every one followed by a file starting in 2040. Rename only, never over an existing
+  file; the start must not change and the data must start and end where the new name says. Scoped to
+  IPSL-CM6-ESMCO2 scen7 experiments; cltcalipso 3hr keeps C122b.
+
+### Changed
+
+- C122, C122b, C122c (cltcalipso 3hr missing steps filled with `_FillValue`) apply to esm-hist and the scen7
+  experiments too, not only historical: same model, same symptom (00:00 of 1 January missing every year).
+
 ## [0.14.0] - 2026-11-26
 
 ### Changed
