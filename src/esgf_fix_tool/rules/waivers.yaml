@@ -16,19 +16,21 @@
 - id: W002
   check: \[CMIP7\] \[TIME001\] Check Time Squareness
   message: \d+ time values do not match the midpoints of their climatology intervals\.
-  dataset: CMIP7\.[^.]+\.[^.]+\.tclm-[^.]+\.mon\.[^.]+\.[^.]+\.[^.]+\.historical\.
+  dataset: CMIP7\.[^.]+\.[^.]+\.tclm-[^.]+\.mon\.[^.]+\.[^.]+\.[^.]+\.(?:historical|esm-hist)\.
   action: waive
-  scope: monthly climatologies (tclm) of historical
-  decided: meeting of 2026-11-24 (pilot historical-CO2conc-01, IPSL-CM6-ESMCO2)
+  scope: monthly climatologies (tclm) of historical and esm-hist
+  decided: meeting of 2026-11-24 (pilot historical-CO2conc-01, IPSL-CM6-ESMCO2); widened on 2026-11-26 to
+    esm-hist (CM6-ESMCO2-FT.p1.3.esm-hist.01, QA 3; the same pfull/phalf tclm files, the same findings)
   note: Date convention of the climatologies (a representative date of each month, not the midpoint of the whole
     climatology interval); the climatology bounds themselves are right.
 
 - id: W003
   check: \[Continuity\] Time continuity
   message: Gap in time axis \(between files\)
-  dataset: CMIP7\.[^.]+\.[^.]+\.tclm-[^.]+\.mon\.[^.]+\.[^.]+\.[^.]+\.historical\.
+  dataset: CMIP7\.[^.]+\.[^.]+\.tclm-[^.]+\.mon\.[^.]+\.[^.]+\.[^.]+\.(?:historical|esm-hist)\.
   action: waive
-  scope: monthly climatologies (tclm) of historical
-  decided: meeting of 2026-11-24 (pilot historical-CO2conc-01, IPSL-CM6-ESMCO2)
+  scope: monthly climatologies (tclm) of historical and esm-hist
+  decided: meeting of 2026-11-24 (pilot historical-CO2conc-01, IPSL-CM6-ESMCO2); widened on 2026-11-26 to
+    esm-hist (CM6-ESMCO2-FT.p1.3.esm-hist.01, QA 3; the same pfull/phalf tclm files, the same findings)
   note: Two climatologies of different periods (e.g. 1850-1949 and 1950-2021) are not a time series; the "gap"
     between them (1900 -> 1986) is not missing data. Gaps in ordinary series stay S031.
