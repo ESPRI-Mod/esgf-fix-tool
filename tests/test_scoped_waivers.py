@@ -48,6 +48,17 @@ def test_waived_in_historical(tmp_path, rules, finding, dataset, severity, rule)
     assert outcome(tmp_path, rules, finding, dataset, severity) == (Outcome.WAIVED, rule)
 
 
+ESM_HIST = "IPSL-CM6-ESMCO2.esm-hist.r1i1p1f1"
+
+
+@pytest.mark.parametrize("finding,dataset,rule", [
+    (MIDPOINTS, f"CMIP7.ATM.pfull.tclm-al-hxy-u.mon.glb.g111.{ESM_HIST}", "W002"),
+    (TCLM_GAP, f"CMIP7.ATM.phalf.tclm-alh-hxy-u.mon.glb.g111.{ESM_HIST}", "W003"),
+])
+def test_climatology_waivers_widened_to_esm_hist(tmp_path, rules, finding, dataset, rule):
+    assert outcome(tmp_path, rules, finding, dataset) == (Outcome.WAIVED, rule)
+
+
 @pytest.mark.parametrize("finding,dataset,severity", [
     (COVERAGE, f"CMIP7.ATM.clivi.tavg-u-hxy-u.3hr.glb.g111.{CONTROL}", 1),        # another experiment
     (COVERAGE, f"CMIP7.ATM.tas.tavg-h2m-hxy-u.day.glb.g111.{HIST}", 1),          # not 3hr

@@ -4,6 +4,15 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Changed
+
+- W002 and W003 (monthly climatologies, tclm: dates that are not the midpoint of the climatology interval, and the
+  "gap" between two climatologies of different periods) waive esm-hist too, not only historical: the same pfull/phalf
+  tclm files of IPSL-CM6-ESMCO2, the same findings at QA 3 of CM6-ESMCO2-FT.p1.3.esm-hist.01. Severity-3 waivers:
+  two reviewers.
+
 ## [0.15.0] - 2026-11-26
 
 ### Added
