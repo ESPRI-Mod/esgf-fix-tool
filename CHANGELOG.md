@@ -4,6 +4,17 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Changed
+
+- ATM/SRF deduplication (`deduplicate`, and the end of `apply`) no longer needs a file of the preferred component
+  with exactly the same name and time values: the secondary copy is matched with all the preferred component's files
+  of the same product, whatever their time ranges, and deleted when each of its time steps is in them (compared as
+  dates). On scen7-vl the ATM snc files are cut differently from SRF's and overlap: they were `failed` ("Temporal
+  coverage differs") or `missing_keeper`, though SRF covers them. A step missing from the kept files still keeps the
+  copy. The deduplication log's `keep` is now the list of kept files.
+
 ## [0.13.1] - 2026-11-25
 
 ### Fixed

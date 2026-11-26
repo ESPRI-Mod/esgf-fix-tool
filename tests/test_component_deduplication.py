@@ -11,7 +11,8 @@ from esgf_fix_tool.cli.main import app
 from esgf_fix_tool.deduplicate import deduplicate
 
 
-def product(root, component, variable, *, surface="u", period="185001-185912", value=1):
+def product(root, component, variable, *, surface="u", period="185001-185912", value=1, times=None):
+    """One file; its time values follow its period (one value a year, mid-January and mid-February of the first)."""
     frequency = "fx" if variable == "areacella" else "mon"
     brand = variable + ("_ti-u-hxy-" if frequency == "fx" else "_tavg-u-hxy-") + surface
     suffix = "" if frequency == "fx" else "_" + period
@@ -29,8 +30,11 @@ def product(root, component, variable, *, surface="u", period="185001-185912", v
         ds.createDimension("lat", 2)
         dims = ("lat",)
         if frequency != "fx":
-            ds.createDimension("time", 2)
-            ds.createVariable("time", "f8", ("time",))[:] = [15, 45]
+            if times is None:
+                start = (int(period[:4]) - 1850) * 365
+                times = [start + 15, start + 45]
+            ds.createDimension("time", len(times))
+            ds.createVariable("time", "f8", ("time",))[:] = times
             ds["time"].units = "days since 1850-01-01"
             ds["time"].calendar = "proleptic_gregorian"
             dims = ("time", "lat")
@@ -74,12 +78,56 @@ def test_other_products_are_never_deleted(tmp_path, variable, surface):
     assert [p.read_bytes() for p in paths] == original
 
 
-def test_missing_or_different_period_keeper_is_not_enough(tmp_path):
+def test_missing_keeper_is_never_guessed(tmp_path):
     discard = product(tmp_path, "SRF", "evspsbl", period="185001-185412")
-    keep = product(tmp_path, "ATM", "evspsbl", period="185501-185912")
+    product(tmp_path, "SRF", "snc", surface="lnd")   # another product in the preferred component is no keeper
     result = deduplicate(tmp_path, tmp_path / "log.jsonl", only_under=tmp_path, emit=lambda text: None)
     assert result["missing_keeper"] == 1 and result["deleted"] == 0
+    assert discard.exists()
+
+
+def test_keepers_of_another_period_do_not_cover_it(tmp_path):
+    discard = product(tmp_path, "SRF", "evspsbl", period="185001-185412")
+    keep = product(tmp_path, "ATM", "evspsbl", period="185501-185912")
+    log = tmp_path / "log.jsonl"
+    result = deduplicate(tmp_path, log, only_under=tmp_path, emit=lambda text: None)
+    assert result["failed"] == 1 and result["deleted"] == 0
     assert discard.exists() and keep.exists()
+    (entry,) = [json.loads(x) for x in log.read_text().splitlines() if '"failed"' in x]
+    assert entry["error"].startswith("Temporal coverage differs: 2 of the 2 time steps")
+
+
+def test_periods_cut_differently_with_overlaps(tmp_path):
+    """scen7-vl: the ATM snc files overlap and are not cut like SRF's; SRF's two files cover every ATM step."""
+    day = dict(surface="lnd")
+    keep = [product(tmp_path, "SRF", "snc", period="20220101-20711231", times=range(50), **day),
+            product(tmp_path, "SRF", "snc", period="20720101-21001231", times=range(50, 79), **day)]
+    discard = [product(tmp_path, "ATM", "snc", period="20220101-20711231", times=range(50), **day),
+               product(tmp_path, "ATM", "snc", period="20400101-20891231", times=range(18, 68), **day),
+               product(tmp_path, "ATM", "snc", period="20900101-21001231", times=range(68, 79), **day)]
+    log = tmp_path / "log.jsonl"
+    result = deduplicate(tmp_path, log, only_under=tmp_path, emit=lambda text: None)
+    assert result["deleted"] == 3 and result["failed"] == result["missing_keeper"] == 0
+    assert all(p.exists() for p in keep) and not any(p.exists() for p in discard)
+    deleted = [json.loads(x) for x in log.read_text().splitlines() if '"deleted"' in x]
+    assert all(e["keep"] == [str(p) for p in keep] for e in deleted)
+
+
+def test_a_step_missing_from_the_keepers_retains_the_copy(tmp_path):
+    product(tmp_path, "SRF", "snc", surface="lnd", period="20220101-20711231", times=range(50))
+    discard = product(tmp_path, "ATM", "snc", surface="lnd", period="20400101-20891231", times=range(18, 68))
+    result = deduplicate(tmp_path, tmp_path / "log.jsonl", only_under=tmp_path, emit=lambda text: None)
+    assert result["failed"] == 1 and discard.exists()
+
+
+def test_coverage_compares_dates_not_values(tmp_path):
+    """Other time units in the kept file: the same dates are the same coverage."""
+    keep = product(tmp_path, "ATM", "evspsbl", times=[15 * 24, 45 * 24])
+    with netCDF4.Dataset(keep, "a") as ds:
+        ds["time"].units = "hours since 1850-01-01"
+    discard = product(tmp_path, "SRF", "evspsbl")
+    result = deduplicate(tmp_path, tmp_path / "log.jsonl", only_under=tmp_path, emit=lambda text: None)
+    assert result["deleted"] == 1 and keep.exists() and not discard.exists()
 
 
 @pytest.mark.parametrize("error", ["model", "experiment", "variable", "time", "units", "corrupt", "symlink", "parent_link"])

@@ -83,7 +83,7 @@ def _signature(path):
 
 
 def _candidates(root):
-    """Pair exact relative filenames, replacing only the ATM/SRF directory."""
+    """Each secondary ATM/SRF copy with the preferred component's files of the same product, whatever their periods."""
     for directory, dirs, files in os.walk(root, followlinks=False):
         dirs.sort()
         for filename in sorted(files):
@@ -92,11 +92,19 @@ def _candidates(root):
             path = Path(directory) / filename
             peer = _preferred_peer(root, path)
             if peer is not None:
-                variable, brand, keep = peer
-                yield variable, brand, path, keep
+                variable, brand, keepers = peer
+                yield variable, brand, path, keepers
+
+
+def _product_prefix(stem):
+    """The file name without its time range: variable_branding_frequency_region_grid_source_experiment_variant."""
+    fields = stem.split("_")
+    return "_".join(fields[:8]) if len(fields) in (8, 9) else None
 
 
 def _preferred_peer(root, path):
+    """(variable, brand, keepers): the preferred component's files of the same product, in the same folder apart
+    from ATM/SRF, whatever their time ranges (the components do not cut a product into the same periods)."""
     fields = path.stem.split("_", 2)
     if path.suffix != ".nc" or len(fields) != 3 or fields[0] not in POLICY:
         return None
@@ -104,6 +112,9 @@ def _preferred_peer(root, path):
     horizontal, surface, preferred = POLICY[variable]
     labels = brand.split("-")
     if len(labels) != 4 or labels[2:] != [horizontal, surface]:
+        return None
+    prefix = _product_prefix(path.stem)
+    if prefix is None:
         return None
     try:
         parts = list(path.relative_to(root).parts)
@@ -113,7 +124,10 @@ def _preferred_peer(root, path):
     if len(positions) != 1 or parts[positions[0]] == preferred:
         return None
     parts[positions[0]] = preferred
-    return variable, variable + "_" + brand, root.joinpath(*parts)
+    folder = root.joinpath(*parts[:-1])
+    keepers = sorted(p for p in folder.glob(prefix + "*.nc") if _product_prefix(p.stem) == prefix) \
+        if folder.is_dir() else []
+    return variable, variable + "_" + brand, keepers
 
 
 def completed_discard(root, path):
@@ -128,23 +142,25 @@ def completed_discard(root, path):
     peer = _preferred_peer(root, path)
     if peer is None:
         return None
-    variable, brand, keep = peer
-    if not keep.is_file() or keep.is_symlink() or keep.resolve() != keep:
-        return None
-    try:
-        with netCDF4.Dataset(keep) as ds:
-            if (getattr(ds, "variable_id", "") != variable
-                    or getattr(ds, "branded_variable", "") != brand
-                    or any(not getattr(ds, attr, "") for attr in IDENTITY)
-                    or variable not in ds.variables or ds[variable].size == 0):
-                return None
-            prefix = "_".join((brand, *(str(getattr(ds, a)) for a in
-                ("frequency", "region", "grid_label", "source_id", "experiment_id", "variant_label"))))
-            if keep.stem != prefix and not keep.stem.startswith(prefix + "_"):
-                return None
-    except OSError:
-        return None
-    return keep
+    variable, brand, keepers = peer
+    for keep in keepers:
+        if not keep.is_file() or keep.is_symlink() or keep.resolve() != keep:
+            continue
+        try:
+            with netCDF4.Dataset(keep) as ds:
+                if (getattr(ds, "variable_id", "") != variable
+                        or getattr(ds, "branded_variable", "") != brand
+                        or any(not getattr(ds, attr, "") for attr in IDENTITY)
+                        or variable not in ds.variables or ds[variable].size == 0):
+                    continue
+                prefix = "_".join((brand, *(str(getattr(ds, a)) for a in
+                    ("frequency", "region", "grid_label", "source_id", "experiment_id", "variant_label"))))
+                if keep.stem != prefix and not keep.stem.startswith(prefix + "_"):
+                    continue
+        except OSError:
+            continue
+        return keep
+    return None
 
 
 def _same_calendar(a, b, values, units):
@@ -159,49 +175,74 @@ def _same_calendar(a, b, values, units):
     return all(day >= GREGORIAN_REFORM for day in first)
 
 
-def _validate(variable, brand, discard, keep, root):
-    """Validate file identity and temporal coverage, never scientific equality."""
-    for path in (discard, keep):
+def _time_steps(ds):
+    """The time coordinate's values, units and calendar, checked to be a plain 1-D axis."""
+    if "time" not in ds.variables:
+        raise ValueError("Time coordinate missing; file retained")
+    t = ds["time"]
+    values = np.ma.asarray(t[:])
+    if (t.dimensions != ("time",) or not values.size or not getattr(t, "units", "")
+            or np.ma.getmaskarray(values).any() or not np.isfinite(values).all()):
+        raise ValueError("Time coordinate is not a plain axis; file retained")
+    return np.asarray(values), t.units, getattr(t, "calendar", "")
+
+
+def _dates(values, units, calendar):
+    """The time steps as (year, month, day, hour, minute, second): comparable across units and equivalent calendars."""
+    calendar = CALENDAR_ALIASES.get(calendar.strip().lower(), calendar.strip().lower())
+    dates = cftime.num2date(values, units, calendar=calendar)
+    return {(d.year, d.month, d.day, d.hour, d.minute, round(d.second + d.microsecond / 1e6)) for d in dates}
+
+
+def _validate(variable, brand, discard, keepers, root):
+    """Validate file identity and temporal coverage, never scientific equality.
+
+    Every time step of the discarded copy must be in the kept files, which may cut the period differently."""
+    for path in (discard, *keepers):
         if path.is_symlink() or path.resolve() != path:
             raise ValueError(f"Symbolic links are not accepted: {path}")
         if not path.resolve().is_relative_to(root) or not path.is_file():
             raise ValueError(f"Expected a regular file within the simulation: {path}")
-    signatures = (_signature(discard), _signature(keep))
-    with netCDF4.Dataset(discard) as src, netCDF4.Dataset(keep) as dst:
-        for ds in (src, dst):
-            if (
-                getattr(ds, "variable_id", "") != variable
-                or getattr(ds, "branded_variable", "") != brand
-                or variable not in ds.variables
-                or ds[variable].size == 0
-            ):
-                raise ValueError("Unexpected or empty product; both files retained")
-        for attr in IDENTITY:
-            if not getattr(src, attr, "") or getattr(src, attr) != getattr(dst, attr, None):
-                raise ValueError(f"Product identity differs or is missing: {attr}")
+    signatures = {path: _signature(path) for path in (discard, *keepers)}
+    with netCDF4.Dataset(discard) as src:
+        if (getattr(src, "variable_id", "") != variable or getattr(src, "branded_variable", "") != brand
+                or variable not in src.variables or src[variable].size == 0):
+            raise ValueError("Unexpected or empty product; file retained")
         # Metadata must also agree with the filename used to select the pair.
-        prefix = "_".join((brand, *(str(getattr(src, a)) for a in
+        prefix = "_".join((brand, *(str(getattr(src, a, "")) for a in
                             ("frequency", "region", "grid_label", "source_id", "experiment_id", "variant_label"))))
         if not (discard.stem == prefix or discard.stem.startswith(prefix + "_")):
             raise ValueError("Filename and NetCDF product identity disagree")
-        if src.frequency != "fx":
-            if "time" not in src.variables or "time" not in dst.variables:
-                raise ValueError("Time coordinate missing; both files retained")
-            a, b = src["time"], dst["time"]
-            x, y = np.ma.asarray(a[:]), np.ma.asarray(b[:])
-            if (
-                a.dimensions != ("time",) or b.dimensions != ("time",)
-                or not x.size or x.shape != y.shape
-                or getattr(a, "units", None) != getattr(b, "units", None)
-                or not getattr(a, "units", "")
-                or np.ma.getmaskarray(x).any() or np.ma.getmaskarray(y).any()
-                or not np.isfinite(x).all() or not np.array_equal(x, y)
-            ):
-                raise ValueError("Temporal coverage differs; both files retained")
-            calendars = getattr(a, "calendar", ""), getattr(b, "calendar", "")
-            if not _same_calendar(*calendars, x, a.units):
-                raise ValueError(f"Calendars differ ({calendars[0] or 'none'} / {calendars[1] or 'none'}); "
-                                 "both files retained")
+        identity = {attr: getattr(src, attr, "") for attr in IDENTITY}
+        if not all(identity.values()):
+            raise ValueError(f"Product identity is missing: {next(a for a, v in identity.items() if not v)}")
+        fixed = src.frequency == "fx"
+        wanted = None if fixed else _time_steps(src)
+    kept = set()
+    for keep in keepers:
+        with netCDF4.Dataset(keep) as dst:
+            if (getattr(dst, "variable_id", "") != variable or getattr(dst, "branded_variable", "") != brand
+                    or variable not in dst.variables or dst[variable].size == 0):
+                raise ValueError(f"Unexpected or empty kept product: {keep.name}; file retained")
+            for attr, value in identity.items():
+                if getattr(dst, attr, None) != value:
+                    raise ValueError(f"Product identity differs: {attr} ({keep.name})")
+            if fixed:
+                continue
+            values, units, calendar = _time_steps(dst)
+            # both files' dates must be where the two calendars agree
+            if not (_same_calendar(wanted[2], calendar, wanted[0], wanted[1])
+                    and _same_calendar(wanted[2], calendar, values, units)):
+                raise ValueError(f"Calendars differ ({wanted[2] or 'none'} / {calendar or 'none'}, {keep.name}); "
+                                 "file retained")
+            kept |= _dates(values, units, calendar)
+    if not fixed:
+        steps = _dates(*wanted)
+        missing = steps - kept
+        if missing:
+            first = "-".join(f"{x:02d}" for x in min(missing)[:3])
+            raise ValueError(f"Temporal coverage differs: {len(missing)} of the {len(steps)} time steps are not in the "
+                             f"kept files (first {first}); file retained")
     return signatures
 
 
@@ -269,24 +310,24 @@ def deduplicate(root, fixlog, *, dry_run=False, only_under=None, emit=print, blo
     counts = dict(deleted=0, would_delete=0, missing_keeper=0, failed=0)
     blocked = {Path(p).resolve() for p in blocked_paths}
     with fixlog.open("a", encoding="utf-8") as log:
-        for variable, brand, discard, keep in _candidates(root):
+        for variable, brand, discard, keepers in _candidates(root):
             entry = dict(time=datetime.now(UTC).isoformat(), operation="component-deduplication",
-                         variable=variable, branded_variable=brand, discard=str(discard), keep=str(keep),
-                         dry_run=dry_run, tool_version=__version__,
+                         variable=variable, branded_variable=brand, discard=str(discard),
+                         keep=[str(k) for k in keepers], dry_run=dry_run, tool_version=__version__,
                          etb_run_id=os.environ.get("ETB_RUN_ID") or None)
             try:
-                if discard.resolve() in blocked or keep.resolve() in blocked:
-                    raise ValueError("A planned correction failed for this pair; both files retained")
-                if not keep.exists():
+                if any(p.resolve() in blocked for p in (discard, *keepers)):
+                    raise ValueError("A planned correction failed for this product; file retained")
+                if not keepers:
                     status = "missing_keeper"
                 else:
-                    signatures = _validate(variable, brand, discard, keep, root)
-                    # Record the intention before unlinking and recheck both files
+                    signatures = _validate(variable, brand, discard, keepers, root)
+                    # Record the intention before unlinking and recheck the files
                     # after metadata inspection to catch concurrent replacements.
                     entry["status"] = "validated"
                     log.write(json.dumps(entry) + "\n")
                     log.flush()
-                    if (_signature(discard), _signature(keep)) != signatures:
+                    if {p: _signature(p) for p in signatures} != signatures:
                         raise ValueError("A file changed during inspection; nothing deleted")
                     if dry_run:
                         status = "would_delete"

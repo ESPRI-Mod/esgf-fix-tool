@@ -520,10 +520,14 @@ esgf-fix-tool deduplicate "$simulation_dir" --only-under "$simulation_dir" --fix
 a parent). Without it, or if the simulation directory is not inside `DIR`, nothing is deleted. `--dry-run` does not
 need it.
 
-A pair is only deleted when both paths are identical apart from the ATM/SRF folder, and the netCDF identity
-(`source_id`, `experiment_id`, `variant_label`, `branded_variable`, `frequency`, `region`, `grid_label`) and time
-coordinate match. A mismatch, an unreadable file or a symlink marks the pair `failed` and deletes nothing; the exit
-code is then 1. A separate run can be used before QA and planning. Normal `apply`
+The secondary copy is matched with the preferred component's files of the same product (same folder apart from
+ATM/SRF, same file name apart from the time range): the two components do not always cut a product into the same
+periods, and a component's files may overlap. It is only deleted when the netCDF identity (`source_id`,
+`experiment_id`, `variant_label`, `branded_variable`, `frequency`, `region`, `grid_label`) matches each kept file and
+**every time step of the copy is in the kept files** (compared as dates, so other time units or an equivalent calendar
+are fine). No kept file: `missing_keeper`, the copy stays. A time step missing from the kept files, a mismatch, an
+unreadable file or a symlink marks the copy `failed` and deletes nothing; the exit code is then 1. The log lists
+the kept files of each decision (`keep`). A separate run can be used before QA and planning. Normal `apply`
 already includes this operation and needs no additional command. Model,
 experiment and realization must agree within a pair but are not fixed to one simulation.
 
