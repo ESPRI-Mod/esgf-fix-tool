@@ -527,7 +527,7 @@ def apply_plan(
                     for discard, keep in removed_duplicates.items():
                         log.write(json.dumps(dict(
                             time=datetime.now(UTC).isoformat(), operation="component-deduplication",
-                            status="already_removed", discard=discard, keep=keep, dry_run=dry_run,
+                            status="already_removed", discard=discard, keep=[keep], dry_run=dry_run,
                         )) + "\n")
                         notify("deduplication", "result", message=f"already_removed: {Path(discard).name}")
             result = deduplicate(
