@@ -89,3 +89,21 @@
   fix: set_global_attr_if_matches
   params: {attr: nominal_resolution, expected: '150 km', value: '100 km'}
   note: User decision on 2026-11-19. Replace only nominal_resolution=150 km with 100 km as a direct global-attribute edit. Preserve other values, grid_label, filenames and all scientific arrays. No model or experiment restriction.
+
+- id: C123
+  check: '\[CMIP7\] \[(?:ATTR004\] Global attribute ''parent_experiment_id'' vocabulary check|ATTR007c\] Consistency: experiment_id vs parent_experiment_id)$'
+  message: '(?:''esm_piControl'' not found in collection ''experiment'' for NetCDF attribute ''parent_experiment_id''|Inconsistency for ''parent_experiment_id'': CV expects one of \[''esm-piControl''\], file has ''esm_piControl''\.)$'
+  action: fix
+  fix: set_global_attr_if_matches
+  params: {attr: parent_experiment_id, expected: esm_piControl, value: esm-piControl}
+  note: CM6-ESMCO2-FT.p1.3.esm-hist.01, every file. The CV's experiment id has a hyphen (ATTR007c gives the expected
+    value). Replace only the exact esm_piControl text; any other value is refused. No model or experiment restriction.
+
+- id: C124
+  check: \[CMIP7\] \[ATTR004\] Global attribute 'activity_id' vocabulary check$
+  message: '''SCENARIOMIP'' not found in collection ''activity'' for NetCDF attribute ''activity_id''$'
+  action: fix
+  fix: set_global_attr_if_matches
+  params: {attr: activity_id, expected: SCENARIOMIP, value: ScenarioMIP}
+  note: scen7-vl and scen7-hl, every file. The CV's activity is ScenarioMIP (its drs_name; esgdrs builds the DRS from
+    it). Replace only the exact SCENARIOMIP text; any other value is refused. No model or experiment restriction.
