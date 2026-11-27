@@ -73,19 +73,27 @@ def center_hybrid_interfaces(ds):
     # Keep the ordinary C102 guard for any unselected 80-center al case.
     hybrid._attributes(ds, "alevel")
     ref = hybrid._coefficient_reference()
+    centre_dims = set()  # the own dimension of centre coefficients, removed with them
     for term in ("ap", "b"):
         v = ds[term]
         a = np.ma.asarray(v[:])
-        if (
-            v.dtype not in ((np.dtype("f4"), np.dtype("f8")) if count == 96 else (np.dtype("f8"),))
-            or v.dimensions not in (("lev",), ("klevp1",))
-            or any(attr in v.ncattrs() for attr in ("scale_factor", "add_offset"))
-            or np.ma.getmaskarray(a).any()
-            or not hybrid._matches_reference(a, ref[count][term], count)
-        ):
+        stored = (
+            v.dtype in ((np.dtype("f4"), np.dtype("f8")) if count == 96 else (np.dtype("f8"),))
+            and not any(attr in v.ncattrs() for attr in ("scale_factor", "add_offset"))
+            and not np.ma.getmaskarray(a).any()
+        )
+        interfaces = v.dimensions in (("lev",), ("klevp1",)) and hybrid._matches_reference(a, ref[count][term], count)
+        # amip (XIOS): the data on the interfaces, but the file carries the centre coefficients, exactly the ones
+        # written below; the interface axis is still checked against the reference
+        centres = (len(v.dimensions) == 1 and v.dimensions[0] != "lev"
+                   and hybrid._matches_reference(a, ref[center_count][term], center_count))
+        if not (stored and (interfaces or centres)):
             raise ValueError(
                 f"Interface {term} does not match the supplied {count}-point reference"
+                f" (nor the {center_count} centres)"
             )
+        if centres:
+            centre_dims.add(v.dimensions[0])
     axis = ds["lev"]
     pressure = ref[count]["ap"] + hybrid.P_REF * ref[count]["b"]
     actual = np.ma.asarray(axis[:])
@@ -134,6 +142,13 @@ def center_hybrid_interfaces(ds):
         if n in ds.variables:
             ds.deleteVariable(n)
     ds.deleteDimension(retired)
+    for dim in centre_dims:  # the centre coefficients' own axis (klev...): gone with them, if nothing else uses it
+        if dim in ds.variables and ds[dim].dimensions == (dim,):
+            users = [n for n, v in ds.variables.items() if dim in v.dimensions and n != dim]
+            if not users:
+                ds.deleteVariable(dim)
+        if dim in ds.dimensions and not any(dim in v.dimensions for v in ds.variables.values()):
+            ds.deleteDimension(dim)
 
     # 3. Use the supplied center coefficients and neighboring reference
     # interfaces for bounds, then delegate formulas/normalization to C074/C102.

@@ -16,8 +16,10 @@ from esgf_fix_tool.report import Finding
 from esgf_fix_tool.ruleset import Action, RuleSet
 
 
-def interface_file(path, name="edt", fmt="NETCDF4", chunk=10, coefficient_dim="lev", dtype="f4", time_chunk=1):
+def interface_file(path, name="edt", fmt="NETCDF4", chunk=10, coefficient_dim="lev", dtype="f4", time_chunk=1,
+                   centre_coefficients=False):
     reference = _coefficient_reference()[80]
+    coefficients = _coefficient_reference()[79] if centre_coefficients else reference
     values = np.ma.array(np.arange(2 * 80 * 3 * 4, dtype=dtype).reshape(2, 80, 3, 4) / 8, mask=False)
     values.mask[0, 20, 1, 1] = True  # Both adjacent output cells must be masked.
     values.mask[1, :, 0, 0] = True
@@ -28,11 +30,12 @@ def interface_file(path, name="edt", fmt="NETCDF4", chunk=10, coefficient_dim="l
         for dim, size in (("time", None), ("lev", 80), ("lat", 3), ("lon", 4), ("bnds", 2)):
             ds.createDimension(dim, size)
         if coefficient_dim != "lev":
-            ds.createDimension(coefficient_dim, 80)
-            ds.createVariable(coefficient_dim, "i4", (coefficient_dim,))[:] = np.arange(80)
+            size = 79 if centre_coefficients else 80
+            ds.createDimension(coefficient_dim, size)
+            ds.createVariable(coefficient_dim, "i4", (coefficient_dim,))[:] = np.arange(size)
         ds.createVariable("lev", "f8", ("lev",))[:] = reference["ap"] / 101325 + reference["b"]
         for term in ("ap", "b"):
-            ds.createVariable(term, "f8", (coefficient_dim,))[:] = reference[term]
+            ds.createVariable(term, "f8", (coefficient_dim,))[:] = coefficients[term]
         ds["ap"].units = "Pa"
         ds.createVariable("time", "f8", ("time",))[:] = [15.5, 45]
         ds["time"].bounds = "time_bnds"
@@ -250,3 +253,37 @@ def test_missing_bound_names_reuse_metadata_recipe_on_published_and_legacy_ids(
     corrected = p.read_bytes()
     assert apply_plan(q, tmp_path / "replay")["changed"] == 0
     assert p.read_bytes() == corrected and p.stat().st_ino == inode
+
+
+@pytest.mark.parametrize("name", ["edt", "evu"])
+def test_centre_coefficients_next_to_interface_data_are_accepted(tmp_path, name):
+    """amip (XIOS): the data on the 80 interfaces, ap/b already the 79 reference centres, on klev."""
+    path = tmp_path / f"{name}.nc"
+    values = interface_file(path, name, coefficient_dim="klev", centre_coefficients=True)
+    assert apply_plan(plan(path), tmp_path / "log")["changed"] == 1
+    ref = _coefficient_reference()[79]
+    with netCDF4.Dataset(path) as ds:
+        assert ds[name].dimensions == ("time", "lev", "lat", "lon") and len(ds.dimensions["lev"]) == 79
+        assert np.array_equal(ds["ap"][:], ref["ap"]) and np.array_equal(ds["b"][:], ref["b"])
+        assert "klev" not in ds.dimensions and "klev" not in ds.variables
+        expected = values[:, :-1] * 0.5 + values[:, 1:] * 0.5
+        assert np.allclose(ds[name][1, :, 1, 1], expected[1, :, 1, 1])
+
+
+def test_centre_coefficients_still_need_the_interface_axis(tmp_path):
+    path = tmp_path / "edt.nc"
+    interface_file(path, coefficient_dim="klev", centre_coefficients=True)
+    with netCDF4.Dataset(path, "a") as ds:
+        ds["lev"][0] = ds["lev"][0] + 0.01
+    with pytest.raises(ValueError, match="lev does not match the supplied 80 interfaces"):
+        apply_plan(plan(path), tmp_path / "log")
+
+
+def test_other_coefficients_are_still_refused(tmp_path):
+    path = tmp_path / "edt.nc"
+    interface_file(path, coefficient_dim="klev", centre_coefficients=True)
+    with netCDF4.Dataset(path, "a") as ds:
+        ds["ap"][3] = ds["ap"][3] + 1
+    with pytest.raises(ValueError, match="does not match the supplied 80-point reference .nor the 79 centres."):
+        apply_plan(plan(path), tmp_path / "log")
+

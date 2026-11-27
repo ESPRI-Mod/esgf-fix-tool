@@ -4,6 +4,16 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Fixed
+
+- C104/C103e (`center_hybrid_interfaces`, edt/evu from 80 interfaces to 79 centres) also accepts files whose `ap`
+  and `b` are already the reference centre coefficients, on their own axis (`klev`): amip (XIOS) writes the data on
+  the 80 interfaces but the 79 centre coefficients next to it, refused so far ("Interface ap does not match the
+  supplied 80-point reference"). The interface axis must still match the 80-point reference; the centre axis goes
+  with the coefficients it carried. Any other coefficients are still refused.
+
 ## [0.17.0] - 2026-11-27
 
 ### Added
