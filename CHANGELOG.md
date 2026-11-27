@@ -4,6 +4,19 @@ All notable changes to esgf-fix-tool are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [semantic versioning](https://semver.org/).
 A new or changed rule is at least a minor version: it changes what the tool does to files.
 
+## [Unreleased]
+
+### Added
+
+- C126: the sub-hourly site series of amip (`tpt-*-hs-*`, `subhr`: cl, ta, ua, zg, tnt*, tnhus*, rld/rlu/rsd/rsu…)
+  written `(time, lev, site)` are transposed to `(time, site, lev)` with `fix_data_layout`. The vertical axis may
+  still be `presinter` at the first QA: its rename to `lev` (C018/C019) must be in the same plan, or the file is
+  refused. The files are big (cl: 438288 times × 79 levels × 126 sites): better as shards.
+- C127 and `trim_filename_seconds`: subhr file names with a time range to the second
+  (`19790101003000-20220101000000`) are renamed to the minute (`197901010030-202201010000`), the only sub-daily
+  form of the CMIP7 CV time_range. Rename only, refused unless both seconds are 00 and the frequency is subhr;
+  never over an existing file.
+
 ## [0.16.0] - 2026-11-26
 
 ### Changed

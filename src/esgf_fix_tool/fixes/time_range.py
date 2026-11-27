@@ -55,3 +55,31 @@ def sync_filename_time_range(ds, source, target):
     if data != target:
         raise ValueError(f"The data cover {data}, not {target}: file name left unchanged")
     return False
+
+
+SECONDS = re.compile(r"_(\d{14})-(\d{14})\.nc$")
+
+
+def filename_seconds_target(path, source):
+    """The path with its YYYYMMDDhhmmss-YYYYMMDDhhmmss range written to the minute (None if already done), after
+    checking that both seconds are 00: the same instants, in the only sub-daily form the CMIP7 CV accepts."""
+    path = Path(path)
+    start, end = source.split("-")
+    if len(start) != 14 or len(end) != 14 or start[-2:] != "00" or end[-2:] != "00":
+        raise ValueError(f"Only a YYYYMMDDhhmmss range with 00 seconds is reviewed: {source}")
+    target = f"{start[:12]}-{end[:12]}"
+    if path.name.endswith(f"_{target}.nc"):
+        return None
+    m = SECONDS.search(path.name)
+    if not m or f"{m.group(1)}-{m.group(2)}" != source:
+        raise ValueError(f"The file name's time range is not {source}: {path.name}")
+    return path.with_name(path.name[:m.start()] + f"_{target}.nc")
+
+
+@fix("trim_filename_seconds")
+def trim_filename_seconds(ds, source):
+    """The sub-hourly file names (subhr) carry seconds the CMIP7 CV refuses (time_range: down to the minute).
+    The apply layer renames the file; nothing changes in it (rename only)."""
+    if getattr(ds, "frequency", "") != "subhr":
+        raise ValueError("The seconds of a file name's time range are only reviewed for frequency subhr")
+    return False
