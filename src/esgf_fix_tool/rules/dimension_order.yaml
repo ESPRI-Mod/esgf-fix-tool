@@ -305,3 +305,24 @@
   dataset: CMIP7\.SRF\.(?:gppVgt|laiVgt)\.tavg-u-hxy-multi\.
   action: review
   note: The reported scientific field has no vegetation-category dimension. Inspect the file header and existing labels before choosing a representation; a permutation or dimension rename cannot supply missing category data. Do not broadcast or duplicate the field to invent vegetation types.
+
+# Sub-hourly site series (amip, IPSL-CM6-ESMCO2): written (time, lev, site), CMIP7 asks (time, site, lev). The
+# vertical axis may still be presinter at the first QA: its rename to lev (C018/C019) must be in the same plan, or the
+# layout fix refuses the file (an unreviewed dimension change). Transposition only; the files are big (cl: 438288
+# times x 79 levels x 126 sites), better run as shards.
+- id: C126
+  check: \[CMIP7\] \[COORD002\] Data-variable coordinate order$
+  message: '''(?P<var>[^'']+)'' dimensions in netCDF/C order are \[''time'', ''(?:lev|presinter)'', ''site''\]; coordinate
+    IDs \[''(?:alevel|alevhalf)'', ''site'', ''time1''\] require \[''time'', ''site'', ''lev''\] as their required order\.$'
+  dataset: CMIP7\.[^.]+\.[^.]+\.tpt-[^.]+-hs-[^.]+\.subhr\.
+  action: fix
+  fix: fix_data_layout
+  params:
+    var: '{var}'
+    target_order:
+    - time
+    - site
+    - lev
+  note: amip subhr site variables (cl, ta, ua, zg, tnt*, tnhus*, rld/rlu/rsd/rsu...). Transpose only, after the
+    reviewed vertical rename; values, masks and attributes are kept and verified.
+

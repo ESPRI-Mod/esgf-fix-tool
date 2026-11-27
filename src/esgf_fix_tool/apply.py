@@ -19,7 +19,7 @@ from .progress import ProgressEvent, activity, notify, reporting, step_scope
 
 
 def _rename_request(path, steps):
-    """Resolve explicit renames (C097 grid label, C125 time range) and a grid edit's paired filename edit."""
+    """Resolve explicit renames (C097 grid label, C125 time range, C127 seconds) and a grid edit's paired filename edit."""
     requests = []
     for i, step in enumerate(steps):
         if step.fix == "sync_filename_grid_label":
@@ -30,6 +30,8 @@ def _rename_request(path, steps):
             target = fixes.grid_labels.proposed_drs_path(path, **step.params)
         elif step.fix == "sync_filename_time_range":
             target = fixes.time_range.filename_time_target(path, **step.params)
+        elif step.fix == "trim_filename_seconds":
+            target = fixes.time_range.filename_seconds_target(path, **step.params)
         elif step.fix == "reduce_replicated_zostoga":
             fields = Path(path).name.split("_", 5)
             if len(fields) != 6 or fields[0] != "zostoga":
@@ -45,7 +47,7 @@ def _rename_request(path, steps):
     # Prefer the explicit rename's log entry when both diagnostics were selected.
     i, target = next(
         ((i, target) for i, target in requests
-         if steps[i].fix in ("sync_filename_grid_label", "sync_filename_time_range")),
+         if steps[i].fix in ("sync_filename_grid_label", "sync_filename_time_range", "trim_filename_seconds")),
         requests[0],
     )
     if target is None:

@@ -107,3 +107,16 @@
   params: {attr: activity_id, expected: SCENARIOMIP, value: ScenarioMIP}
   note: scen7-vl and scen7-hl, every file. The CV's activity is ScenarioMIP (its drs_name; esgdrs builds the DRS from
     it). Replace only the exact SCENARIOMIP text; any other value is refused. No model or experiment restriction.
+
+- id: C127
+  check: \[CMIP7\] \[FILE001\] DRS Filename Vocabulary Check$
+  message: Filename '[^']+' has validation errors. extra term (?P<source>\d{14}-\d{14}) invalidated by the optional collection time_range at position \d+$
+  dataset: CMIP7\.[^.]+\.[^.]+\.[^.]+\.subhr\.
+  action: fix
+  fix: trim_filename_seconds
+  params:
+    source: '{source}'
+  note: amip subhr file names carry seconds (19790101003000-20220101000000); the CMIP7 CV time_range goes down to
+    the minute (YYYYMMDDhhmm). Rename only, to 197901010030-202201010000, refused unless both seconds are 00;
+    never over an existing file.
+
